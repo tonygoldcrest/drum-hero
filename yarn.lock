@@ -2217,11 +2217,6 @@
   resolved "https://registry.yarnpkg.com/@types/verror/-/verror-1.10.9.tgz#420c32adb9a2dd50b3db4c8f96501e05a0e72941"
   integrity sha512-MLx9Z+9lGzwEuW16ubGeNkpBDE84RpB/NyGgg6z2BTpWzKkGU451cAY3UkUzZEp72RHF585oJ3V8JVNqIplcAQ==
 
-"@types/vexflow@^1.2.42":
-  version "1.2.42"
-  resolved "https://registry.yarnpkg.com/@types/vexflow/-/vexflow-1.2.42.tgz#76883be5ba41b5a88e226d3089162b4bb1e90cd0"
-  integrity sha512-bj3If1sm1FYJN0tJMV2BJNrwoeQ6xfrTt+rbmFvUytyxUhklLlW79MR4uwQ+upzrNJLVy012TnC7oZqSpEglSw==
-
 "@types/webpack-bundle-analyzer@^4.6.0":
   version "4.6.3"
   resolved "https://registry.yarnpkg.com/@types/webpack-bundle-analyzer/-/webpack-bundle-analyzer-4.6.3.tgz#53c26f21134ca2e5049fd2af4f2ffbf8dfe87b4f"

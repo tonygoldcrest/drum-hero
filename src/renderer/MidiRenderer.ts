@@ -1,80 +1,124 @@
-import { HeaderJSON, MidiJSON, TrackJSON } from '@tonejs/midi';
-import { NoteJSON } from '@tonejs/midi/dist/Note';
 import React from 'react';
-import Vex from 'vexflow';
-import { Song } from './song';
+import {
+  RenderContext,
+  Renderer,
+  Stave,
+  StaveNote,
+  TextJustification,
+  Formatter,
+  ModifierPosition,
+  Beam,
+  Dot,
+  Barline,
+  Tuplet,
+} from 'vexflow';
+import { Measure, Song } from '../midi-parser/song';
 
-export default class MidiRenderer {
-  song: Song;
+const STAVE_WIDTH = 400;
+const STAVE_PER_ROW = 3;
+const LINE_HEIGHT = 150;
 
-  constructor(
-    public data: MidiJSON,
-    public elementRef: React.RefObject<HTMLDivElement>,
-  ) {
-    this.song = new Song(data);
+export function renderMusic(
+  elementRef: React.RefObject<HTMLDivElement>,
+  song: Song,
+) {
+  if (!elementRef.current) {
+    return;
   }
 
-  render() {
-    if (!this.elementRef.current) {
-      return;
+  const renderer = new Renderer(elementRef.current, Renderer.Backends.SVG);
+
+  const context = renderer.getContext();
+
+  renderer.resize(
+    STAVE_WIDTH * STAVE_PER_ROW + 50,
+    Math.ceil(song.measures.length / STAVE_PER_ROW) * LINE_HEIGHT + 50,
+  );
+
+  song.measures.forEach((measure, index) => {
+    renderMeasure(
+      context,
+      measure,
+      index,
+      (index % STAVE_PER_ROW) * STAVE_WIDTH,
+      Math.floor(index / STAVE_PER_ROW) * LINE_HEIGHT,
+      index === song.measures.length - 1,
+    );
+  });
+}
+
+function renderMeasure(
+  context: RenderContext,
+  measure: Measure,
+  index: number,
+  xOffset: number,
+  yOffset: number,
+  endMeasure: boolean,
+) {
+  const stave = new Stave(xOffset, yOffset, STAVE_WIDTH);
+
+  if (endMeasure) {
+    stave.setEndBarType(Barline.type.END);
+  }
+  if (measure.hasClef) {
+    stave.addClef('percussion');
+  }
+  if (measure.sigChange) {
+    stave.addTimeSignature(`${measure.timeSig[0]}/${measure.timeSig[1]}`);
+  }
+
+  stave.setText(`${index}`, ModifierPosition.ABOVE, {
+    justification: TextJustification.LEFT,
+  });
+
+  stave.setContext(context).draw();
+
+  const tuplets: StaveNote[][] = [];
+  let currentTuplet: StaveNote[] | null = null;
+
+  const notes = measure.notes.map((note) => {
+    const staveNote = new StaveNote({
+      keys: note.notes,
+      duration: note.duration,
+      align_center: note.duration === 'wr',
+    });
+
+    if (
+      (note.isTriplet && !currentTuplet) ||
+      (note.isTriplet && currentTuplet && currentTuplet.length === 3)
+    ) {
+      currentTuplet = [staveNote];
+      tuplets.push(currentTuplet);
+    } else if (note.isTriplet && currentTuplet) {
+      currentTuplet.push(staveNote);
+    } else if (!note.isTriplet && currentTuplet) {
+      currentTuplet = null;
     }
 
-    const { Renderer, Stave, StaveNote, Formatter, Beam } = Vex.Flow;
+    if (note.dotted) {
+      Dot.buildAndAttach([staveNote], {
+        all: true,
+      });
+    }
+    return staveNote;
+  });
 
-    // Create an SVG renderer and attach it to the DIV element with id="output".
-    const renderer = new Renderer(
-      this.elementRef.current,
-      Renderer.Backends.SVG,
-    );
+  const drawableTuplets = tuplets.map((tupletNotes) => new Tuplet(tupletNotes));
 
-    // Configure the rendering context.
-    renderer.resize(3000, 3000);
-    const context = renderer.getContext();
-    context.setFont('Roboto', 10);
+  const beams = Beam.generateBeams(notes, {
+    flat_beams: true,
+    stem_direction: -1,
+  });
 
-    let xOffset = 0;
-    let yOffset = 0;
-    const verticalOffset = 100;
+  Formatter.FormatAndDraw(context, stave, notes);
 
-    this.song.measures.forEach((measure, index) => {
-      const stave = new Stave(xOffset, yOffset, 300);
+  drawableTuplets.forEach((tuplet) => {
+    tuplet.setContext(context).draw();
+  });
 
-      if (measure.hasClef) {
-        stave.addClef('percussion');
-      }
-      if (measure.sigChange) {
-        stave.addTimeSignature(`${measure.timeSig[0]}/${measure.timeSig[1]}`);
-      }
-      stave.setContext(context).draw();
+  beams.forEach((b) => {
+    b.setContext(context).draw();
+  });
 
-      if (measure.tickNotes.length) {
-        const notes = measure.tickNotes.map((tickNote) => {
-          return new StaveNote({
-            keys: tickNote.notes.map((n) => n.key),
-            duration: tickNote.duration,
-            align_center: tickNote.duration === 'wr',
-          });
-        });
-
-        const beams = Beam.generateBeams(notes, {
-          flat_beams: true,
-          stem_direction: -1,
-          // flat_beam_offset: 150,
-        });
-
-        Formatter.FormatAndDraw(context, stave, notes);
-
-        beams.forEach((b) => {
-          b.setContext(context).draw();
-        });
-      }
-
-      if ((index + 1) % 4 === 0) {
-        xOffset = 0;
-        yOffset += verticalOffset;
-      } else {
-        xOffset += stave.getWidth();
-      }
-    });
-  }
+  return stave;
 }

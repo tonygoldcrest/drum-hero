@@ -35,7 +35,7 @@ ipcMain.on('load-default', async (event) => {
   console.log('here');
 
   const midiData = fs.readFileSync(
-    '/Users/antosha/code/ch-sheet/test-songs/disturbed/notes.mid',
+    '/Users/antosha/code/clone-hero-sheet/test-songs/disturbed/notes.mid',
   );
   const midi = new Midi(midiData);
   event.reply('load-default', midi.toJSON());

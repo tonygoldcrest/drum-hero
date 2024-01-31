@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 
 import './App.css';
 import { MidiJSON } from '@tonejs/midi';
-import MidiRenderer from './MidiRenderer';
+import { renderMusic } from './MidiRenderer';
 import { Channels } from '../main/preload';
+import { Song } from '../midi-parser/song';
 
 function Hello() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -12,6 +13,10 @@ function Hello() {
   const [midiData, setMidiData] = useState<MidiJSON>();
 
   const loadSong = (type: Channels) => {
+    if (midiData && divRef.current) {
+      divRef.current.removeChild(divRef.current.children[0]);
+    }
+
     window.electron.ipcRenderer.on(type, (arg) => {
       setMidiData(arg);
 
@@ -28,7 +33,7 @@ function Hello() {
       return;
     }
 
-    new MidiRenderer(midiData, divRef).render();
+    renderMusic(divRef, new Song(midiData));
   }, [isLoaded, midiData]);
 
   return (
