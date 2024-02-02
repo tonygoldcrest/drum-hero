@@ -1,6 +1,11 @@
 body {
-  position: relative;
   height: 100vh;
+  padding: 0;
+  margin: 0;
+  background: #fbf9f1;
   font-family: sans-serif;
-  display: flex;
+}
+
+* {
+  box-sizing: border-box;
 }

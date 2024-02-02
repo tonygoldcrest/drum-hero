@@ -2,7 +2,7 @@
 /* eslint no-unused-vars: off */
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
-export type Channels = 'load' | 'load-default';
+export type Channels = 'load' | 'load-default' | 'song-list';
 
 const electronHandler = {
   ipcRenderer: {
@@ -21,6 +21,15 @@ const electronHandler = {
     once(channel: Channels, func: (...args: unknown[]) => void) {
       ipcRenderer.once(channel, (_event, ...args) => func(...args));
     },
+  },
+  store: {
+    get(key: string) {
+      return ipcRenderer.sendSync('electron-store-get', key);
+    },
+    set(property: string, val: any) {
+      ipcRenderer.send('electron-store-set', property, val);
+    },
+    // Other method you want to add like has(), reset(), etc.
   },
 };
 

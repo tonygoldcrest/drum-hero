@@ -16,11 +16,11 @@ import { Measure, Song } from '../midi-parser/song';
 
 const STAVE_WIDTH = 400;
 const STAVE_PER_ROW = 3;
-const LINE_HEIGHT = 150;
 
 export function renderMusic(
   elementRef: React.RefObject<HTMLDivElement>,
   song: Song,
+  showBarNumbers: boolean = true,
 ) {
   if (!elementRef.current) {
     return;
@@ -29,10 +29,11 @@ export function renderMusic(
   const renderer = new Renderer(elementRef.current, Renderer.Backends.SVG);
 
   const context = renderer.getContext();
+  const lineHeight = showBarNumbers ? 150 : 110;
 
   renderer.resize(
-    STAVE_WIDTH * STAVE_PER_ROW + 50,
-    Math.ceil(song.measures.length / STAVE_PER_ROW) * LINE_HEIGHT + 50,
+    STAVE_WIDTH * STAVE_PER_ROW + 10,
+    Math.ceil(song.measures.length / STAVE_PER_ROW) * lineHeight,
   );
 
   song.measures.forEach((measure, index) => {
@@ -41,8 +42,9 @@ export function renderMusic(
       measure,
       index,
       (index % STAVE_PER_ROW) * STAVE_WIDTH,
-      Math.floor(index / STAVE_PER_ROW) * LINE_HEIGHT,
+      Math.floor(index / STAVE_PER_ROW) * lineHeight,
       index === song.measures.length - 1,
+      showBarNumbers,
     );
   });
 }
@@ -54,6 +56,7 @@ function renderMeasure(
   xOffset: number,
   yOffset: number,
   endMeasure: boolean,
+  showBarNumbers: boolean,
 ) {
   const stave = new Stave(xOffset, yOffset, STAVE_WIDTH);
 
@@ -67,9 +70,11 @@ function renderMeasure(
     stave.addTimeSignature(`${measure.timeSig[0]}/${measure.timeSig[1]}`);
   }
 
-  stave.setText(`${index}`, ModifierPosition.ABOVE, {
-    justification: TextJustification.LEFT,
-  });
+  if (showBarNumbers) {
+    stave.setText(`${index}`, ModifierPosition.ABOVE, {
+      justification: TextJustification.LEFT,
+    });
+  }
 
   stave.setContext(context).draw();
 
@@ -84,8 +89,8 @@ function renderMeasure(
     });
 
     if (
-      (note.isTriplet && !currentTuplet) ||
-      (note.isTriplet && currentTuplet && currentTuplet.length === 3)
+      note.isTriplet &&
+      (!currentTuplet || (currentTuplet && currentTuplet.length === 3))
     ) {
       currentTuplet = [staveNote];
       tuplets.push(currentTuplet);

@@ -343,31 +343,63 @@ export class Song {
             const atomicDurations = this.getSubsets(
               availableDurations,
               note.durationTicks ?? 0,
-            )
+            );
+
+            if (atomicDurations.length === 0) {
+              return this.getClosestDuration(availableDurations, note);
+            }
+
+            return atomicDurations
               .sort((a, b) => a.length - b.length)[0]
-              .sort((a, b) => b - a);
+              .sort((a, b) => b - a)
+              .map((durationTicks, index) => {
+                const { duration, dotted, isTriplet } =
+                  this.durationMap[durationTicks];
 
-            return atomicDurations.map((durationTicks, index) => {
-              const { duration, dotted, isTriplet } =
-                this.durationMap[durationTicks];
+                const isRest = note.isRest || index === 0;
+                const newNote: Note = {
+                  isTriplet: isTriplet ?? false,
+                  dotted: dotted ?? false,
+                  durationTicks,
+                  isRest,
+                  tick: 0,
+                  duration: `${duration}${isRest ? 'r' : ''}`,
+                  notes: ['b/4'],
+                };
 
-              const isRest = note.isRest || index === 0;
-              const newNote: Note = {
-                isTriplet: isTriplet ?? false,
-                dotted: dotted ?? false,
-                durationTicks,
-                isRest,
-                tick: 0,
-                duration: `${duration}${isRest ? 'r' : ''}`,
-                notes: ['b/4'],
-              };
-
-              return newNote;
-            });
+                return newNote;
+              });
           })
           .flat();
       });
     });
+  }
+
+  getClosestDuration(availableDurations: number[], note: Note) {
+    let durationDiff = Infinity;
+    let closestDurationKey = this.header.ppq / 16;
+    availableDurations.forEach((duration) => {
+      const diff = Math.abs(duration - (note.durationTicks ?? 0));
+      if (diff < durationDiff) {
+        closestDurationKey = duration;
+        durationDiff = diff;
+      }
+    });
+
+    const { duration, isTriplet, dotted } =
+      this.durationMap[closestDurationKey];
+
+    return [
+      {
+        isTriplet: isTriplet ?? false,
+        dotted: dotted ?? false,
+        durationTicks: note.durationTicks,
+        isRest: note.isRest,
+        tick: 0,
+        duration: `${duration}${note.isRest ? 'r' : ''}`,
+        notes: ['b/4'],
+      },
+    ];
   }
 
   getSubsets(array: number[], sum: number) {
@@ -406,6 +438,9 @@ export class Song {
       [ppq / 8]: { duration: '32' },
       [ppq / 8 + ppq / 16]: { duration: '32d', dotted: true },
       [ppq / 12]: { duration: '32', isTriplet: true },
+      [ppq / 16]: { duration: '64' },
+      [ppq / 16 + ppq / 32]: { duration: '64d', dotted: true },
+      [ppq / 24]: { duration: '64', isTriplet: true },
     };
   }
 }

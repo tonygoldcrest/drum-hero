@@ -11,10 +11,13 @@
 import glob from 'glob';
 import path from 'path';
 import fs from 'fs';
-import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
+import ini from 'ini';
+import { app, BrowserWindow, shell, ipcMain, dialog, protocol } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import { Midi } from '@tonejs/midi';
+import Store from 'electron-store';
+import { randomUUID } from 'crypto';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 
@@ -28,39 +31,44 @@ class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 
+const store = new Store();
+
+ipcMain.on('electron-store-get', async (event, val) => {
+  event.returnValue = store.get(val);
+});
+ipcMain.on('electron-store-set', async (event, key, val) => {
+  store.set(key, val);
+});
+
 ipcMain.on('load-default', async (event) => {
   if (!mainWindow) {
     return;
   }
-  console.log('here');
 
   const midiData = fs.readFileSync(
-    '/Users/antosha/code/clone-hero-sheet/test-songs/disturbed/notes.mid',
+    '/Users/antosha/code/clone-hero-sheet/test-songs/yyz/notes.mid',
   );
   const midi = new Midi(midiData);
   event.reply('load-default', midi.toJSON());
 });
 
-ipcMain.on('load', async (event) => {
+ipcMain.on('load', async (event, [id]) => {
   if (!mainWindow) {
     return;
   }
-  dialog
-    .showOpenDialog(mainWindow, {
-      properties: ['openDirectory'],
-    })
-    .then((result) => {
-      console.log(result);
-      glob(`${result.filePaths[0]}/**/*.mid`, {}, (err, files) => {
-        console.log(files[0]);
-        const midiData = fs.readFileSync(files[0]);
-        const midi = new Midi(midiData);
-        event.reply('load', midi.toJSON());
-      });
-    })
-    .catch((err) => {
-      console.log(err);
-    });
+  const song = store.get('songs')[id];
+  glob(`${song.dir}/**/*.mid`, {}, (err, files) => {
+    const midiData = fs.readFileSync(files[0]);
+    const midi = new Midi(midiData);
+    event.reply('load', { info: song, midi: midi.toJSON() });
+  });
+});
+
+ipcMain.on('song-list', async (event) => {
+  if (!mainWindow) {
+    return;
+  }
+  event.reply('song-list', Object.values(store.get('songs')));
 });
 
 if (process.env.NODE_ENV === 'production') {
@@ -88,9 +96,47 @@ const installExtensions = async () => {
     .catch(console.log);
 };
 
+const loadSongList = async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openDirectory'],
+    title: 'Choose your Clone Hero library',
+    message: 'Choose your Clone Hero library',
+  });
+
+  glob(`${result.filePaths[0]}/**/*.mid`, {}, (err, files) => {
+    const songList = files
+      .map((file) => path.join(path.dirname(file), 'song.ini'))
+      .filter((file) => fs.existsSync(file))
+      .map((file) => ({
+        info: ini.parse(fs.readFileSync(file, 'utf-8')),
+        dir: path.dirname(file),
+      }))
+      .map(({ info, dir }) => ({
+        id: randomUUID(),
+        song: info.song ?? info.Song ?? info,
+        dir,
+        albumCover: fs.existsSync(path.join(dir, 'album.png'))
+          ? `atom:///${path.join(dir, 'album.png')}`
+          : null,
+      }));
+
+    store.set(
+      'songs',
+      songList.reduce((acc, song) => {
+        acc[song.id] = song;
+        return acc;
+      }, {}),
+    );
+  });
+};
+
 const createWindow = async () => {
   if (isDebug) {
     await installExtensions();
+  }
+
+  if (!store.get('songs')) {
+    await loadSongList();
   }
 
   const RESOURCES_PATH = app.isPackaged
@@ -159,11 +205,16 @@ app.on('window-all-closed', () => {
 app
   .whenReady()
   .then(() => {
-    createWindow();
-    app.on('activate', () => {
-      // On macOS it's common to re-create a window in the app when the
-      // dock icon is clicked and there are no other windows open.
-      if (mainWindow === null) createWindow();
+    protocol.registerFileProtocol('atom', (request, callback) => {
+      const url = request.url.substr(7);
+      callback({ path: url });
     });
+
+    createWindow();
+    // app.on('activate', () => {
+    //   // On macOS it's common to re-create a window in the app when the
+    //   // dock icon is clicked and there are no other windows open.
+    //   if (mainWindow === null) createWindow();
+    // });
   })
   .catch(console.log);
