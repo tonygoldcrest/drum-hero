@@ -33,6 +33,9 @@ export const SheetMusicView = styled(Content)<{
   align-items: center;
   background: ${(props) => props.background};
   border-radius: ${(props) => props.borderRadius}px;
+  box-shadow:
+    rgba(60, 64, 67, 0.3) 0px 1px 2px 0px,
+    rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
 `;
 
 export const SettingsMenu = styled(Sider)`

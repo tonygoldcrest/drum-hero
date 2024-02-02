@@ -1,41 +1,11 @@
-import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 
-export const SongListItem = styled(Link)`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  display: flex;
-  border-bottom: 1px solid #e5e1da;
-  padding: 10px;
-  text-decoration: none;
-  color: #333;
-  background: #fbf9f1;
-  align-items: center;
-
-  &:hover {
-    background: #e5e1da;
-  }
-`;
-
-export const SongAlbum = styled.img`
+export const Wrapper = styled.div`
   height: 100%;
-  width: auto;
-  object-fit: contain;
-  aspect-ratio: 1;
-  border-radius: 15px;
-  border: 5px solid #92c7cf;
+  overflow-y: auto;
 `;
 
-export const SongMainInfo = styled.div`
-  margin-left: 10px;
+export const VirtualList = styled.div`
+  width: 100%;
+  position: relative;
 `;
-
-export const SongName = styled.div`
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 5px;
-`;
-
-export const SongArtist = styled.div``;

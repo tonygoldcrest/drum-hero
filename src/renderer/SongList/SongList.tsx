@@ -1,19 +1,15 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useRef } from 'react';
 import { SongData } from '../types';
-import {
-  SongAlbum,
-  SongArtist,
-  SongListItem,
-  SongMainInfo,
-  SongName,
-} from './styles';
+import { SongListItem } from '../SongListItem/SongListItem';
+import { VirtualList, Wrapper } from './styles';
 
 export interface SongListProps {
   songList: SongData[];
+  className?: string;
 }
 
-export function SongList({ songList }: SongListProps) {
+export function SongList({ songList, className }: SongListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
   const rowVirtualizer = useVirtualizer({
@@ -23,35 +19,26 @@ export function SongList({ songList }: SongListProps) {
   });
 
   return (
-    <div ref={parentRef} style={{ height: '100%', overflow: 'auto' }}>
-      <div
+    <Wrapper ref={parentRef} className={className}>
+      <VirtualList
         style={{
           height: `${rowVirtualizer.getTotalSize()}px`,
-          width: '100%',
-          position: 'relative',
         }}
       >
         {rowVirtualizer.getVirtualItems().map((virtualItem) => {
-          const { song, albumCover, id } = songList[virtualItem.index];
+          const songInfo = songList[virtualItem.index];
 
           return (
             <SongListItem
-              to={{ pathname: `/${id}` }}
-              key={id}
+              songInfo={songInfo}
               style={{
                 height: `${virtualItem.size}px`,
                 transform: `translateY(${virtualItem.start}px)`,
               }}
-            >
-              <SongAlbum src={albumCover} />
-              <SongMainInfo>
-                <SongName>{song.name}</SongName>
-                <SongArtist>{song.artist}</SongArtist>
-              </SongMainInfo>
-            </SongListItem>
+            />
           );
         })}
-      </div>
-    </div>
+      </VirtualList>
+    </Wrapper>
   );
 }
