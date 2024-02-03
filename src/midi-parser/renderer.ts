@@ -12,14 +12,14 @@ import {
   Barline,
   Tuplet,
 } from 'vexflow';
-import { Measure, Song } from '../midi-parser/song';
+import { Measure, MidiParser } from './parser';
 
 const STAVE_WIDTH = 400;
 const STAVE_PER_ROW = 3;
 
 export function renderMusic(
   elementRef: React.RefObject<HTMLDivElement>,
-  song: Song,
+  song: MidiParser,
   showBarNumbers: boolean = true,
 ) {
   if (!elementRef.current) {

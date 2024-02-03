@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
+import { theme } from '../../theme';
 
 export const Wrapper = styled(Link)`
   position: absolute;
@@ -10,15 +11,13 @@ export const Wrapper = styled(Link)`
   border-bottom: 1px solid #e5e1da;
   padding: 10px;
   text-decoration: none;
-  color: #333;
-  background: #fbf9f1;
+  color: ${theme.color.text.primary};
+  background: ${theme.color.foreground};
   align-items: center;
   transition: box-shadow 0.15s ease-in-out;
 
   &:hover {
-    box-shadow:
-      rgba(60, 64, 67, 0.3) 0px 1px 2px 0px,
-      rgba(60, 64, 67, 0.15) 0px 2px 6px 2px;
+    box-shadow: ${theme.boxShadow.soft};
     z-index: 1;
   }
 `;
@@ -28,8 +27,8 @@ export const Album = styled.img`
   width: auto;
   object-fit: contain;
   aspect-ratio: 1;
-  border-radius: 15px;
-  border: 5px solid #92c7cf;
+  border-radius: ${theme.borderRadius}px;
+  box-shadow: ${theme.boxShadow.soft};
 `;
 
 export const MainInfo = styled.div`
@@ -54,11 +53,11 @@ export const Info = styled.div`
 `;
 
 export const Parameter = styled.div`
-  color: #888;
+  color: ${theme.color.text.tertiary};
   font-size: 12px;
 `;
 
 export const Value = styled.div`
   margin-left: 5px;
-  color: #444;
+  color: ${theme.color.text.secondary};
 `;

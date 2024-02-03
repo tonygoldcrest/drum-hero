@@ -19,6 +19,8 @@ module.exports = {
     'import/prefer-default-export': 'off',
     'no-use-before-define': 'off',
     'react/require-default-props': 'off',
+    'react/no-array-index-key': 'off',
+    'no-bitwise': 'off',
   },
   parserOptions: {
     ecmaVersion: 2022,

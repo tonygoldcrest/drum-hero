@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Fuse from 'fuse.js';
-import { SongListContainer, SongViewOverlay, Wrapper } from './styles';
+import { Button, FloatButton } from 'antd';
+import {
+  Header,
+  ScanSongsButton,
+  SongListContainer,
+  SongViewOverlay,
+  Wrapper,
+} from './styles';
 import { IpcLoadSongListResponse, SongData } from '../../../types';
 import { SongFilter } from '../../components/SongFilter/SongFilter';
 import { SongList } from '../../components/SongList/SongList';
@@ -26,12 +33,11 @@ export function SelectSongView() {
     }
 
     const fuseOptions = {
-      // isCaseSensitive: false,
       // includeScore: false,
       // shouldSort: true,
       // includeMatches: false,
       // findAllMatches: false,
-      // minMatchCharLength: 1,
+      minMatchCharLength: 2,
       // location: 0,
       // threshold: 0.6,
       // distance: 100,
@@ -49,18 +55,21 @@ export function SelectSongView() {
 
   return (
     <Wrapper>
-      <SongFilter
-        nameFilter={nameFilter}
-        onChange={(value: string) => {
-          setNameFilter(value);
-        }}
-      />
+      <Header>
+        <SongFilter
+          nameFilter={nameFilter}
+          onChange={(value: string) => {
+            setNameFilter(value);
+          }}
+        />
+      </Header>
       <SongListContainer>
         <SongList songList={filteredSongList()} />
       </SongListContainer>
       <SongViewOverlay>
         <Outlet />
       </SongViewOverlay>
+      <ScanSongsButton description="SCAN SONGS" type="primary" />
     </Wrapper>
   );
 }

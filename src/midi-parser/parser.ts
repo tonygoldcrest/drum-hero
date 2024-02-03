@@ -49,7 +49,7 @@ export interface Duration {
   dotted?: boolean;
 }
 
-export class Song {
+export class MidiParser {
   mapping: { [key: number]: string } = {
     96: 'f/4',
     97: 'c/5',

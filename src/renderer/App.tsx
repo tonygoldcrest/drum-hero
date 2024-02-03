@@ -4,19 +4,21 @@ import { ConfigProvider } from 'antd';
 import './App.css';
 import { SelectSongView } from './views/SelectSongView/SelectSongView';
 import { SongView } from './views/SongView/SongView';
+import { theme } from './theme';
 
 export default function App() {
   return (
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#50a5b2',
-          borderRadius: 10,
-          colorBgContainer: '#fbf9f1',
+          colorPrimary: theme.color.primaryDark,
+          borderRadius: theme.borderRadius,
+          colorBgContainer: theme.color.foreground,
+          colorText: theme.color.text.primary,
         },
         components: {
           Layout: {
-            bodyBg: '#e5e1da',
+            bodyBg: theme.color.background,
           },
         },
       }}

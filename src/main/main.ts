@@ -167,7 +167,7 @@ app
   .whenReady()
   .then(() => {
     protocol.registerFileProtocol('gh', (request, callback) => {
-      const url = request.url.substr(5);
+      const url = decodeURIComponent(request.url.substr(5));
       callback({ path: url });
     });
 

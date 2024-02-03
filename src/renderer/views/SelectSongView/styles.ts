@@ -1,10 +1,12 @@
+import { FloatButton } from 'antd';
 import styled from 'styled-components';
+import { theme } from '../../theme';
 
 export const Wrapper = styled.div`
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #e5e1da;
+  background: ${theme.color.background};
 `;
 
 export const SongViewOverlay = styled.div`
@@ -14,7 +16,7 @@ export const SongViewOverlay = styled.div`
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 10;
+  z-index: 100;
 `;
 
 export const SongListContainer = styled.div`
@@ -23,8 +25,22 @@ export const SongListContainer = styled.div`
   flex-grow: 1;
   overflow: hidden;
   margin: 0 auto;
-  box-shadow:
-    rgba(60, 64, 67, 0.3) 0px 1px 2px 0px,
-    rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
-  background: #fbf9f1;
+  box-shadow: ${theme.boxShadow.soft};
+  background: ${theme.color.foreground};
+`;
+
+export const Header = styled.div`
+  background: ${theme.color.primaryDark};
+
+  padding: 20px;
+  z-index: 10;
+  box-shadow: ${theme.boxShadow.soft};
+`;
+
+export const ScanSongsButton = styled(FloatButton)`
+  right: 94px;
+  width: 70px;
+  height: 70px;
+  box-shadow: ${theme.boxShadow.soft};
+  font-weight: bold;
 `;

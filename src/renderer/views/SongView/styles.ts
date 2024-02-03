@@ -2,6 +2,7 @@ import { Layout } from 'antd';
 import Sider from 'antd/es/layout/Sider';
 import { Content } from 'antd/es/layout/layout';
 import styled from 'styled-components';
+import { theme } from '../../theme';
 
 export const FullHeightLayout = styled(Layout)`
   height: 100%;
@@ -21,25 +22,37 @@ export const SettingsItem = styled.div`
   }
 `;
 
-export const SheetMusicView = styled(Content)<{
-  background: string;
-  borderRadius: number;
-}>`
+export const SheetMusicView = styled(Content)`
   padding: 24px;
   margin: 0;
   overflow: scroll;
   display: flex;
   flex-flow: column;
   align-items: center;
-  background: ${(props) => props.background};
-  border-radius: ${(props) => props.borderRadius}px;
-  box-shadow:
-    rgba(60, 64, 67, 0.3) 0px 1px 2px 0px,
-    rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
+  background: ${theme.color.foreground};
+  border-radius: ${theme.borderRadius}px;
+  box-shadow: ${theme.boxShadow.soft};
+  color: ${theme.color.text.primary};
 `;
 
 export const SettingsMenu = styled(Sider)`
   display: flex;
   flex-flow: column;
   padding: 10px;
+  background: ${theme.color.foreground} !important;
+`;
+
+export const PlaybackContainer = styled.div`
+  background: ${theme.color.foreground};
+  border-radius: ${theme.borderRadius}px;
+  box-shadow: ${theme.boxShadow.soft};
+  margin-bottom: 5px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+`;
+
+export const PlaybackTime = styled.div`
+  font-size: 12px;
+  color: ${theme.color.text.tertiary};
 `;

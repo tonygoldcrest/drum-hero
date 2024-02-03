@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { Button, Layout, Slider, Switch, Typography, theme } from 'antd';
+import { Button, Layout, Slider, Switch, Typography } from 'antd';
 import { MidiJSON } from '@tonejs/midi';
 import {
   ArrowLeftOutlined,
@@ -12,21 +12,26 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   FullHeightLayout,
+  PlaybackContainer,
+  PlaybackTime,
   SettingsItem,
   SettingsMenu,
   SheetMusicView,
 } from './styles';
-import { Song } from '../../../midi-parser/song';
+import { MidiParser } from '../../../midi-parser/parser';
 import { IpcLoadSongResponse, SongData } from '../../../types';
 import { AudioFile } from '../../types';
-import { renderMusic } from '../../MidiRenderer';
+import { renderMusic } from '../../../midi-parser/renderer';
+import { format } from '../../util';
 
 export function SongView() {
   const divRef = useRef<HTMLDivElement>(null);
   const [midiData, setMidiData] = useState<MidiJSON>();
-  const [song, setSong] = useState<Song | null>(null);
+  const [parsedMidi, setParsedMidi] = useState<MidiParser | null>(null);
   const [collapsed, setCollapsed] = useState(true);
   const [showBarNumbers, setShowBarNumbers] = useState(false);
+  const [currentPlayback, setCurrentPlayback] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(1);
   const [songData, setSongData] = useState<SongData | null>(null);
   const [audioFiles, setAudioFiles] = useState<AudioFile[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -69,7 +74,7 @@ export function SongView() {
   }, [id]);
 
   const renderSheetMusic = useCallback(() => {
-    if (!divRef.current || !song) {
+    if (!divRef.current || !parsedMidi) {
       return;
     }
 
@@ -77,12 +82,36 @@ export function SongView() {
       divRef.current.removeChild(divRef.current.children[0]);
     }
 
-    renderMusic(divRef, song, showBarNumbers);
-  }, [song, showBarNumbers]);
+    renderMusic(divRef, parsedMidi, showBarNumbers);
+  }, [parsedMidi, showBarNumbers]);
 
   useEffect(() => {
     loadSong();
   }, [loadSong]);
+
+  useEffect(() => {
+    if (audioFiles.length === 0) {
+      return;
+    }
+
+    const audioElement = audioFiles[0].element[0];
+
+    const playbackEventListener = () => {
+      setCurrentPlayback(audioElement.currentTime);
+    };
+
+    const readyEventListener = () => {
+      setAudioDuration(audioElement.duration);
+    };
+
+    audioElement.addEventListener('timeupdate', playbackEventListener);
+    audioElement.addEventListener('canplaythrough', readyEventListener);
+
+    return () => {
+      audioElement.removeEventListener('timeupdate', playbackEventListener);
+      audioElement.removeEventListener('canplaythrough', readyEventListener);
+    };
+  }, [audioFiles]);
 
   useEffect(() => {
     return () => {
@@ -119,16 +148,12 @@ export function SongView() {
       return;
     }
 
-    setSong(new Song(midiData));
+    setParsedMidi(new MidiParser(midiData));
   }, [midiData]);
 
   useEffect(() => {
     renderSheetMusic();
   }, [renderSheetMusic]);
-
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
 
   const volumeSliders = audioFiles.map((file, index) => {
     return (
@@ -152,9 +177,6 @@ export function SongView() {
         <SettingsMenu
           width={200}
           collapsedWidth={60}
-          style={{
-            background: colorBgContainer,
-          }}
           trigger={null}
           collapsible
           collapsed={collapsed}
@@ -162,8 +184,7 @@ export function SongView() {
         >
           <SettingsItem>
             <Button
-              shape={collapsed ? 'circle' : 'round'}
-              style={{ width: '100%' }}
+              shape="circle"
               size="large"
               icon={<ArrowLeftOutlined />}
               onClick={() => {
@@ -175,8 +196,7 @@ export function SongView() {
           <SettingsItem>
             {isPlaying ? (
               <Button
-                shape={collapsed ? 'circle' : 'round'}
-                style={{ width: '100%' }}
+                shape="circle"
                 type="primary"
                 size="large"
                 icon={<PauseOutlined />}
@@ -186,8 +206,7 @@ export function SongView() {
               />
             ) : (
               <Button
-                shape={collapsed ? 'circle' : 'round'}
-                style={{ width: '100%' }}
+                shape="circle"
                 type="primary"
                 size="large"
                 icon={<CaretRightOutlined />}
@@ -199,8 +218,7 @@ export function SongView() {
           </SettingsItem>
           <SettingsItem>
             <Button
-              shape={collapsed ? 'circle' : 'round'}
-              style={{ width: '100%' }}
+              shape="circle"
               size="large"
               icon={collapsed ? <SettingOutlined /> : <VerticalRightOutlined />}
               onClick={() => setCollapsed(!collapsed)}
@@ -223,10 +241,28 @@ export function SongView() {
           )}
         </SettingsMenu>
         <Layout style={{ padding: 10 }}>
-          <SheetMusicView
-            background={colorBgContainer}
-            borderRadius={borderRadiusLG}
-          >
+          <PlaybackContainer>
+            <Slider
+              defaultValue={0}
+              tooltipVisible={false}
+              style={{
+                flexGrow: 1,
+              }}
+              value={(currentPlayback / audioDuration) * 100}
+              onChange={(value) => {
+                const time = (value / 100) * audioDuration;
+                audioFiles.forEach((audioFile) => {
+                  audioFile.element.forEach((element) => {
+                    element.currentTime = time;
+                  });
+                });
+              }}
+            />
+            <PlaybackTime>
+              {format(currentPlayback)} / {format(audioDuration)}
+            </PlaybackTime>
+          </PlaybackContainer>
+          <SheetMusicView>
             {songData && (
               <>
                 <Typography.Title>

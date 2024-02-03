@@ -1,14 +1,19 @@
-import { Button, Input } from 'antd';
+import { Input } from 'antd';
 import { Wrapper } from './styles';
 
 export interface SongFilterProps {
   onChange: (value: string) => void;
   nameFilter: string;
+  className?: string;
 }
 
-export function SongFilter({ onChange, nameFilter }: SongFilterProps) {
+export function SongFilter({
+  onChange,
+  nameFilter,
+  className,
+}: SongFilterProps) {
   return (
-    <Wrapper>
+    <Wrapper className={className}>
       <Input
         placeholder="Enter song name"
         value={nameFilter}
@@ -16,7 +21,6 @@ export function SongFilter({ onChange, nameFilter }: SongFilterProps) {
           onChange(event.target.value);
         }}
       />
-      <Button>Rescan Songs</Button>
     </Wrapper>
   );
 }
