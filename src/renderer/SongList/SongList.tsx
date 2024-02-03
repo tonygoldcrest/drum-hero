@@ -1,8 +1,8 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useRef } from 'react';
-import { SongData } from '../types';
 import { SongListItem } from '../SongListItem/SongListItem';
 import { VirtualList, Wrapper } from './styles';
+import { SongData } from '../../types';
 
 export interface SongListProps {
   songList: SongData[];
@@ -26,11 +26,12 @@ export function SongList({ songList, className }: SongListProps) {
         }}
       >
         {rowVirtualizer.getVirtualItems().map((virtualItem) => {
-          const songInfo = songList[virtualItem.index];
+          const songData = songList[virtualItem.index];
 
           return (
             <SongListItem
-              songInfo={songInfo}
+              songData={songData}
+              key={songData.id}
               style={{
                 height: `${virtualItem.size}px`,
                 transform: `translateY(${virtualItem.start}px)`,

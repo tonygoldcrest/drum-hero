@@ -2,19 +2,22 @@ import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Fuse from 'fuse.js';
 import { SongList } from '../SongList/SongList';
-import { SongData } from '../types';
 import { SongListContainer, SongViewOverlay, Wrapper } from './styles';
 import { SelectSongHeader } from '../SelectSongHeader/SelectSongHeader';
+import { IpcLoadSongListResponse, SongData } from '../../types';
 
 export function SelectSongView() {
   const [songList, setSongList] = useState<SongData[]>([]);
   const [nameFilter, setNameFilter] = useState('');
 
   useEffect(() => {
-    window.electron.ipcRenderer.sendMessage('song-list', ['ping']);
-    window.electron.ipcRenderer.on('song-list', (arg) => {
-      setSongList(arg as SongData[]);
-    });
+    window.electron.ipcRenderer.sendMessage('load-song-list');
+    window.electron.ipcRenderer.on<IpcLoadSongListResponse>(
+      'load-song-list',
+      (arg) => {
+        setSongList(arg);
+      },
+    );
   }, []);
 
   const filteredSongList = () => {
@@ -36,7 +39,7 @@ export function SelectSongView() {
       // ignoreLocation: false,
       // ignoreFieldNorm: false,
       // fieldNormWeight: 1,
-      keys: ['song.name', 'song.artist'],
+      keys: ['name', 'artist', 'charter'],
     };
 
     const fuse = new Fuse(songList, fuseOptions);

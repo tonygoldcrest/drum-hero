@@ -5,12 +5,12 @@ import { MidiJSON } from '@tonejs/midi';
 import {
   ArrowLeftOutlined,
   CaretRightOutlined,
+  PauseOutlined,
   SettingOutlined,
   VerticalRightOutlined,
 } from '@ant-design/icons';
-import { Link, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { renderMusic } from '../MidiRenderer';
-import { Channels } from '../../main/preload';
 import { Song } from '../../midi-parser/song';
 import {
   FullHeightLayout,
@@ -18,7 +18,8 @@ import {
   SettingsMenu,
   SheetMusicView,
 } from './styles';
-import { SongData } from '../types';
+import { AudioFile } from '../types';
+import { IpcLoadSongResponse, SongData } from '../../types';
 
 export function SongView() {
   const divRef = useRef<HTMLDivElement>(null);
@@ -26,20 +27,46 @@ export function SongView() {
   const [song, setSong] = useState<Song | null>(null);
   const [collapsed, setCollapsed] = useState(true);
   const [showBarNumbers, setShowBarNumbers] = useState(false);
-  const [songInfo, setSongInfo] = useState<SongData | null>(null);
+  const [songData, setSongData] = useState<SongData | null>(null);
+  const [audioFiles, setAudioFiles] = useState<AudioFile[]>([]);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const { id } = useParams();
+  const navigate = useNavigate();
 
-  const loadSong = useCallback(
-    (type: Channels) => {
-      window.electron.ipcRenderer.on(type, ({ info, midi }) => {
+  const loadSong = useCallback(() => {
+    window.electron.ipcRenderer.on<IpcLoadSongResponse>(
+      'load-song',
+      ({ data, midi, audio }) => {
         setMidiData(midi as MidiJSON);
-        setSongInfo(info);
-      });
-      window.electron.ipcRenderer.sendMessage(type, [id]);
-    },
-    [id],
-  );
+        setSongData(data);
+
+        const drumsAudio = audio
+          .filter((file) => file.name.includes('drums'))
+          .map((drumsFile) => new Audio(drumsFile.src));
+
+        const otherTracks = audio.filter(
+          (file) => !file.name.includes('drums'),
+        );
+
+        const audios = otherTracks.map((file) => ({
+          ...file,
+          element: [new Audio(file.src)],
+        }));
+
+        if (drumsAudio.length !== 0) {
+          audios.push({
+            src: '',
+            element: drumsAudio,
+            name: 'drums',
+          });
+        }
+
+        setAudioFiles(audios);
+      },
+    );
+    window.electron.ipcRenderer.sendMessage('load-song', id);
+  }, [id]);
 
   const renderSheetMusic = useCallback(() => {
     if (!divRef.current || !song) {
@@ -54,8 +81,38 @@ export function SongView() {
   }, [song, showBarNumbers]);
 
   useEffect(() => {
-    loadSong('load');
+    loadSong();
   }, [loadSong]);
+
+  useEffect(() => {
+    return () => {
+      audioFiles.forEach((audio) => {
+        audio.element.forEach((drumAudio) => {
+          drumAudio.pause();
+        });
+      });
+    };
+  }, [audioFiles]);
+
+  useEffect(() => {
+    if (audioFiles.length === 0) {
+      return;
+    }
+
+    if (isPlaying) {
+      audioFiles.forEach((audio) => {
+        audio.element.forEach((drumAudio) => {
+          drumAudio.play();
+        });
+      });
+    } else {
+      audioFiles.forEach((audio) => {
+        audio.element.forEach((drumAudio) => {
+          drumAudio.pause();
+        });
+      });
+    }
+  }, [audioFiles, isPlaying]);
 
   useEffect(() => {
     if (!divRef.current || !midiData) {
@@ -73,9 +130,25 @@ export function SongView() {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
 
-  if (!songInfo) {
+  if (!songData) {
     return null;
   }
+
+  const volumeSliders = audioFiles.map((file, index) => {
+    return (
+      <div key={index}>
+        <div>{file.name}</div>
+        <Slider
+          defaultValue={100}
+          onChange={(value) => {
+            file.element.forEach((drumAudio) => {
+              drumAudio.volume = value / 100;
+            });
+          }}
+        />
+      </div>
+    );
+  });
 
   return (
     <FullHeightLayout>
@@ -92,25 +165,41 @@ export function SongView() {
           onCollapse={(value) => setCollapsed(value)}
         >
           <SettingsItem>
-            <Link to={{ pathname: '/' }}>
-              <Button
-                shape={collapsed ? 'circle' : 'round'}
-                style={{ width: '100%' }}
-                size="large"
-                icon={<ArrowLeftOutlined />}
-                onClick={() => renderSheetMusic()}
-              />
-            </Link>
-          </SettingsItem>
-          <SettingsItem>
             <Button
               shape={collapsed ? 'circle' : 'round'}
               style={{ width: '100%' }}
-              type="primary"
               size="large"
-              icon={<CaretRightOutlined />}
-              onClick={() => renderSheetMusic()}
+              icon={<ArrowLeftOutlined />}
+              onClick={() => {
+                setIsPlaying(false);
+                navigate('/');
+              }}
             />
+          </SettingsItem>
+          <SettingsItem>
+            {isPlaying ? (
+              <Button
+                shape={collapsed ? 'circle' : 'round'}
+                style={{ width: '100%' }}
+                type="primary"
+                size="large"
+                icon={<PauseOutlined />}
+                onClick={() => {
+                  setIsPlaying(false);
+                }}
+              />
+            ) : (
+              <Button
+                shape={collapsed ? 'circle' : 'round'}
+                style={{ width: '100%' }}
+                type="primary"
+                size="large"
+                icon={<CaretRightOutlined />}
+                onClick={() => {
+                  setIsPlaying(true);
+                }}
+              />
+            )}
           </SettingsItem>
           <SettingsItem>
             <Button
@@ -123,9 +212,7 @@ export function SongView() {
           </SettingsItem>
           {!collapsed && (
             <div>
-              <Slider defaultValue={30} />
-              <Slider defaultValue={30} />
-              <Slider defaultValue={30} />
+              {volumeSliders}
               <SettingsItem>
                 <Switch
                   size="default"
@@ -145,7 +232,7 @@ export function SongView() {
             borderRadius={borderRadiusLG}
           >
             <Typography.Title>
-              {songInfo.song.name} by {songInfo.song.artist}
+              {songData.name} by {songData.artist}
             </Typography.Title>
             <div style={{ margin: '0 auto' }} ref={divRef} />
           </SheetMusicView>

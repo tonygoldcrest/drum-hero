@@ -1,5 +1,4 @@
 import { CSSProperties } from 'react';
-import { SongData } from '../types';
 import {
   AdditionalInfo,
   Album,
@@ -11,28 +10,29 @@ import {
   Value,
   Wrapper,
 } from './styles';
+import { SongData } from '../../types';
 
 export interface SongListItemProps {
-  songInfo: SongData;
+  songData: SongData;
   style: CSSProperties;
 }
 
 export function SongListItem({
-  songInfo: { albumCover, song, id },
+  songData: { albumCover, id, name, artist, charter },
   style,
 }: SongListItemProps) {
   return (
     <Wrapper to={{ pathname: `/${id}` }} style={style}>
       <Album src={albumCover} />
       <MainInfo>
-        <Name>{song.name}</Name>
-        <Artist>{song.artist}</Artist>
+        <Name>{name}</Name>
+        <Artist>{artist}</Artist>
       </MainInfo>
       <AdditionalInfo>
-        {song.charter && (
+        {charter && (
           <Info>
             <Parameter>charter:</Parameter>
-            <Value>{song.charter.replace(/<\S+?>/g, '')}</Value>
+            <Value>{charter.replace(/<\S+?>/g, '')}</Value>
           </Info>
         )}
       </AdditionalInfo>

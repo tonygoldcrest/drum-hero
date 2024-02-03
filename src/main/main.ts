@@ -11,15 +11,14 @@
 import glob from 'glob';
 import path from 'path';
 import fs from 'fs';
-import ini from 'ini';
-import { app, BrowserWindow, shell, ipcMain, dialog, protocol } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, protocol, screen } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import { Midi } from '@tonejs/midi';
 import Store from 'electron-store';
-import { randomUUID } from 'crypto';
 import MenuBuilder from './menu';
-import { resolveHtmlPath } from './util';
+import { parseAndSaveSongs, resolveHtmlPath } from './util';
+import { StorageSchema } from '../types';
 
 class AppUpdater {
   constructor() {
@@ -33,42 +32,35 @@ let mainWindow: BrowserWindow | null = null;
 
 const store = new Store();
 
-ipcMain.on('electron-store-get', async (event, val) => {
-  event.returnValue = store.get(val);
-});
-ipcMain.on('electron-store-set', async (event, key, val) => {
-  store.set(key, val);
-});
+ipcMain.on('load-song', async (event, id) => {
+  const songData = (store.get('songs') as StorageSchema['songs'])[id];
 
-ipcMain.on('load-default', async (event) => {
-  if (!mainWindow) {
-    return;
-  }
-
-  const midiData = fs.readFileSync(
-    '/Users/antosha/code/clone-hero-sheet/test-songs/yyz/notes.mid',
+  glob(
+    `${songData.dir}/*(*.mid|*.ogg)`,
+    { ignore: [`${songData.dir}/crowd.ogg`, `${songData.dir}/preview.ogg`] },
+    (err, files) => {
+      const midiFilePath = files.find((file) => path.extname(file) === '.mid');
+      if (!midiFilePath) {
+        return;
+      }
+      const audio = files
+        .filter((file) => path.extname(file) === '.ogg')
+        .map((file) => ({
+          src: `gh://${file}`,
+          name: path.parse(file).name,
+        }));
+      const midiData = fs.readFileSync(midiFilePath);
+      const midi = new Midi(midiData);
+      event.reply('load-song', { data: songData, midi: midi.toJSON(), audio });
+    },
   );
-  const midi = new Midi(midiData);
-  event.reply('load-default', midi.toJSON());
 });
 
-ipcMain.on('load', async (event, [id]) => {
-  if (!mainWindow) {
-    return;
-  }
-  const song = store.get('songs')[id];
-  glob(`${song.dir}/**/*.mid`, {}, (err, files) => {
-    const midiData = fs.readFileSync(files[0]);
-    const midi = new Midi(midiData);
-    event.reply('load', { info: song, midi: midi.toJSON() });
-  });
-});
-
-ipcMain.on('song-list', async (event) => {
-  if (!mainWindow) {
-    return;
-  }
-  event.reply('song-list', Object.values(store.get('songs')));
+ipcMain.on('load-song-list', async (event) => {
+  event.reply(
+    'load-song-list',
+    Object.values(store.get('songs') as StorageSchema['songs']),
+  );
 });
 
 if (process.env.NODE_ENV === 'production') {
@@ -96,47 +88,13 @@ const installExtensions = async () => {
     .catch(console.log);
 };
 
-const loadSongList = async () => {
-  const result = await dialog.showOpenDialog({
-    properties: ['openDirectory'],
-    title: 'Choose your Clone Hero library',
-    message: 'Choose your Clone Hero library',
-  });
-
-  glob(`${result.filePaths[0]}/**/*.mid`, {}, (err, files) => {
-    const songList = files
-      .map((file) => path.join(path.dirname(file), 'song.ini'))
-      .filter((file) => fs.existsSync(file))
-      .map((file) => ({
-        info: ini.parse(fs.readFileSync(file, 'utf-8')),
-        dir: path.dirname(file),
-      }))
-      .map(({ info, dir }) => ({
-        id: randomUUID(),
-        song: info.song ?? info.Song ?? info,
-        dir,
-        albumCover: fs.existsSync(path.join(dir, 'album.png'))
-          ? `atom:///${path.join(dir, 'album.png')}`
-          : null,
-      }));
-
-    store.set(
-      'songs',
-      songList.reduce((acc, song) => {
-        acc[song.id] = song;
-        return acc;
-      }, {}),
-    );
-  });
-};
-
 const createWindow = async () => {
   if (isDebug) {
     await installExtensions();
   }
 
   if (!store.get('songs')) {
-    await loadSongList();
+    await parseAndSaveSongs(store);
   }
 
   const RESOURCES_PATH = app.isPackaged
@@ -147,10 +105,17 @@ const createWindow = async () => {
     return path.join(RESOURCES_PATH, ...paths);
   };
 
+  const displays = screen.getAllDisplays();
+  const externalDisplay = displays.find((display) => {
+    return display.bounds.x !== 0 || display.bounds.y !== 0;
+  });
+
   mainWindow = new BrowserWindow({
     show: false,
-    width: 1024,
-    height: 728,
+    x: externalDisplay ? externalDisplay.bounds.x + 50 : 0,
+    y: externalDisplay ? externalDisplay.bounds.y + 50 : 0,
+    width: externalDisplay ? externalDisplay.bounds.width : 1024,
+    height: externalDisplay ? externalDisplay.bounds.height : 728,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       preload: app.isPackaged
@@ -190,10 +155,6 @@ const createWindow = async () => {
   new AppUpdater();
 };
 
-/**
- * Add event listeners...
- */
-
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even
   // after all windows have been closed
@@ -205,8 +166,8 @@ app.on('window-all-closed', () => {
 app
   .whenReady()
   .then(() => {
-    protocol.registerFileProtocol('atom', (request, callback) => {
-      const url = request.url.substr(7);
+    protocol.registerFileProtocol('gh', (request, callback) => {
+      const url = request.url.substr(5);
       callback({ path: url });
     });
 
