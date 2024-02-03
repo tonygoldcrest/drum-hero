@@ -14,6 +14,11 @@ import {
 } from 'vexflow';
 import { Measure, MidiParser } from './parser';
 
+export interface RenderData {
+  stave: Stave;
+  measure: Measure;
+}
+
 const STAVE_WIDTH = 400;
 const STAVE_PER_ROW = 3;
 
@@ -21,9 +26,9 @@ export function renderMusic(
   elementRef: React.RefObject<HTMLDivElement>,
   song: MidiParser,
   showBarNumbers: boolean = true,
-) {
+): RenderData[] {
   if (!elementRef.current) {
-    return;
+    return [];
   }
 
   const renderer = new Renderer(elementRef.current, Renderer.Backends.SVG);
@@ -33,11 +38,12 @@ export function renderMusic(
 
   renderer.resize(
     STAVE_WIDTH * STAVE_PER_ROW + 10,
-    Math.ceil(song.measures.length / STAVE_PER_ROW) * lineHeight,
+    Math.ceil(song.measures.length / STAVE_PER_ROW) * lineHeight + 50,
   );
 
-  song.measures.forEach((measure, index) => {
-    renderMeasure(
+  return song.measures.map((measure, index) => ({
+    measure,
+    stave: renderMeasure(
       context,
       measure,
       index,
@@ -45,8 +51,8 @@ export function renderMusic(
       Math.floor(index / STAVE_PER_ROW) * lineHeight,
       index === song.measures.length - 1,
       showBarNumbers,
-    );
-  });
+    ),
+  }));
 }
 
 function renderMeasure(

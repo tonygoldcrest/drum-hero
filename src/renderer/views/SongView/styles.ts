@@ -1,4 +1,4 @@
-import { Layout } from 'antd';
+import { Layout, Typography } from 'antd';
 import Sider from 'antd/es/layout/Sider';
 import { Content } from 'antd/es/layout/layout';
 import styled from 'styled-components';
@@ -22,17 +22,27 @@ export const SettingsItem = styled.div`
   }
 `;
 
-export const SheetMusicView = styled(Content)`
+export const LayoutContent = styled(Content)`
   padding: 24px;
   margin: 0;
   overflow: scroll;
   display: flex;
   flex-flow: column;
-  align-items: center;
   background: ${theme.color.foreground};
   border-radius: ${theme.borderRadius}px;
   box-shadow: ${theme.boxShadow.soft};
   color: ${theme.color.text.primary};
+`;
+
+export const SheetMusicView = styled.div`
+  display: flex;
+  flex-flow: column;
+  align-items: center;
+  min-width: max-content;
+`;
+
+export const Title = styled(Typography.Title)`
+  margin: 0 auto;
 `;
 
 export const SettingsMenu = styled(Sider)`

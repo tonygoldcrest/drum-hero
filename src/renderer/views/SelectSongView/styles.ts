@@ -39,8 +39,9 @@ export const Header = styled.div`
 
 export const ScanSongsButton = styled(FloatButton)`
   right: 94px;
-  width: 70px;
-  height: 70px;
+  width: 60px;
+  height: 60px;
   box-shadow: ${theme.boxShadow.soft};
   font-weight: bold;
+  font-size: 20px;
 `;

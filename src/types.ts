@@ -1,5 +1,3 @@
-import { MidiJSON } from '@tonejs/midi';
-
 export interface SongData {
   id: string;
   dir: string;
@@ -60,7 +58,7 @@ export interface AudioData {
 
 export interface IpcLoadSongResponse {
   data: SongData;
-  midi: MidiJSON;
+  midi: Buffer;
   audio: AudioData[];
 }
 

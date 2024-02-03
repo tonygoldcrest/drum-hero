@@ -1,33 +1,32 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-import { Button, Layout, Slider, Switch, Typography } from 'antd';
-import { MidiJSON } from '@tonejs/midi';
-import {
-  ArrowLeftOutlined,
-  CaretRightOutlined,
-  PauseOutlined,
-  SettingOutlined,
-  VerticalRightOutlined,
-} from '@ant-design/icons';
+import { Button, Layout, Slider, Switch } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faArrowLeft,
+  faChevronLeft,
+  faGear,
+  faPause,
+  faPlay,
+} from '@fortawesome/free-solid-svg-icons';
 import {
   FullHeightLayout,
   PlaybackContainer,
   PlaybackTime,
   SettingsItem,
   SettingsMenu,
+  LayoutContent,
+  Title,
   SheetMusicView,
 } from './styles';
-import { MidiParser } from '../../../midi-parser/parser';
 import { IpcLoadSongResponse, SongData } from '../../../types';
 import { AudioFile } from '../../types';
-import { renderMusic } from '../../../midi-parser/renderer';
 import { format } from '../../util';
+import { SheetMusic } from '../../components/SheetMusic/SheetMusic';
 
 export function SongView() {
-  const divRef = useRef<HTMLDivElement>(null);
-  const [midiData, setMidiData] = useState<MidiJSON>();
-  const [parsedMidi, setParsedMidi] = useState<MidiParser | null>(null);
+  const [midiData, setMidiData] = useState<Buffer>();
   const [collapsed, setCollapsed] = useState(true);
   const [showBarNumbers, setShowBarNumbers] = useState(false);
   const [currentPlayback, setCurrentPlayback] = useState(0);
@@ -43,7 +42,7 @@ export function SongView() {
     window.electron.ipcRenderer.on<IpcLoadSongResponse>(
       'load-song',
       ({ data, midi, audio }) => {
-        setMidiData(midi as MidiJSON);
+        setMidiData(midi);
         setSongData(data);
 
         const drumsAudio = audio
@@ -73,25 +72,13 @@ export function SongView() {
     window.electron.ipcRenderer.sendMessage('load-song', id);
   }, [id]);
 
-  const renderSheetMusic = useCallback(() => {
-    if (!divRef.current || !parsedMidi) {
-      return;
-    }
-
-    if (divRef.current?.children.length > 0) {
-      divRef.current.removeChild(divRef.current.children[0]);
-    }
-
-    renderMusic(divRef, parsedMidi, showBarNumbers);
-  }, [parsedMidi, showBarNumbers]);
-
   useEffect(() => {
     loadSong();
   }, [loadSong]);
 
   useEffect(() => {
     if (audioFiles.length === 0) {
-      return;
+      return undefined;
     }
 
     const audioElement = audioFiles[0].element[0];
@@ -104,11 +91,11 @@ export function SongView() {
       setAudioDuration(audioElement.duration);
     };
 
-    audioElement.addEventListener('timeupdate', playbackEventListener);
+    const audioPolling = setInterval(playbackEventListener, 30);
     audioElement.addEventListener('canplaythrough', readyEventListener);
 
     return () => {
-      audioElement.removeEventListener('timeupdate', playbackEventListener);
+      clearInterval(audioPolling);
       audioElement.removeEventListener('canplaythrough', readyEventListener);
     };
   }, [audioFiles]);
@@ -143,18 +130,6 @@ export function SongView() {
     }
   }, [audioFiles, isPlaying]);
 
-  useEffect(() => {
-    if (!divRef.current || !midiData) {
-      return;
-    }
-
-    setParsedMidi(new MidiParser(midiData));
-  }, [midiData]);
-
-  useEffect(() => {
-    renderSheetMusic();
-  }, [renderSheetMusic]);
-
   const volumeSliders = audioFiles.map((file, index) => {
     return (
       <div key={index}>
@@ -186,7 +161,7 @@ export function SongView() {
             <Button
               shape="circle"
               size="large"
-              icon={<ArrowLeftOutlined />}
+              icon={<FontAwesomeIcon icon={faArrowLeft} />}
               onClick={() => {
                 setIsPlaying(false);
                 navigate('/');
@@ -194,33 +169,33 @@ export function SongView() {
             />
           </SettingsItem>
           <SettingsItem>
-            {isPlaying ? (
-              <Button
-                shape="circle"
-                type="primary"
-                size="large"
-                icon={<PauseOutlined />}
-                onClick={() => {
-                  setIsPlaying(false);
-                }}
-              />
-            ) : (
-              <Button
-                shape="circle"
-                type="primary"
-                size="large"
-                icon={<CaretRightOutlined />}
-                onClick={() => {
-                  setIsPlaying(true);
-                }}
-              />
-            )}
+            <Button
+              shape="circle"
+              type="primary"
+              size="large"
+              icon={
+                isPlaying ? (
+                  <FontAwesomeIcon icon={faPause} />
+                ) : (
+                  <FontAwesomeIcon icon={faPlay} />
+                )
+              }
+              onClick={() => {
+                setIsPlaying(!isPlaying);
+              }}
+            />
           </SettingsItem>
           <SettingsItem>
             <Button
               shape="circle"
               size="large"
-              icon={collapsed ? <SettingOutlined /> : <VerticalRightOutlined />}
+              icon={
+                collapsed ? (
+                  <FontAwesomeIcon icon={faGear} />
+                ) : (
+                  <FontAwesomeIcon icon={faChevronLeft} />
+                )
+              }
               onClick={() => setCollapsed(!collapsed)}
             />
           </SettingsItem>
@@ -262,16 +237,27 @@ export function SongView() {
               {format(currentPlayback)} / {format(audioDuration)}
             </PlaybackTime>
           </PlaybackContainer>
-          <SheetMusicView>
+          <LayoutContent>
             {songData && (
-              <>
-                <Typography.Title>
+              <SheetMusicView>
+                <Title>
                   {songData.name} by {songData.artist}
-                </Typography.Title>
-                <div style={{ margin: '0 auto' }} ref={divRef} />
-              </>
+                </Title>
+                <SheetMusic
+                  currentTime={currentPlayback}
+                  midiData={midiData}
+                  showBarNumbers={showBarNumbers}
+                  onSelectMeasure={(time) => {
+                    audioFiles.forEach((audioFile) => {
+                      audioFile.element.forEach((element) => {
+                        element.currentTime = time;
+                      });
+                    });
+                  }}
+                />
+              </SheetMusicView>
             )}
-          </SheetMusicView>
+          </LayoutContent>
         </Layout>
       </Layout>
     </FullHeightLayout>

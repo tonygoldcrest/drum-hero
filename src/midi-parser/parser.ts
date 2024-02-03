@@ -1,4 +1,5 @@
 import { HeaderJSON, MidiJSON, TrackJSON } from '@tonejs/midi';
+import { TempoEvent } from '@tonejs/midi/dist/Header';
 import { NoteJSON } from '@tonejs/midi/dist/Note';
 
 export interface Note {

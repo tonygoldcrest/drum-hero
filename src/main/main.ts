@@ -14,7 +14,6 @@ import fs from 'fs';
 import { app, BrowserWindow, shell, ipcMain, protocol, screen } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
-import { Midi } from '@tonejs/midi';
 import Store from 'electron-store';
 import MenuBuilder from './menu';
 import { parseAndSaveSongs, resolveHtmlPath } from './util';
@@ -50,8 +49,7 @@ ipcMain.on('load-song', async (event, id) => {
           name: path.parse(file).name,
         }));
       const midiData = fs.readFileSync(midiFilePath);
-      const midi = new Midi(midiData);
-      event.reply('load-song', { data: songData, midi: midi.toJSON(), audio });
+      event.reply('load-song', { data: songData, midi: midiData, audio });
     },
   );
 });
@@ -61,6 +59,12 @@ ipcMain.on('load-song-list', async (event) => {
     'load-song-list',
     Object.values(store.get('songs') as StorageSchema['songs']),
   );
+});
+
+ipcMain.on('rescan-songs', async (event) => {
+  await parseAndSaveSongs(store, (songs) => {
+    event.reply('rescan-songs', Object.values(songs));
+  });
 });
 
 if (process.env.NODE_ENV === 'production') {

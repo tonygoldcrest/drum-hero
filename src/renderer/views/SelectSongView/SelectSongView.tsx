@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Fuse from 'fuse.js';
-import { Button, FloatButton } from 'antd';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFolderTree } from '@fortawesome/free-solid-svg-icons';
 import {
   Header,
   ScanSongsButton,
@@ -27,31 +28,19 @@ export function SelectSongView() {
     );
   }, []);
 
-  const filteredSongList = () => {
+  const filteredSongList = useMemo(() => {
     if (!nameFilter) {
-      return songList;
+      return songList.sort((a, b) => a.name.localeCompare(b.name));
     }
 
     const fuseOptions = {
-      // includeScore: false,
-      // shouldSort: true,
-      // includeMatches: false,
-      // findAllMatches: false,
-      minMatchCharLength: 2,
-      // location: 0,
-      // threshold: 0.6,
-      // distance: 100,
-      // useExtendedSearch: false,
-      // ignoreLocation: false,
-      // ignoreFieldNorm: false,
-      // fieldNormWeight: 1,
       keys: ['name', 'artist', 'charter'],
     };
 
     const fuse = new Fuse(songList, fuseOptions);
 
     return fuse.search(nameFilter).map((result) => result.item);
-  };
+  }, [songList, nameFilter]);
 
   return (
     <Wrapper>
@@ -64,12 +53,25 @@ export function SelectSongView() {
         />
       </Header>
       <SongListContainer>
-        <SongList songList={filteredSongList()} />
+        <SongList songList={filteredSongList} />
       </SongListContainer>
       <SongViewOverlay>
         <Outlet />
       </SongViewOverlay>
-      <ScanSongsButton description="SCAN SONGS" type="primary" />
+      <ScanSongsButton
+        tooltip="Rescan songs"
+        type="primary"
+        icon={<FontAwesomeIcon icon={faFolderTree} />}
+        onClick={() => {
+          window.electron.ipcRenderer.sendMessage('rescan-songs');
+          window.electron.ipcRenderer.on<IpcLoadSongListResponse>(
+            'rescan-songs',
+            (arg) => {
+              setSongList(arg);
+            },
+          );
+        }}
+      />
     </Wrapper>
   );
 }

@@ -2,7 +2,7 @@
 /* eslint no-unused-vars: off */
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
-export type Channels = 'load-song-list' | 'load-song';
+export type Channels = 'load-song-list' | 'load-song' | 'rescan-songs';
 
 const electronHandler = {
   ipcRenderer: {

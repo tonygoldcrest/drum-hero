@@ -7,6 +7,7 @@ import fs from 'fs';
 import ini from 'ini';
 import ElectronStore from 'electron-store';
 import { randomUUID } from 'crypto';
+import { StorageSchema } from '../types';
 
 export function resolveHtmlPath(htmlFileName: string) {
   if (process.env.NODE_ENV === 'development') {
@@ -18,12 +19,21 @@ export function resolveHtmlPath(htmlFileName: string) {
   return `file://${path.resolve(__dirname, '../renderer/', htmlFileName)}`;
 }
 
-export async function parseAndSaveSongs(store: ElectronStore) {
+export async function parseAndSaveSongs(
+  store: ElectronStore,
+  callback?: (songs: StorageSchema['songs']) => void,
+) {
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory'],
     title: 'Choose your Clone Hero library',
     message: 'Choose your Clone Hero library',
   });
+
+  if (result.canceled) {
+    return;
+  }
+
+  store.delete('songs');
 
   glob(`${result.filePaths[0]}/**/*.mid`, {}, (err, files) => {
     const songList = files
@@ -42,12 +52,12 @@ export async function parseAndSaveSongs(store: ElectronStore) {
         ...(info.song ?? info.Song ?? info),
       }));
 
-    store.set(
-      'songs',
-      songList.reduce((acc, song) => {
-        acc[song.id] = song;
-        return acc;
-      }, {}),
-    );
+    const songs = songList.reduce((acc, song) => {
+      acc[song.id] = song;
+      return acc;
+    }, {});
+    store.set('songs', songs);
+
+    callback?.(songs);
   });
 }
