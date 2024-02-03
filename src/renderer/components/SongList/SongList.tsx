@@ -1,8 +1,8 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useRef } from 'react';
-import { SongListItem } from '../SongListItem/SongListItem';
 import { VirtualList, Wrapper } from './styles';
-import { SongData } from '../../types';
+import { SongListItem } from '../SongListItem/SongListItem';
+import { SongData } from '../../../types';
 
 export interface SongListProps {
   songList: SongData[];

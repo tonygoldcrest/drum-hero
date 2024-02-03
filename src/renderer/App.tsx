@@ -2,8 +2,8 @@ import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 
 import { ConfigProvider } from 'antd';
 import './App.css';
-import { SongView } from './SongView/SongView';
-import { SelectSongView } from './SelectSongView/SelectSongView';
+import { SelectSongView } from './views/SelectSongView/SelectSongView';
+import { SongView } from './views/SongView/SongView';
 
 export default function App() {
   return (

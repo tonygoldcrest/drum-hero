@@ -4,7 +4,7 @@ import { Content } from 'antd/es/layout/layout';
 import styled from 'styled-components';
 
 export const FullHeightLayout = styled(Layout)`
-  height: 100vh;
+  height: 100%;
   pointer-events: all;
 `;
 

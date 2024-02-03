@@ -10,7 +10,7 @@ import {
   Value,
   Wrapper,
 } from './styles';
-import { SongData } from '../../types';
+import { SongData } from '../../../types';
 
 export interface SongListItemProps {
   songData: SongData;

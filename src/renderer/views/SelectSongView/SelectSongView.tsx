@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Fuse from 'fuse.js';
-import { SongList } from '../SongList/SongList';
 import { SongListContainer, SongViewOverlay, Wrapper } from './styles';
-import { SelectSongHeader } from '../SelectSongHeader/SelectSongHeader';
-import { IpcLoadSongListResponse, SongData } from '../../types';
+import { IpcLoadSongListResponse, SongData } from '../../../types';
+import { SongFilter } from '../../components/SongFilter/SongFilter';
+import { SongList } from '../../components/SongList/SongList';
 
 export function SelectSongView() {
   const [songList, setSongList] = useState<SongData[]>([]);
@@ -49,7 +49,7 @@ export function SelectSongView() {
 
   return (
     <Wrapper>
-      <SelectSongHeader
+      <SongFilter
         nameFilter={nameFilter}
         onChange={(value: string) => {
           setNameFilter(value);

@@ -10,16 +10,16 @@ import {
   VerticalRightOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import { renderMusic } from '../MidiRenderer';
-import { Song } from '../../midi-parser/song';
 import {
   FullHeightLayout,
   SettingsItem,
   SettingsMenu,
   SheetMusicView,
 } from './styles';
-import { AudioFile } from '../types';
-import { IpcLoadSongResponse, SongData } from '../../types';
+import { Song } from '../../../midi-parser/song';
+import { IpcLoadSongResponse, SongData } from '../../../types';
+import { AudioFile } from '../../types';
+import { renderMusic } from '../../MidiRenderer';
 
 export function SongView() {
   const divRef = useRef<HTMLDivElement>(null);
@@ -130,10 +130,6 @@ export function SongView() {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
 
-  if (!songData) {
-    return null;
-  }
-
   const volumeSliders = audioFiles.map((file, index) => {
     return (
       <div key={index}>
@@ -231,10 +227,14 @@ export function SongView() {
             background={colorBgContainer}
             borderRadius={borderRadiusLG}
           >
-            <Typography.Title>
-              {songData.name} by {songData.artist}
-            </Typography.Title>
-            <div style={{ margin: '0 auto' }} ref={divRef} />
+            {songData && (
+              <>
+                <Typography.Title>
+                  {songData.name} by {songData.artist}
+                </Typography.Title>
+                <div style={{ margin: '0 auto' }} ref={divRef} />
+              </>
+            )}
           </SheetMusicView>
         </Layout>
       </Layout>
