@@ -30,7 +30,10 @@ export function SelectSongView() {
 
   const filteredSongList = useMemo(() => {
     if (!nameFilter) {
-      return songList.sort((a, b) => a.name.localeCompare(b.name));
+      return songList.sort(
+        (a, b) =>
+          +(b.liked ?? 0) - +(a.liked ?? 0) || a.name.localeCompare(b.name),
+      );
     }
 
     const fuseOptions = {
@@ -53,7 +56,25 @@ export function SelectSongView() {
         />
       </Header>
       <SongListContainer>
-        <SongList songList={filteredSongList} />
+        <SongList
+          songList={filteredSongList}
+          onLikeChange={(id, liked) => {
+            const song = songList.find((s) => s.id === id);
+
+            if (!song) {
+              return;
+            }
+            window.electron.ipcRenderer.sendMessage('like-song', id, liked);
+
+            setSongList([
+              ...songList.filter((s) => s.id !== id),
+              {
+                ...song,
+                liked,
+              },
+            ]);
+          }}
+        />
       </SongListContainer>
       <SongViewOverlay>
         <Outlet />

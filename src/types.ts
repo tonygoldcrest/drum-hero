@@ -49,6 +49,7 @@ export interface SongData {
   video: string;
   video_start_time: string;
   year: string;
+  liked?: boolean;
 }
 
 export interface AudioData {

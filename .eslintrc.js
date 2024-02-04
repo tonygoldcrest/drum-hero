@@ -21,6 +21,7 @@ module.exports = {
     'react/require-default-props': 'off',
     'react/no-array-index-key': 'off',
     'no-bitwise': 'off',
+    camelcase: 'off',
   },
   parserOptions: {
     ecmaVersion: 2022,

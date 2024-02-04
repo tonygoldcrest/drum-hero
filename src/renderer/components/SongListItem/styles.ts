@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { theme } from '../../theme';
 
 export const Wrapper = styled(Link)`
@@ -44,7 +45,17 @@ export const Name = styled.div`
 export const Artist = styled.div``;
 
 export const AdditionalInfo = styled.div`
+  margin-left: 40px;
+  display: flex;
+  flex-flow: column;
+  align-items: flex-end;
+  align-self: center;
   margin-left: auto;
+  margin-right: 10px;
+
+  & > * + * {
+    margin-top: 5px;
+  }
 `;
 
 export const Info = styled.div`
@@ -60,4 +71,17 @@ export const Parameter = styled.div`
 export const Value = styled.div`
   margin-left: 5px;
   color: ${theme.color.text.secondary};
+`;
+
+export const Like = styled.button`
+  align-self: start;
+  background: none;
+  border: 0;
+  padding: 5px;
+  border-radius: 50%;
+  cursor: pointer;
+
+  &:hover {
+    box-shadow: ${theme.boxShadow.soft};
+  }
 `;

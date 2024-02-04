@@ -19,8 +19,8 @@ export interface RenderData {
   measure: Measure;
 }
 
-const STAVE_WIDTH = 400;
-const STAVE_PER_ROW = 3;
+const STAVE_WIDTH = 600;
+const STAVE_PER_ROW = 2;
 
 export function renderMusic(
   elementRef: React.RefObject<HTMLDivElement>,

@@ -67,6 +67,10 @@ ipcMain.on('rescan-songs', async (event) => {
   });
 });
 
+ipcMain.on('like-song', async (event, id, liked) => {
+  store.set(`songs.${id}.liked`, liked);
+});
+
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
   sourceMapSupport.install();

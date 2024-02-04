@@ -7,9 +7,10 @@ import { SongData } from '../../../types';
 export interface SongListProps {
   songList: SongData[];
   className?: string;
+  onLikeChange: (id: string, liked: boolean) => void;
 }
 
-export function SongList({ songList, className }: SongListProps) {
+export function SongList({ songList, className, onLikeChange }: SongListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
   const rowVirtualizer = useVirtualizer({
@@ -31,6 +32,7 @@ export function SongList({ songList, className }: SongListProps) {
           return (
             <SongListItem
               songData={songData}
+              onLikeChange={onLikeChange}
               key={songData.id}
               style={{
                 height: `${virtualItem.size}px`,

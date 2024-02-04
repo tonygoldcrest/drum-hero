@@ -82,6 +82,7 @@
   "dependencies": {
     "@ant-design/icons": "^5.2.6",
     "@fortawesome/fontawesome-svg-core": "^6.5.1",
+    "@fortawesome/free-regular-svg-icons": "^6.5.1",
     "@fortawesome/free-solid-svg-icons": "^6.5.1",
     "@fortawesome/react-fontawesome": "^0.2.0",
     "@tanstack/react-virtual": "^3.0.2",
@@ -97,6 +98,7 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.16.0",
     "styled-components": "^6.1.8",
+    "use-debounce": "^10.0.0",
     "vexflow": "^4.2.3"
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button, Layout, Slider, Switch } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -10,6 +10,7 @@ import {
   faPause,
   faPlay,
 } from '@fortawesome/free-solid-svg-icons';
+import { useDebouncedCallback } from 'use-debounce';
 import {
   FullHeightLayout,
   PlaybackContainer,
@@ -55,14 +56,16 @@ export function SongView() {
 
         const audios = otherTracks.map((file) => ({
           ...file,
-          element: [new Audio(file.src)],
+          elements: [new Audio(file.src)],
+          volume: 100,
         }));
 
         if (drumsAudio.length !== 0) {
           audios.push({
             src: '',
-            element: drumsAudio,
+            elements: drumsAudio,
             name: 'drums',
+            volume: 0,
           });
         }
 
@@ -81,7 +84,7 @@ export function SongView() {
       return undefined;
     }
 
-    const audioElement = audioFiles[0].element[0];
+    const audioElement = audioFiles[0].elements[0];
 
     const playbackEventListener = () => {
       setCurrentPlayback(audioElement.currentTime);
@@ -91,19 +94,32 @@ export function SongView() {
       setAudioDuration(audioElement.duration);
     };
 
-    const audioPolling = setInterval(playbackEventListener, 30);
+    const endedListener = () => {
+      setIsPlaying(false);
+    };
+
+    const audioPolling = setInterval(playbackEventListener, 20);
     audioElement.addEventListener('canplaythrough', readyEventListener);
+
+    audioElement.addEventListener('ended', endedListener);
 
     return () => {
       clearInterval(audioPolling);
       audioElement.removeEventListener('canplaythrough', readyEventListener);
+      audioElement.removeEventListener('ended', endedListener);
     };
   }, [audioFiles]);
 
   useEffect(() => {
+    audioFiles.forEach((audio) => {
+      audio.elements.forEach((element) => {
+        element.volume = audio.volume / 100;
+      });
+    });
+
     return () => {
       audioFiles.forEach((audio) => {
-        audio.element.forEach((drumAudio) => {
+        audio.elements.forEach((drumAudio) => {
           drumAudio.pause();
         });
       });
@@ -117,34 +133,48 @@ export function SongView() {
 
     if (isPlaying) {
       audioFiles.forEach((audio) => {
-        audio.element.forEach((drumAudio) => {
+        audio.elements.forEach((drumAudio) => {
           drumAudio.play();
         });
       });
     } else {
       audioFiles.forEach((audio) => {
-        audio.element.forEach((drumAudio) => {
+        audio.elements.forEach((drumAudio) => {
           drumAudio.pause();
         });
       });
     }
   }, [audioFiles, isPlaying]);
 
-  const volumeSliders = audioFiles.map((file, index) => {
-    return (
-      <div key={index}>
-        <div>{file.name}</div>
-        <Slider
-          defaultValue={100}
-          onChange={(value) => {
-            file.element.forEach((drumAudio) => {
-              drumAudio.volume = value / 100;
-            });
-          }}
-        />
-      </div>
-    );
-  });
+  const setVolume = useDebouncedCallback((file, volume) => {
+    const otherFiles = audioFiles.filter((f) => f !== file);
+
+    setAudioFiles([
+      ...otherFiles,
+      {
+        ...file,
+        volume,
+      },
+    ]);
+  }, 300);
+
+  const volumeSliders = useMemo(() => {
+    return audioFiles
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((file) => {
+        return (
+          <div key={file.name}>
+            <div>{file.name}</div>
+            <Slider
+              defaultValue={file.volume}
+              onChange={(value) => {
+                setVolume(file, value);
+              }}
+            />
+          </div>
+        );
+      });
+  }, [audioFiles, setVolume]);
 
   return (
     <FullHeightLayout>
@@ -227,7 +257,7 @@ export function SongView() {
               onChange={(value) => {
                 const time = (value / 100) * audioDuration;
                 audioFiles.forEach((audioFile) => {
-                  audioFile.element.forEach((element) => {
+                  audioFile.elements.forEach((element) => {
                     element.currentTime = time;
                   });
                 });
@@ -249,10 +279,12 @@ export function SongView() {
                   showBarNumbers={showBarNumbers}
                   onSelectMeasure={(time) => {
                     audioFiles.forEach((audioFile) => {
-                      audioFile.element.forEach((element) => {
+                      audioFile.elements.forEach((element) => {
                         element.currentTime = time;
                       });
                     });
+
+                    setIsPlaying(true);
                   }}
                 />
               </SheetMusicView>
