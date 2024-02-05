@@ -20,7 +20,7 @@ export function SelectSongView() {
 
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage('load-song-list');
-    window.electron.ipcRenderer.on<IpcLoadSongListResponse>(
+    window.electron.ipcRenderer.once<IpcLoadSongListResponse>(
       'load-song-list',
       (arg) => {
         setSongList(arg);
@@ -85,7 +85,7 @@ export function SelectSongView() {
         icon={<FontAwesomeIcon icon={faFolderTree} />}
         onClick={() => {
           window.electron.ipcRenderer.sendMessage('rescan-songs');
-          window.electron.ipcRenderer.on<IpcLoadSongListResponse>(
+          window.electron.ipcRenderer.once<IpcLoadSongListResponse>(
             'rescan-songs',
             (arg) => {
               setSongList(arg);

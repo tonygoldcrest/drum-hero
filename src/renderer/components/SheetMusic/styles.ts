@@ -21,14 +21,14 @@ export const MeasureHighlighted = css`
   background: ${theme.color.primaryLightest};
 `;
 
-export const MeasureHighlight = styled.button<{ highlighted: boolean }>`
+export const MeasureHighlight = styled.button<{ $highlighted: boolean }>`
   position: absolute;
   z-index: -3;
   border-radius: ${theme.borderRadius}px;
   border: 0;
   background: transparent;
   cursor: pointer;
-  ${(props) => (props.highlighted ? MeasureHighlighted : '')}
+  ${(props) => (props.$highlighted ? MeasureHighlighted : '')}
 
   &:hover {
     background: ${theme.color.background};

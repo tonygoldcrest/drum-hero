@@ -40,7 +40,7 @@ export function SongView() {
   const navigate = useNavigate();
 
   const loadSong = useCallback(() => {
-    window.electron.ipcRenderer.on<IpcLoadSongResponse>(
+    window.electron.ipcRenderer.once<IpcLoadSongResponse>(
       'load-song',
       ({ data, midi, audio }) => {
         setMidiData(midi);
@@ -249,7 +249,7 @@ export function SongView() {
           <PlaybackContainer>
             <Slider
               defaultValue={0}
-              tooltipVisible={false}
+              tooltip={{ open: false }}
               style={{
                 flexGrow: 1,
               }}
