@@ -11,7 +11,15 @@
 import glob from 'glob';
 import path from 'path';
 import fs from 'fs';
-import { app, BrowserWindow, shell, ipcMain, protocol, screen } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  shell,
+  ipcMain,
+  protocol,
+  screen,
+  net,
+} from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import Store from 'electron-store';
@@ -171,9 +179,23 @@ app.on('window-all-closed', () => {
   }
 });
 
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'gh',
+    privileges: {
+      supportFetchAPI: true,
+    },
+  },
+]);
+
 app
   .whenReady()
   .then(() => {
+    // protocol.handle('gh', (request) =>
+    //   net.fetch(
+    //     `file://${decodeURIComponent(request.url.slice('gh://'.length))}`,
+    //   ),
+    // );
     protocol.registerFileProtocol('gh', (request, callback) => {
       const url = decodeURIComponent(request.url.substr(5));
       callback({ path: url });
