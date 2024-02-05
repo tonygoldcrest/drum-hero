@@ -96,7 +96,7 @@ export function SheetMusic({
           width: stave.getWidth() + 10,
           height: stave.getHeight(),
         }}
-        highlighted={isHighlighted}
+        $highlighted={isHighlighted}
         onClick={() => {
           if (!midi) {
             return;

@@ -22,6 +22,7 @@ module.exports = {
     'react/no-array-index-key': 'off',
     'no-bitwise': 'off',
     camelcase: 'off',
+    'no-underscore-dangle': 'off',
   },
   parserOptions: {
     ecmaVersion: 2022,

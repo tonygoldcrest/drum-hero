@@ -25,6 +25,7 @@ import { IpcLoadSongResponse, SongData } from '../../../types';
 import { AudioFile } from '../../types';
 import { format } from '../../util';
 import { SheetMusic } from '../../components/SheetMusic/SheetMusic';
+import { AudioPlayer } from '../../services/audio-player/player';
 
 export function SongView() {
   const [midiData, setMidiData] = useState<Buffer>();
@@ -35,6 +36,7 @@ export function SongView() {
   const [songData, setSongData] = useState<SongData | null>(null);
   const [audioFiles, setAudioFiles] = useState<AudioFile[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [audioPlayer, setAudioPlayer] = useState<AudioPlayer | null>(null);
 
   const { id } = useParams();
   const navigate = useNavigate();
@@ -45,6 +47,25 @@ export function SongView() {
       ({ data, midi, audio }) => {
         setMidiData(midi);
         setSongData(data);
+
+        const drums = audio
+          .filter((file) => file.name.includes('drums'))
+          .map((file) => file.src);
+
+        const other = audio
+          .filter((file) => !file.name.includes('drums'))
+          .map((file) => ({ urls: [file.src], name: file.name }));
+
+        const player = new AudioPlayer([
+          { name: 'drums', urls: drums },
+          ...other,
+        ]);
+
+        player.ready
+          .then(() => {
+            return setAudioPlayer(player);
+          })
+          .catch(() => {});
 
         const drumsAudio = audio
           .filter((file) => file.name.includes('drums'))
@@ -79,36 +100,60 @@ export function SongView() {
     loadSong();
   }, [loadSong]);
 
+  // useEffect(() => {
+  //   if (audioFiles.length === 0) {
+  //     return undefined;
+  //   }
+
+  //   const audioElement = audioFiles[0].elements[0];
+
+  //   const playbackEventListener = () => {
+  //     setCurrentPlayback(audioElement.currentTime);
+  //   };
+
+  //   const readyEventListener = () => {
+  //     setAudioDuration(audioElement.duration);
+  //   };
+
+  //   const endedListener = () => {
+  //     setIsPlaying(false);
+  //   };
+
+  //   const audioPolling = setInterval(playbackEventListener, 20);
+  //   audioElement.addEventListener('canplaythrough', readyEventListener);
+
+  //   audioElement.addEventListener('ended', endedListener);
+
+  //   return () => {
+  //     clearInterval(audioPolling);
+  //     audioElement.removeEventListener('canplaythrough', readyEventListener);
+  //     audioElement.removeEventListener('ended', endedListener);
+  //   };
+  // }, [audioFiles]);
+
   useEffect(() => {
-    if (audioFiles.length === 0) {
+    if (audioPlayer === null) {
       return undefined;
     }
 
-    const audioElement = audioFiles[0].elements[0];
-
     const playbackEventListener = () => {
-      setCurrentPlayback(audioElement.currentTime);
+      setCurrentPlayback(audioPlayer.context.currentTime);
     };
 
-    const readyEventListener = () => {
-      setAudioDuration(audioElement.duration);
-    };
+    // const readyEventListener = () => {
+    //   setAudioDuration(audioPlayer.duration);
+    // };
 
-    const endedListener = () => {
-      setIsPlaying(false);
-    };
+    // const endedListener = () => {
+    //   setIsPlaying(false);
+    // };
 
     const audioPolling = setInterval(playbackEventListener, 20);
-    audioElement.addEventListener('canplaythrough', readyEventListener);
-
-    audioElement.addEventListener('ended', endedListener);
 
     return () => {
       clearInterval(audioPolling);
-      audioElement.removeEventListener('canplaythrough', readyEventListener);
-      audioElement.removeEventListener('ended', endedListener);
     };
-  }, [audioFiles]);
+  }, [audioPlayer]);
 
   useEffect(() => {
     audioFiles.forEach((audio) => {
@@ -127,24 +172,35 @@ export function SongView() {
   }, [audioFiles]);
 
   useEffect(() => {
-    if (audioFiles.length === 0) {
+    if (audioPlayer === null) {
       return;
     }
 
-    if (isPlaying) {
-      audioFiles.forEach((audio) => {
-        audio.elements.forEach((drumAudio) => {
-          drumAudio.play();
-        });
-      });
-    } else {
-      audioFiles.forEach((audio) => {
-        audio.elements.forEach((drumAudio) => {
-          drumAudio.pause();
-        });
-      });
+    if (isPlaying && !audioPlayer.isInitialised) {
+      audioPlayer.start();
+    } else if (isPlaying) {
+      audioPlayer.resume();
+    } else if (!isPlaying && audioPlayer.isInitialised) {
+      audioPlayer.pause();
     }
-  }, [audioFiles, isPlaying]);
+    // if (audioFiles.length === 0) {
+    //   return;
+    // }
+
+    // if (isPlaying) {
+    //   audioFiles.forEach((audio) => {
+    //     audio.elements.forEach((drumAudio) => {
+    //       drumAudio.play();
+    //     });
+    //   });
+    // } else {
+    //   audioFiles.forEach((audio) => {
+    //     audio.elements.forEach((drumAudio) => {
+    //       drumAudio.pause();
+    //     });
+    //   });
+    // }
+  }, [audioPlayer, isPlaying]);
 
   const setVolume = useDebouncedCallback((file, volume) => {
     const otherFiles = audioFiles.filter((f) => f !== file);
@@ -175,6 +231,10 @@ export function SongView() {
         );
       });
   }, [audioFiles, setVolume]);
+
+  if (!audioPlayer) {
+    return null;
+  }
 
   return (
     <FullHeightLayout>
@@ -253,7 +313,7 @@ export function SongView() {
               style={{
                 flexGrow: 1,
               }}
-              value={(currentPlayback / audioDuration) * 100}
+              value={(currentPlayback / audioPlayer.duration) * 100}
               onChange={(value) => {
                 const time = (value / 100) * audioDuration;
                 audioFiles.forEach((audioFile) => {
@@ -264,7 +324,7 @@ export function SongView() {
               }}
             />
             <PlaybackTime>
-              {format(currentPlayback)} / {format(audioDuration)}
+              {format(currentPlayback)} / {format(audioPlayer.duration)}
             </PlaybackTime>
           </PlaybackContainer>
           <LayoutContent>
