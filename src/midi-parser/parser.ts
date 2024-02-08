@@ -1,5 +1,4 @@
 import { HeaderJSON, MidiJSON, TrackJSON } from '@tonejs/midi';
-import { TempoEvent } from '@tonejs/midi/dist/Header';
 import { NoteJSON } from '@tonejs/midi/dist/Note';
 
 export interface Note {
@@ -50,13 +49,47 @@ export interface Duration {
   dotted?: boolean;
 }
 
+export enum Difficulty {
+  easy = 'easy',
+  medium = 'medium',
+  hard = 'hard',
+  expert = 'expert',
+}
+
+export interface MidiMapping {
+  [key: number]: string;
+}
+
 export class MidiParser {
-  mapping: { [key: number]: string } = {
-    96: 'f/4',
-    97: 'c/5',
-    98: 'g/5/x2',
-    99: 'f/5/x2',
-    100: 'a/5/x2',
+  mapping: { [key in Difficulty]: MidiMapping } = {
+    expert: {
+      96: 'f/4', // kick
+      97: 'c/5', // snare
+      98: 'g/5/x2', // yellow tom
+      99: 'f/5/x2', // blue tom
+      100: 'a/5/x2', // green tom
+    },
+    hard: {
+      84: 'f/4', // kick
+      85: 'c/5', // snare
+      86: 'g/5/x2', // yellow tom
+      87: 'f/5/x2', // blue tom
+      88: 'a/5/x2', // green tom
+    },
+    medium: {
+      72: 'f/4', // kick
+      73: 'c/5', // snare
+      74: 'g/5/x2', // yellow tom
+      75: 'f/5/x2', // blue tom
+      76: 'a/5/x2', // green tom
+    },
+    easy: {
+      60: 'f/4', // kick
+      61: 'c/5', // snare
+      62: 'g/5/x2', // yellow tom
+      63: 'f/5/x2', // blue tom
+      64: 'a/5/x2', // green tom
+    },
   };
 
   tomModifiers: { [key: number]: Modifier } = {
@@ -86,7 +119,7 @@ export class MidiParser {
 
   durationMap: { [key: number]: Duration };
 
-  constructor(data: MidiJSON) {
+  constructor(data: MidiJSON, difficulty: Difficulty = 'expert') {
     const drumPart = data.tracks.find((track) => track.name === 'PART DRUMS');
 
     if (!drumPart) {
@@ -99,7 +132,7 @@ export class MidiParser {
 
     this.durationMap = this.constructDurationMap();
 
-    this.processNotes(drumPart);
+    this.processNotes(drumPart, difficulty);
     this.createMeasures();
     this.fillBeats();
     this.extendNoteDuration();
@@ -107,13 +140,13 @@ export class MidiParser {
     this.flattenMeasures();
   }
 
-  processNotes(trackData: TrackJSON) {
+  processNotes(trackData: TrackJSON, difficulty: Difficulty) {
     trackData.notes.forEach((note) => {
-      if (this.mapping[note.midi]) {
+      if (this.mapping[difficulty][note.midi]) {
         const tickData = this.rawMidiNotes.get(note.ticks) ?? [];
         tickData.push({
           note,
-          key: this.mapping[note.midi],
+          key: this.mapping[difficulty][note.midi],
         });
         this.rawMidiNotes.set(note.ticks, tickData);
       } else if (this.tomModifiers[note.midi]) {

@@ -12,9 +12,13 @@ export class AudioTrack {
     public name: string,
     public context: AudioContext,
   ) {
-    this.gainNodes = new Array(buffers.length)
-      .fill(null)
-      .map(() => context.createGain());
+    this.gainNodes = new Array(buffers.length).fill(null).map(() => {
+      const gainNode = context.createGain();
+
+      gainNode.connect(this.context.destination);
+
+      return gainNode;
+    });
 
     this.duration = Math.max(...this.buffers.map((buffer) => buffer.duration));
   }
@@ -30,17 +34,32 @@ export class AudioTrack {
   }
 
   start(at: number, offset: number) {
-    this.sources = this.buffers.map((buffer) => {
+    this.sources = this.buffers.map((buffer, index) => {
       const source = this.context.createBufferSource();
       source.buffer = buffer;
-      source.connect(this.context.destination);
       source.start(at, offset);
+
+      source.connect(this.gainNodes[index]);
+
       return source;
     });
   }
 
   stop() {
-    this.sources.forEach((source) => source.stop(0));
+    this.sources.forEach((source) => {
+      source.stop(0);
+      source.disconnect();
+    });
+
     this.sources = [];
+  }
+
+  destroy() {
+    this.stop();
+
+    this.gainNodes.forEach((node) => {
+      node.disconnect();
+    });
+    this.gainNodes = [];
   }
 }

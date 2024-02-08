@@ -20,6 +20,10 @@ export default function App() {
           Layout: {
             bodyBg: theme.color.background,
           },
+          Button: {
+            defaultShadow: theme.boxShadow.soft,
+            primaryShadow: theme.boxShadow.soft,
+          },
         },
       }}
     >

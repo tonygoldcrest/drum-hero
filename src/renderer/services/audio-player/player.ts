@@ -10,6 +10,10 @@ export class AudioPlayer {
 
   isInitialised: boolean = false;
 
+  private startedAt: number = -1;
+
+  private offset: number = 0;
+
   duration: number = 0;
 
   constructor(trackConfigs: TrackConfig[]) {
@@ -46,7 +50,13 @@ export class AudioPlayer {
   }
 
   start(offset: number = 0) {
-    const time = this.context.currentTime + 0.5;
+    if (this.isInitialised) {
+      this.stop();
+    }
+    this.offset = offset;
+
+    const time = this.context.currentTime;
+    this.startedAt = time;
     this.audioTracks.forEach((track) => track.start(time, offset));
     this.isInitialised = true;
   }
@@ -54,6 +64,7 @@ export class AudioPlayer {
   stop() {
     this.audioTracks.forEach((track) => track.stop());
     this.isInitialised = false;
+    this.startedAt = -1;
   }
 
   pause() {
@@ -62,5 +73,20 @@ export class AudioPlayer {
 
   resume() {
     this.context.resume();
+  }
+
+  get currentTime() {
+    if (this.startedAt < 0) {
+      return 0;
+    }
+
+    return this.context.currentTime - this.startedAt + this.offset;
+  }
+
+  destroy() {
+    this.audioTracks.forEach((track) => track.destroy());
+    this.audioTracks = [];
+
+    this.context.close();
   }
 }

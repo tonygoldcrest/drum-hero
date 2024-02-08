@@ -1,7 +1,7 @@
 import { RefObject, createRef, useEffect, useRef, useState } from 'react';
 import { Midi } from '@tonejs/midi';
 import { MeasureHighlight, VexflowContainer, Wrapper } from './styles';
-import { MidiParser } from '../../../midi-parser/parser';
+import { Difficulty, MidiParser } from '../../../midi-parser/parser';
 import { RenderData, renderMusic } from '../../../midi-parser/renderer';
 
 export interface SheetMusicProps {
@@ -9,6 +9,7 @@ export interface SheetMusicProps {
   showBarNumbers: boolean;
   currentTime: number;
   onSelectMeasure: (time: number) => void;
+  difficulty: Difficulty;
 }
 
 export function SheetMusic({
@@ -16,6 +17,7 @@ export function SheetMusic({
   showBarNumbers,
   currentTime,
   onSelectMeasure,
+  difficulty,
 }: SheetMusicProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const highlightsRef = useRef<RefObject<HTMLButtonElement>[]>([]);
@@ -33,9 +35,15 @@ export function SheetMusic({
 
     const mid = new Midi(midiData);
     setMidi(mid);
-
-    setParsedMidi(new MidiParser(mid.toJSON()));
   }, [midiData]);
+
+  useEffect(() => {
+    if (!midi) {
+      return;
+    }
+
+    setParsedMidi(new MidiParser(midi.toJSON(), difficulty));
+  }, [midi, difficulty]);
 
   useEffect(() => {
     if (!vexflowContainerRef.current || !parsedMidi) {
