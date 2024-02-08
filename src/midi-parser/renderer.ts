@@ -22,10 +22,22 @@ export interface RenderData {
 const STAVE_WIDTH = 600;
 const STAVE_PER_ROW = 2;
 
+const NOTE_COLOR_MAP: { [key: string]: string } = {
+  'f/4': '#ff793f', // orange
+  'c/5': '#e74c3c', // red
+  'g/5/x2': '#ffb142', // yellow
+  'f/5/x2': '#2980b9', // blue
+  'a/5/x2': '#27ae60', // green
+  'e/5': '#ffb142', // yellow
+  'd/5': '#2980b9', // blue
+  'a/4': '#27ae60', // green
+};
+
 export function renderMusic(
   elementRef: React.RefObject<HTMLDivElement>,
   song: MidiParser,
   showBarNumbers: boolean = true,
+  enableColors: boolean = false,
 ): RenderData[] {
   if (!elementRef.current) {
     return [];
@@ -51,6 +63,7 @@ export function renderMusic(
       Math.floor(index / STAVE_PER_ROW) * lineHeight,
       index === song.measures.length - 1,
       showBarNumbers,
+      enableColors,
     ),
   }));
 }
@@ -63,6 +76,7 @@ function renderMeasure(
   yOffset: number,
   endMeasure: boolean,
   showBarNumbers: boolean,
+  enableColors: boolean,
 ) {
   const stave = new Stave(xOffset, yOffset, STAVE_WIDTH);
 
@@ -93,6 +107,12 @@ function renderMeasure(
       duration: note.duration,
       align_center: note.duration === 'wr',
     });
+
+    if (enableColors) {
+      staveNote.keys.forEach((n, idx) => {
+        staveNote.setKeyStyle(idx, { fillStyle: NOTE_COLOR_MAP[n] });
+      });
+    }
 
     if (
       note.isTriplet &&

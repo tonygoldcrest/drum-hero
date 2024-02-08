@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Layout, Select, Switch } from 'antd';
+import { Layout, Switch } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   FullHeightLayout,
@@ -25,6 +25,7 @@ export function SongView() {
   const [midiData, setMidiData] = useState<Buffer>();
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [showBarNumbers, setShowBarNumbers] = useState(false);
+  const [enableColors, setEnableColors] = useState(true);
   const [difficulty, setDifficulty] = useState<Difficulty>(Difficulty.expert);
   const [currentPlayback, setCurrentPlayback] = useState(0);
   const [songData, setSongData] = useState<SongData | null>(null);
@@ -167,6 +168,16 @@ export function SongView() {
             <>
               <Switch
                 size="small"
+                checked={enableColors}
+                onChange={() => {
+                  setEnableColors(!enableColors);
+                }}
+              />
+              <SecondaryText>Enable colors</SecondaryText>
+            </>
+            <>
+              <Switch
+                size="small"
                 checked={showBarNumbers}
                 onChange={() => {
                   setShowBarNumbers(!showBarNumbers);
@@ -199,6 +210,7 @@ export function SongView() {
                   midiData={midiData}
                   difficulty={difficulty}
                   showBarNumbers={showBarNumbers}
+                  enableColors={enableColors}
                   onSelectMeasure={(time) => {
                     if (!audioPlayer) {
                       return;

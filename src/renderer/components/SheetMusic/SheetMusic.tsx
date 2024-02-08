@@ -7,6 +7,7 @@ import { RenderData, renderMusic } from '../../../midi-parser/renderer';
 export interface SheetMusicProps {
   midiData?: Buffer;
   showBarNumbers: boolean;
+  enableColors: boolean;
   currentTime: number;
   onSelectMeasure: (time: number) => void;
   difficulty: Difficulty;
@@ -15,6 +16,7 @@ export interface SheetMusicProps {
 export function SheetMusic({
   midiData,
   showBarNumbers,
+  enableColors,
   currentTime,
   onSelectMeasure,
   difficulty,
@@ -56,8 +58,15 @@ export function SheetMusic({
       );
     }
 
-    setRenderData(renderMusic(vexflowContainerRef, parsedMidi, showBarNumbers));
-  }, [parsedMidi, showBarNumbers]);
+    setRenderData(
+      renderMusic(
+        vexflowContainerRef,
+        parsedMidi,
+        showBarNumbers,
+        enableColors,
+      ),
+    );
+  }, [parsedMidi, showBarNumbers, enableColors]);
 
   useEffect(() => {
     if (!midi || !renderData) {

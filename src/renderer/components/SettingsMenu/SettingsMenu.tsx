@@ -72,8 +72,8 @@ export function SettingsMenu({
       </SettingsItem>
       {isExpanded && !isLoading && (
         <div>
-          {children.map((child) => (
-            <SettingsItem>{child}</SettingsItem>
+          {children.map((child, index) => (
+            <SettingsItem key={index}>{child}</SettingsItem>
           ))}
         </div>
       )}

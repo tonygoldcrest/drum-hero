@@ -34,7 +34,7 @@ export interface RawMidiNote {
 }
 
 export interface Modifier {
-  forNote: number;
+  forNotes: number[];
   key: string;
 }
 
@@ -94,16 +94,16 @@ export class MidiParser {
 
   tomModifiers: { [key: number]: Modifier } = {
     110: {
-      forNote: 98,
-      key: 'e/5',
+      forNotes: [98, 86, 74, 62],
+      key: 'e/5', // yellow tom
     },
     111: {
-      forNote: 99,
-      key: 'd/5',
+      forNotes: [99, 87, 75, 63],
+      key: 'd/5', // blue tom
     },
     112: {
-      forNote: 100,
-      key: 'a/4',
+      forNotes: [100, 88, 76, 64],
+      key: 'a/4', // green tom
     },
   };
 
@@ -119,7 +119,7 @@ export class MidiParser {
 
   durationMap: { [key: number]: Duration };
 
-  constructor(data: MidiJSON, difficulty: Difficulty = 'expert') {
+  constructor(data: MidiJSON, difficulty: Difficulty = Difficulty.expert) {
     const drumPart = data.tracks.find((track) => track.name === 'PART DRUMS');
 
     if (!drumPart) {
@@ -160,8 +160,9 @@ export class MidiParser {
 
   getNoteKey(note: RawMidiNote, modifiers: ModifierNote[]) {
     return (
-      modifiers.find((modifier) => modifier.modifier.forNote === note.note.midi)
-        ?.modifier.key ?? note.key
+      modifiers.find((modifier) =>
+        modifier.modifier.forNotes.includes(note.note.midi),
+      )?.modifier.key ?? note.key
     );
   }
 
@@ -342,9 +343,13 @@ export class MidiParser {
 
           note.durationTicks = noteDuration;
 
-          const { duration, dotted, isTriplet } = this.durationMap[
-            noteDuration
-          ] ?? { duration: '' };
+          if (!this.durationMap[noteDuration]) {
+            note.duration = '';
+            return;
+          }
+
+          const { duration, dotted, isTriplet } =
+            this.durationMap[noteDuration];
 
           note.duration = duration
             ? `${duration}${note.isRest ? 'r' : ''}`
@@ -374,6 +379,10 @@ export class MidiParser {
               return note;
             }
 
+            if (!note.isRest) {
+              return this.getClosestDuration(availableDurations, note);
+            }
+
             const atomicDurations = this.getSubsets(
               availableDurations,
               note.durationTicks ?? 0,
@@ -398,7 +407,7 @@ export class MidiParser {
                   isRest,
                   tick: 0,
                   duration: `${duration}${isRest ? 'r' : ''}`,
-                  notes: ['b/4'],
+                  notes: note.isRest ? ['b/4'] : note.notes,
                 };
 
                 return newNote;
@@ -431,7 +440,7 @@ export class MidiParser {
         isRest: note.isRest,
         tick: 0,
         duration: `${duration}${note.isRest ? 'r' : ''}`,
-        notes: ['b/4'],
+        notes: note.isRest ? ['b/4'] : note.notes,
       },
     ];
   }
