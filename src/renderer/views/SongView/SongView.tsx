@@ -20,6 +20,7 @@ import { SettingsMenu } from '../../components/SettingsMenu/SettingsMenu';
 import { AudioVolume } from '../../components/AudioVolume/AudioVolume';
 import { TrackConfig } from '../../services/audio-player/types';
 import { Difficulty } from '../../../midi-parser/parser';
+import { VolumeControl } from './types';
 
 export function SongView() {
   const [midiData, setMidiData] = useState<Buffer>();
@@ -32,9 +33,18 @@ export function SongView() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioPlayer, setAudioPlayer] = useState<AudioPlayer | null>(null);
   const [trackData, setTrackData] = useState<TrackConfig[]>([]);
+  const [volumeControls, setVolumeControls] = useState<VolumeControl[]>([]);
 
   const { id } = useParams();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    window.electron.ipcRenderer.sendMessage('prevent-sleep');
+
+    return () => {
+      window.electron.ipcRenderer.sendMessage('resume-sleep');
+    };
+  }, []);
 
   const loadSong = useCallback(() => {
     window.electron.ipcRenderer.once<IpcLoadSongResponse>(
@@ -61,7 +71,16 @@ export function SongView() {
     if (trackData.length === 0) {
       return;
     }
-    const player = new AudioPlayer(trackData);
+    const player = new AudioPlayer(trackData, () => setIsPlaying(false));
+
+    setVolumeControls(
+      trackData.map(({ name }) => ({
+        trackName: name,
+        volume: 100,
+        isMuted: false,
+        isSoloed: false,
+      })),
+    );
 
     player.ready
       .then(() => {
@@ -83,9 +102,6 @@ export function SongView() {
       setCurrentPlayback(audioPlayer.currentTime);
     };
 
-    // const endedListener = () => {
-    //   setIsPlaying(false);
-    // };
     const audioPolling = setInterval(playbackEventListener, 20);
 
     return () => {
@@ -95,6 +111,24 @@ export function SongView() {
       // audioPlayer.destroy();
     };
   }, [audioPlayer]);
+
+  useEffect(() => {
+    if (volumeControls.length === 0 || !audioPlayer) {
+      return;
+    }
+
+    volumeControls.forEach((control) => {
+      const audioTrack = audioPlayer.audioTracks.find(
+        (track) => track.name === control.trackName,
+      );
+
+      if (!audioTrack) {
+        return;
+      }
+
+      audioTrack.setVolume(control.volume / 100);
+    });
+  }, [volumeControls, audioPlayer]);
 
   useEffect(() => {
     if (audioPlayer === null) {
@@ -111,23 +145,86 @@ export function SongView() {
   }, [audioPlayer, isPlaying]);
 
   const volumeSliders = useMemo(() => {
-    if (!audioPlayer) {
+    if (volumeControls.length === 0 || !audioPlayer) {
       return [];
     }
 
-    return audioPlayer.audioTracks
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((track) => {
+    return volumeControls
+      .sort((a, b) => a.trackName.localeCompare(b.trackName))
+      .map((control) => {
         return (
           <AudioVolume
-            key={track.name}
-            name={track.name}
-            volume={track.volume}
-            onChange={(value) => track.setVolume(value / 100)}
+            key={control.trackName}
+            name={control.trackName}
+            volume={control.volume}
+            isMuted={control.isMuted}
+            isSoloed={control.isSoloed}
+            onMuteClick={() => {
+              if (control.isMuted) {
+                setVolumeControls([
+                  ...volumeControls.filter((c) => c !== control),
+                  {
+                    ...control,
+                    volume: control.previousVolume ?? 100,
+                    previousVolume: undefined,
+                    isMuted: false,
+                  },
+                ]);
+              } else {
+                setVolumeControls([
+                  ...volumeControls.filter((c) => c !== control),
+                  {
+                    ...control,
+                    volume: 0,
+                    previousVolume: control.volume,
+                    isMuted: true,
+                  },
+                ]);
+              }
+            }}
+            onSoloClick={() => {
+              if (control.isSoloed) {
+                setVolumeControls([
+                  ...volumeControls
+                    .filter((c) => c !== control)
+                    .map((c) => ({
+                      ...c,
+                      isMuted: false,
+                      previousVolume: undefined,
+                      volume: c.previousVolume ?? 100,
+                    })),
+                  {
+                    ...control,
+                    isSoloed: false,
+                  },
+                ]);
+              } else {
+                setVolumeControls([
+                  ...volumeControls
+                    .filter((c) => c !== control)
+                    .map((c) => ({
+                      ...c,
+                      isMuted: true,
+                      previousVolume: c.previousVolume,
+                      volume: 0,
+                    })),
+                  {
+                    ...control,
+                    isSoloed: true,
+                  },
+                ]);
+              }
+            }}
+            onChange={(value) =>
+              setVolumeControls([
+                ...volumeControls.filter((c) => c !== control),
+                { ...control, volume: value },
+              ])
+            }
           />
         );
       });
-  }, [audioPlayer]);
+  }, [volumeControls, audioPlayer]);
 
   return (
     <FullHeightLayout>

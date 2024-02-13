@@ -10,16 +10,20 @@ export class AudioPlayer {
 
   isInitialised: boolean = false;
 
+  onEnded: (() => void) | null;
+
   private startedAt: number = -1;
 
   private offset: number = 0;
 
   duration: number = 0;
 
-  constructor(trackConfigs: TrackConfig[]) {
+  constructor(trackConfigs: TrackConfig[], onEnded: () => void) {
     this.context = new AudioContext();
 
     this.ready = this.createTracks(trackConfigs);
+
+    this.onEnded = onEnded;
 
     this.ready
       .then((tracks) => {
@@ -89,6 +93,8 @@ export class AudioPlayer {
     this.audioTracks.forEach((track) => track.destroy());
     this.audioTracks = [];
 
+    this.onEnded = null;
+
     this.context.close();
   }
 
@@ -98,5 +104,6 @@ export class AudioPlayer {
     }
 
     this.stop();
+    this.onEnded?.();
   };
 }

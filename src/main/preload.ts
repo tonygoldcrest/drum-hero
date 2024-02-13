@@ -6,7 +6,9 @@ export type Channels =
   | 'load-song-list'
   | 'load-song'
   | 'rescan-songs'
-  | 'like-song';
+  | 'like-song'
+  | 'prevent-sleep'
+  | 'resume-sleep';
 
 const electronHandler = {
   ipcRenderer: {

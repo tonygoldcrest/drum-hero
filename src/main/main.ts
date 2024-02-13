@@ -81,6 +81,14 @@ ipcMain.on('like-song', async (event, id, liked) => {
   store.set(`songs.${id}.liked`, liked);
 });
 
+ipcMain.on('prevent-sleep', async () => {
+  powerSaveBlockerId = powerSaveBlocker.start('prevent-display-sleep');
+});
+
+ipcMain.on('resume-sleep', async () => {
+  powerSaveBlocker.stop(powerSaveBlockerId);
+});
+
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
   sourceMapSupport.install();
@@ -127,8 +135,6 @@ const createWindow = async () => {
   const externalDisplay = displays.find((display) => {
     return display.bounds.x !== 0 || display.bounds.y !== 0;
   });
-
-  powerSaveBlockerId = powerSaveBlocker.start('prevent-display-sleep');
 
   mainWindow = new BrowserWindow({
     show: false,
@@ -180,7 +186,6 @@ app.on('window-all-closed', () => {
   // after all windows have been closed
   if (process.platform !== 'darwin') {
     app.quit();
-    powerSaveBlocker.stop(powerSaveBlockerId);
   }
 });
 
