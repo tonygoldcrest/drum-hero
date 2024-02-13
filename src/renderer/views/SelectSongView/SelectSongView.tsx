@@ -7,6 +7,7 @@ import {
   Header,
   ScanSongsButton,
   SongListContainer,
+  SongNumber,
   SongViewOverlay,
   Wrapper,
 } from './styles';
@@ -54,6 +55,9 @@ export function SelectSongView() {
             setNameFilter(value);
           }}
         />
+        <SongNumber>
+          {filteredSongList.length} / {songList.length}
+        </SongNumber>
       </Header>
       <SongListContainer>
         <SongList

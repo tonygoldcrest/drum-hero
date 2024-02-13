@@ -42,6 +42,8 @@ export class AudioPlayer {
 
         const audioTrack = new AudioTrack(audioBuffers, name, this.context);
 
+        audioTrack.endedListener = this.trackEndedListener;
+
         this.audioTracks.push(audioTrack);
 
         return audioTrack;
@@ -89,4 +91,12 @@ export class AudioPlayer {
 
     this.context.close();
   }
+
+  trackEndedListener = () => {
+    if (this.audioTracks.filter((track) => !track.ended).length !== 0) {
+      return;
+    }
+
+    this.stop();
+  };
 }

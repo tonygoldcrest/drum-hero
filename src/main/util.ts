@@ -35,7 +35,7 @@ export async function parseAndSaveSongs(
 
   store.delete('songs');
 
-  glob(`${result.filePaths[0]}/**/*.mid`, {}, (err, files) => {
+  glob(`${result.filePaths[0]}/**/notes.mid`, {}, (err, files) => {
     const songList = files
       .map((file) => path.join(path.dirname(file), 'song.ini'))
       .filter((file) => fs.existsSync(file))

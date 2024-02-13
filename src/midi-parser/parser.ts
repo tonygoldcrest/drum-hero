@@ -245,7 +245,7 @@ export class MidiParser {
           const currentModifierNotes = this.modifierNotes.filter(
             (modifier) =>
               currentTick >= modifier.note.ticks &&
-              currentTick <= modifier.note.ticks + modifier.note.durationTicks,
+              currentTick < modifier.note.ticks + modifier.note.durationTicks,
           );
 
           if (tickNotes) {
@@ -379,10 +379,6 @@ export class MidiParser {
               return note;
             }
 
-            if (!note.isRest) {
-              return this.getClosestDuration(availableDurations, note);
-            }
-
             const atomicDurations = this.getSubsets(
               availableDurations,
               note.durationTicks ?? 0,
@@ -399,7 +395,7 @@ export class MidiParser {
                 const { duration, dotted, isTriplet } =
                   this.durationMap[durationTicks];
 
-                const isRest = note.isRest || index === 0;
+                const isRest = note.isRest || index !== 0;
                 const newNote: Note = {
                   isTriplet: isTriplet ?? false,
                   dotted: dotted ?? false,
@@ -407,7 +403,7 @@ export class MidiParser {
                   isRest,
                   tick: 0,
                   duration: `${duration}${isRest ? 'r' : ''}`,
-                  notes: note.isRest ? ['b/4'] : note.notes,
+                  notes: isRest ? ['b/4'] : note.notes,
                 };
 
                 return newNote;

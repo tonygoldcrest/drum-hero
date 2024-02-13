@@ -35,6 +35,14 @@ export const Header = styled.div`
   padding: 20px;
   z-index: 10;
   box-shadow: ${theme.boxShadow.soft};
+  display: flex;
+  flex-flow: column;
+`;
+
+export const SongNumber = styled.div`
+  margin-left: auto;
+  color: ${theme.color.foreground};
+  font-size: 12px;
 `;
 
 export const ScanSongsButton = styled(FloatButton)`

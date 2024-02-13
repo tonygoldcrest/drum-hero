@@ -7,6 +7,10 @@ export class AudioTrack {
 
   duration: number;
 
+  ended: boolean = false;
+
+  endedListener: (() => void) | null = null;
+
   constructor(
     public buffers: AudioBuffer[],
     public name: string,
@@ -34,6 +38,12 @@ export class AudioTrack {
   }
 
   start(at: number, offset: number) {
+    if (this.sources.length > 0) {
+      this.stop();
+    }
+
+    this.ended = false;
+
     this.sources = this.buffers.map((buffer, index) => {
       const source = this.context.createBufferSource();
       source.buffer = buffer;
@@ -41,17 +51,35 @@ export class AudioTrack {
 
       source.connect(this.gainNodes[index]);
 
+      source.addEventListener('ended', this.endedEventListener);
+
       return source;
     });
   }
 
   stop() {
-    this.sources.forEach((source) => {
-      source.stop(0);
-      source.disconnect();
-    });
+    this.sources.forEach((source) => this.stopSource(source));
 
     this.sources = [];
+  }
+
+  endedEventListener = (event: Event) => {
+    const source = event.currentTarget as AudioBufferSourceNode;
+
+    this.stopSource(source);
+    this.sources.splice(this.sources.indexOf(source), 1);
+
+    if (this.sources.length === 0) {
+      this.ended = true;
+
+      this.endedListener?.();
+    }
+  };
+
+  stopSource(source: AudioBufferSourceNode) {
+    source.stop();
+    source.removeEventListener('ended', this.endedEventListener);
+    source.disconnect();
   }
 
   destroy() {
@@ -61,5 +89,7 @@ export class AudioTrack {
       node.disconnect();
     });
     this.gainNodes = [];
+
+    this.endedListener = null;
   }
 }

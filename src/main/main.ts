@@ -18,7 +18,7 @@ import {
   ipcMain,
   protocol,
   screen,
-  net,
+  powerSaveBlocker,
 } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
@@ -38,6 +38,8 @@ class AppUpdater {
 let mainWindow: BrowserWindow | null = null;
 
 const store = new Store();
+
+let powerSaveBlockerId: number = -1;
 
 ipcMain.on('load-song', async (event, id) => {
   const songData = (store.get('songs') as StorageSchema['songs'])[id];
@@ -126,6 +128,8 @@ const createWindow = async () => {
     return display.bounds.x !== 0 || display.bounds.y !== 0;
   });
 
+  powerSaveBlockerId = powerSaveBlocker.start('prevent-display-sleep');
+
   mainWindow = new BrowserWindow({
     show: false,
     x: externalDisplay ? externalDisplay.bounds.x + 50 : 0,
@@ -176,6 +180,7 @@ app.on('window-all-closed', () => {
   // after all windows have been closed
   if (process.platform !== 'darwin') {
     app.quit();
+    powerSaveBlocker.stop(powerSaveBlockerId);
   }
 });
 
