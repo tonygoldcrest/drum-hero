@@ -1,7 +1,12 @@
-import { Button } from 'antd';
 import { faS, faVolumeMute } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { FileName, VolumeControl, VolumeSlider, Wrapper } from './styles';
+import {
+  FileName,
+  VolumeControl,
+  VolumeControlButton,
+  VolumeSlider,
+  Wrapper,
+} from './styles';
 
 export interface AudioVolumeProps {
   name: string;
@@ -27,18 +32,18 @@ export function AudioVolume({
       <FileName>{name}</FileName>
       <VolumeControl>
         <VolumeSlider value={volume} onChange={onChange} />
-        <Button
+        <VolumeControlButton
           shape="circle"
           type={isMuted ? 'primary' : 'default'}
           size="small"
-          icon={<FontAwesomeIcon icon={faVolumeMute} />}
+          icon={<FontAwesomeIcon size="xs" icon={faVolumeMute} />}
           onClick={onMuteClick}
         />
-        <Button
+        <VolumeControlButton
           shape="circle"
           type={isSoloed ? 'primary' : 'default'}
           size="small"
-          icon={<FontAwesomeIcon icon={faS} />}
+          icon={<FontAwesomeIcon size="xs" icon={faS} />}
           onClick={onSoloClick}
         />
       </VolumeControl>

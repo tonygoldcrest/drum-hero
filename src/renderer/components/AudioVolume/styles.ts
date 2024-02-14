@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { Slider } from 'antd';
+import { Button, Slider } from 'antd';
 import { theme } from '../../theme';
 
 export const Wrapper = styled.div`
@@ -21,10 +21,20 @@ export const VolumeControl = styled.div`
   align-items: center;
 
   & > * + * {
-    margin-left: 7px;
+    margin-left: 5px;
   }
 `;
 
 export const VolumeSlider = styled(Slider)`
   flex-grow: 1;
+`;
+
+export const VolumeControlButton = styled(Button)`
+  &.ant-btn.ant-btn-sm {
+    width: 20px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0;
+    line-height: 0;
+  }
 `;

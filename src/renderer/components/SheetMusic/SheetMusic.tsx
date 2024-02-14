@@ -114,7 +114,7 @@ export function SheetMusic({
           height: stave.getHeight(),
         }}
         $highlighted={isHighlighted}
-        onClick={() => {
+        onDoubleClick={() => {
           if (!midi) {
             return;
           }

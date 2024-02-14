@@ -24,7 +24,7 @@ import { VolumeControl } from './types';
 
 export function SongView() {
   const [midiData, setMidiData] = useState<Buffer>();
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [showBarNumbers, setShowBarNumbers] = useState(false);
   const [enableColors, setEnableColors] = useState(true);
   const [difficulty, setDifficulty] = useState<Difficulty>(Difficulty.expert);
@@ -183,16 +183,44 @@ export function SongView() {
               }
             }}
             onSoloClick={() => {
+              const otherControls = volumeControls.filter((c) => c !== control);
+
+              if (otherControls.filter((c) => c.isSoloed).length > 0) {
+                if (control.isSoloed) {
+                  setVolumeControls([
+                    ...otherControls,
+                    {
+                      ...control,
+                      isSoloed: false,
+                      isMuted: true,
+                      volume: 0,
+                      previousVolume: control.volume,
+                    },
+                  ]);
+                } else {
+                  setVolumeControls([
+                    ...otherControls,
+                    {
+                      ...control,
+                      isSoloed: true,
+                      isMuted: false,
+                      volume: control.previousVolume ?? 100,
+                      previousVolume: undefined,
+                    },
+                  ]);
+                }
+
+                return;
+              }
+
               if (control.isSoloed) {
                 setVolumeControls([
-                  ...volumeControls
-                    .filter((c) => c !== control)
-                    .map((c) => ({
-                      ...c,
-                      isMuted: false,
-                      previousVolume: undefined,
-                      volume: c.previousVolume ?? 100,
-                    })),
+                  ...otherControls.map((c) => ({
+                    ...c,
+                    isMuted: false,
+                    previousVolume: undefined,
+                    volume: c.previousVolume ?? 100,
+                  })),
                   {
                     ...control,
                     isSoloed: false,
@@ -200,14 +228,12 @@ export function SongView() {
                 ]);
               } else {
                 setVolumeControls([
-                  ...volumeControls
-                    .filter((c) => c !== control)
-                    .map((c) => ({
-                      ...c,
-                      isMuted: true,
-                      previousVolume: c.previousVolume,
-                      volume: 0,
-                    })),
+                  ...otherControls.map((c) => ({
+                    ...c,
+                    isMuted: true,
+                    previousVolume: c.volume,
+                    volume: 0,
+                  })),
                   {
                     ...control,
                     isSoloed: true,

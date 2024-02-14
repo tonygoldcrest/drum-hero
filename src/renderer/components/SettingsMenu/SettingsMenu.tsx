@@ -2,7 +2,7 @@ import { Button } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowLeft,
-  faChevronLeft,
+  faCompress,
   faGear,
   faPause,
   faPlay,
@@ -62,7 +62,7 @@ export function SettingsMenu({
           loading={isLoading}
           icon={
             isExpanded ? (
-              <FontAwesomeIcon icon={faChevronLeft} />
+              <FontAwesomeIcon icon={faCompress} />
             ) : (
               <FontAwesomeIcon icon={faGear} />
             )
