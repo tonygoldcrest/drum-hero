@@ -9,7 +9,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/peancored/genuine-hero.git"
+    "url": "git+https://github.com/peancored/drum-hero.git"
   },
   "license": "MIT",
   "author": {
@@ -171,8 +171,8 @@
     "webpack-merge": "^5.9.0"
   },
   "build": {
-    "productName": "GenuineHero",
-    "appId": "org.gh.GenuineHero",
+    "productName": "DrumHero",
+    "appId": "org.dh.DrumHero",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",
     "files": [
