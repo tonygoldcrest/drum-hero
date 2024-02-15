@@ -8,7 +8,8 @@ export type Channels =
   | 'rescan-songs'
   | 'like-song'
   | 'prevent-sleep'
-  | 'resume-sleep';
+  | 'resume-sleep'
+  | 'check-dev';
 
 const electronHandler = {
   ipcRenderer: {

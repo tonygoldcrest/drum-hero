@@ -17,7 +17,6 @@ import {
   shell,
   ipcMain,
   protocol,
-  screen,
   powerSaveBlocker,
 } from 'electron';
 import { autoUpdater } from 'electron-updater';
@@ -77,6 +76,13 @@ ipcMain.on('rescan-songs', async (event) => {
   });
 });
 
+const isDebug =
+  process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
+
+ipcMain.on('check-dev', async (event) => {
+  event.reply('check-dev', isDebug);
+});
+
 ipcMain.on('like-song', async (event, id, liked) => {
   store.set(`songs.${id}.liked`, liked);
 });
@@ -94,11 +100,8 @@ if (process.env.NODE_ENV === 'production') {
   sourceMapSupport.install();
 }
 
-const isDebug =
-  process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
-
 if (isDebug) {
-  require('electron-debug')();
+  // require('electron-debug')();
 }
 
 const installExtensions = async () => {
@@ -131,17 +134,12 @@ const createWindow = async () => {
     return path.join(RESOURCES_PATH, ...paths);
   };
 
-  const displays = screen.getAllDisplays();
-  const externalDisplay = displays.find((display) => {
-    return display.bounds.x !== 0 || display.bounds.y !== 0;
-  });
-
   mainWindow = new BrowserWindow({
     show: false,
-    x: externalDisplay ? externalDisplay.bounds.x + 50 : 0,
-    y: externalDisplay ? externalDisplay.bounds.y + 50 : 0,
-    width: externalDisplay ? externalDisplay.bounds.width : 1024,
-    height: externalDisplay ? externalDisplay.bounds.height : 728,
+    x: 0,
+    y: 0,
+    width: 1024,
+    height: 728,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       preload: app.isPackaged
@@ -201,21 +199,16 @@ protocol.registerSchemesAsPrivileged([
 app
   .whenReady()
   .then(() => {
-    // protocol.handle('gh', (request) =>
-    //   net.fetch(
-    //     `file://${decodeURIComponent(request.url.slice('gh://'.length))}`,
-    //   ),
-    // );
     protocol.registerFileProtocol('gh', (request, callback) => {
       const url = decodeURIComponent(request.url.substr(5));
       callback({ path: url });
     });
 
     createWindow();
-    // app.on('activate', () => {
-    //   // On macOS it's common to re-create a window in the app when the
-    //   // dock icon is clicked and there are no other windows open.
-    //   if (mainWindow === null) createWindow();
-    // });
+    app.on('activate', () => {
+      // On macOS it's common to re-create a window in the app when the
+      // dock icon is clicked and there are no other windows open.
+      if (mainWindow === null) createWindow();
+    });
   })
   .catch(console.log);

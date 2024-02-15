@@ -34,6 +34,7 @@ export function SongView() {
   const [audioPlayer, setAudioPlayer] = useState<AudioPlayer | null>(null);
   const [trackData, setTrackData] = useState<TrackConfig[]>([]);
   const [volumeControls, setVolumeControls] = useState<VolumeControl[]>([]);
+  const [isDev, setIsDev] = useState(true);
 
   const { id } = useParams();
   const navigate = useNavigate();
@@ -44,6 +45,14 @@ export function SongView() {
     return () => {
       window.electron.ipcRenderer.sendMessage('resume-sleep');
     };
+  }, []);
+
+  useEffect(() => {
+    window.electron.ipcRenderer.sendMessage('check-dev');
+
+    window.electron.ipcRenderer.once('check-dev', (dev: boolean) => {
+      setIsDev(dev);
+    });
   }, []);
 
   const loadSong = useCallback(() => {
@@ -107,10 +116,13 @@ export function SongView() {
     return () => {
       clearInterval(audioPolling);
 
-      audioPlayer.stop();
-      // audioPlayer.destroy();
+      if (isDev) {
+        audioPlayer.stop();
+      } else {
+        audioPlayer.destroy();
+      }
     };
-  }, [audioPlayer]);
+  }, [audioPlayer, isDev]);
 
   useEffect(() => {
     if (volumeControls.length === 0 || !audioPlayer) {
