@@ -1,6 +1,6 @@
 # <img width="64" alt="image" src="https://github.com/peancored/drum-hero/assets/5630034/968da3e0-11e7-4e99-94e3-4aa8df19dc38"> Drum Hero
 
-Play your favourite Clone Hero drum tracks, assisted by sheet music.
+Play your favourite CloneHero tracks on drums, assisted by sheet music.
 
 [DOWNLOAD](https://github.com/peancored/drum-hero/releases/tag/v0.1.0)
 
