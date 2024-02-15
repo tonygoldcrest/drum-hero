@@ -1,12 +1,12 @@
 # <img width="64" alt="image" src="https://github.com/peancored/drum-hero/assets/5630034/968da3e0-11e7-4e99-94e3-4aa8df19dc38"> Drum Hero
 
-Play your favourite CloneHero tracks on drums, assisted by sheet music.
+Play your favourite Clone Hero tracks on drums, assisted by sheet music.
 
 [DOWNLOAD](https://github.com/peancored/drum-hero/releases/tag/v0.1.0)
 
 ## Why?
 
-Finding drumless tracks with sheet music to play along can be daunting. Thankfully, CloneHero provides both. It has thousands of songs with what is essentially sheet music and for many of them it's possible to disable drum audio. Albeit, the notes in these tracks are not 100% correct, they are often close enough. 
+Finding drumless tracks with sheet music to play along can be daunting. Thankfully, Clone Hero provides both. It has thousands of songs with what is essentially sheet music and for many of them it's possible to disable drum audio. Albeit, the notes in these tracks are not 100% correct, they are often close enough. 
 
 My goal was to create a tool that I can use in conjunction with CloneHero to start moving away from only playing it to something more serious. The next step for me is to learn to sightread the actual music, and this tool helps tremendously with that.
 
