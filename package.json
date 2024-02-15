@@ -1,5 +1,6 @@
 {
   "description": "Play your favorite Clone Hero drum tracks",
+  "version": "0.1.0",
   "keywords": [
     "clonehero",
     "drums",
@@ -24,7 +25,8 @@
     "build:renderer": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.prod.ts",
     "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && npm run build:dll",
     "lint": "cross-env NODE_ENV=development eslint . --ext .js,.jsx,.ts,.tsx",
-    "package": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never && npm run build:dll",
+    "package": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build -w --x64 --mac --publish never && npm run build:dll",
+    "package:win": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build -w --x64 --publish never && npm run build:dll",
     "rebuild": "electron-rebuild --parallel --types prod,dev,optional --module-dir release/app",
     "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run start:renderer",
     "start:main": "cross-env NODE_ENV=development electronmon -r ts-node/register/transpile-only .",
@@ -172,6 +174,7 @@
   },
   "build": {
     "productName": "DrumHero",
+    "buildVersion": "0.1.0",
     "appId": "org.dh.DrumHero",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",

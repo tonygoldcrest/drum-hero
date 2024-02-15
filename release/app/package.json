@@ -1,12 +1,11 @@
 {
-  "name": "electron-react-boilerplate",
-  "version": "4.6.0",
-  "description": "A foundation for scalable desktop apps",
+  "name": "drum-hero",
+  "version": "0.1.0",
+  "description": "Play your favorite Clone Hero drum tracks",
   "license": "MIT",
   "author": {
-    "name": "Electron React Boilerplate Maintainers",
-    "email": "electronreactboilerplate@gmail.com",
-    "url": "https://github.com/electron-react-boilerplate"
+    "name": "Anton Korolkov",
+    "email": "peancored@gmail.com"
   },
   "main": "./dist/main/main.js",
   "scripts": {
