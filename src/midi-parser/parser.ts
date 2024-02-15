@@ -63,6 +63,7 @@ export interface MidiMapping {
 export class MidiParser {
   mapping: { [key in Difficulty]: MidiMapping } = {
     expert: {
+      95: 'e/4', // kick
       96: 'f/4', // kick
       97: 'c/5', // snare
       98: 'g/5/x2', // yellow tom

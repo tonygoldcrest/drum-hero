@@ -23,6 +23,7 @@ const STAVE_WIDTH = 600;
 const STAVE_PER_ROW = 2;
 
 const NOTE_COLOR_MAP: { [key: string]: string } = {
+  'e/4': '#ff793f', // orange
   'f/4': '#ff793f', // orange
   'c/5': '#e74c3c', // red
   'g/5/x2': '#ffb142', // yellow
