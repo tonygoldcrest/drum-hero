@@ -15,7 +15,7 @@ My goal was to create a tool that I can use to start moving away from only playi
 ### 1. Select your Clone Hero Library directory
 If you don't have one, download songs from known sources you can find online.
 
-### 2. Search for the song you want to play
+### 2. Search for a song you want to play
 <img width="768" alt="image" src="https://github.com/peancored/drum-hero/assets/5630034/b2b1cd66-9fda-4a38-855e-52b0646b013c">
 
 #### FYI
