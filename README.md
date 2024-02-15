@@ -19,6 +19,7 @@ If you don't have one, download songs from known sources you can find online.
 <img width="768" alt="image" src="https://github.com/peancored/drum-hero/assets/5630034/b2b1cd66-9fda-4a38-855e-52b0646b013c">
 
 #### FYI
+* If you chose an incorrect CloneHero directory, press the green floating button to browse again
 * You can add a song you like to favorites by pressing the like button to make sure it always appears on top.
 
 ### 3. Press play and enjoy jamming along to your favorite track
