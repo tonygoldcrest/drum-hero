@@ -6,7 +6,7 @@ Play your favourite Clone Hero drum tracks, assisted by sheet music.
 
 ## Why?
 
-Finding drumless tracks with sheet music to play along can be daunting. Thankfully, CloneHero provides both. Albeit, the notes are not 100% correct, they are often close enough. 
+Finding drumless tracks with sheet music to play along can be daunting. Thankfully, CloneHero provides both. It has thousands of songs with what is essentially sheet music and for many of them it's possible to disable drum audio. Albeit, the notes in these tracks are not 100% correct, they are often close enough. 
 
 My goal was to create a tool that I can use in conjunction with CloneHero to start moving away from only playing it to something more serious. The next step for me is to learn to sightread the actual music, and this tool helps tremendously with that. The added bonus is the ability to disable the drum track to have an uninterrupted drumming experience.
 
