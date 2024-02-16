@@ -42,7 +42,6 @@ If you don't have one, download songs from known sources you can find online.
 ## Known bugs
 
 * Triplets sometimes render incorrectly
-* GH charts are rendered incorrectly
 
 ## Acknowledgements
 
