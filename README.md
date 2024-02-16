@@ -34,9 +34,9 @@ If you don't have one, download songs from known sources you can find online.
 
 ## Roadmap
 
-- [ ] 5-lane track support (GH songs are not supported for now)
+- [x] 5-lane track support (GH songs are not supported for now)
 - [ ] .chart support for custom charts.
-- [ ] Double-kick support
+- [x] Double-kick support
 - [ ] Practice mode - selecting measures makes the song loop within them
 
 ## Known bugs
