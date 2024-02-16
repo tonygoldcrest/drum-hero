@@ -2,7 +2,7 @@
 
 Play your favourite Clone Hero tracks on drums, assisted by sheet music.
 
-[DOWNLOAD](https://github.com/peancored/drum-hero/releases/tag/v0.1.0)
+[DOWNLOAD](https://github.com/peancored/drum-hero/releases)
 
 ## Why?
 
