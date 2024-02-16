@@ -346,6 +346,7 @@ export function SongView() {
                   difficulty={difficulty}
                   showBarNumbers={showBarNumbers}
                   enableColors={enableColors}
+                  isFiveLane={songData.five_lane_drums === 'True'}
                   onSelectMeasure={(time) => {
                     if (!audioPlayer) {
                       return;

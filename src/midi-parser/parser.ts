@@ -66,30 +66,66 @@ export class MidiParser {
       95: 'e/4', // kick
       96: 'f/4', // kick
       97: 'c/5', // snare
-      98: 'g/5/x2', // yellow tom
-      99: 'f/5/x2', // blue tom
-      100: 'a/5/x2', // green tom
+      98: 'g/5/x2', // yellow cymbal
+      99: 'f/5/x2', // blue cymbal
+      100: 'a/5/x2', // green cymbal
     },
     hard: {
       84: 'f/4', // kick
       85: 'c/5', // snare
-      86: 'g/5/x2', // yellow tom
-      87: 'f/5/x2', // blue tom
-      88: 'a/5/x2', // green tom
+      86: 'g/5/x2', // yellow cymbal
+      87: 'f/5/x2', // blue cymbal
+      88: 'a/5/x2', // green cymbal
     },
     medium: {
       72: 'f/4', // kick
       73: 'c/5', // snare
-      74: 'g/5/x2', // yellow tom
-      75: 'f/5/x2', // blue tom
-      76: 'a/5/x2', // green tom
+      74: 'g/5/x2', // yellow cymbal
+      75: 'f/5/x2', // blue cymbal
+      76: 'a/5/x2', // green cymbal
     },
     easy: {
       60: 'f/4', // kick
       61: 'c/5', // snare
-      62: 'g/5/x2', // yellow tom
-      63: 'f/5/x2', // blue tom
-      64: 'a/5/x2', // green tom
+      62: 'g/5/x2', // yellow cymbal
+      63: 'f/5/x2', // blue cymbal
+      64: 'a/5/x2', // green cymbal
+    },
+  };
+
+  mappingFiveLane: { [key in Difficulty]: MidiMapping } = {
+    expert: {
+      95: 'e/4', // kick
+      96: 'f/4', // kick
+      97: 'c/5', // snare
+      98: 'g/5/x2', // yellow cymbal
+      99: 'd/5', // blue tom
+      100: 'a/5/x2', // green cymbal
+      101: 'a/4', // green tom
+    },
+    hard: {
+      84: 'f/4', // kick
+      85: 'c/5', // snare
+      86: 'g/5/x2', // yellow cymbal
+      87: 'd/5', // blue tom
+      88: 'a/5/x2', // green cymbal
+      89: 'a/4', // green tom
+    },
+    medium: {
+      72: 'f/4', // kick
+      73: 'c/5', // snare
+      74: 'g/5/x2', // yellow cymbal
+      75: 'd/5', // blue tom
+      76: 'a/5/x2', // green cymbal
+      77: 'a/4', // green tom
+    },
+    easy: {
+      60: 'f/4', // kick
+      61: 'c/5', // snare
+      62: 'g/5/x2', // yellow cymbal
+      63: 'd/5', // blue tom
+      64: 'a/5/x2', // green cymbal
+      65: 'a/4', // green tom
     },
   };
 
@@ -120,7 +156,11 @@ export class MidiParser {
 
   durationMap: { [key: number]: Duration };
 
-  constructor(data: MidiJSON, difficulty: Difficulty = Difficulty.expert) {
+  constructor(
+    data: MidiJSON,
+    isFiveLane: boolean,
+    difficulty: Difficulty = Difficulty.expert,
+  ) {
     const drumPart = data.tracks.find((track) => track.name === 'PART DRUMS');
 
     if (!drumPart) {
@@ -133,7 +173,7 @@ export class MidiParser {
 
     this.durationMap = this.constructDurationMap();
 
-    this.processNotes(drumPart, difficulty);
+    this.processNotes(drumPart, isFiveLane, difficulty);
     this.createMeasures();
     this.fillBeats();
     this.extendNoteDuration();
@@ -141,13 +181,19 @@ export class MidiParser {
     this.flattenMeasures();
   }
 
-  processNotes(trackData: TrackJSON, difficulty: Difficulty) {
+  processNotes(
+    trackData: TrackJSON,
+    isFiveLane: boolean,
+    difficulty: Difficulty,
+  ) {
+    const mapping = isFiveLane ? this.mappingFiveLane : this.mapping;
+
     trackData.notes.forEach((note) => {
-      if (this.mapping[difficulty][note.midi]) {
+      if (mapping[difficulty][note.midi]) {
         const tickData = this.rawMidiNotes.get(note.ticks) ?? [];
         tickData.push({
           note,
-          key: this.mapping[difficulty][note.midi],
+          key: mapping[difficulty][note.midi],
         });
         this.rawMidiNotes.set(note.ticks, tickData);
       } else if (this.tomModifiers[note.midi]) {

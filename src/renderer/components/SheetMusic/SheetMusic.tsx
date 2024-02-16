@@ -11,6 +11,7 @@ export interface SheetMusicProps {
   currentTime: number;
   onSelectMeasure: (time: number) => void;
   difficulty: Difficulty;
+  isFiveLane: boolean;
 }
 
 export function SheetMusic({
@@ -20,6 +21,7 @@ export function SheetMusic({
   currentTime,
   onSelectMeasure,
   difficulty,
+  isFiveLane,
 }: SheetMusicProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const highlightsRef = useRef<RefObject<HTMLButtonElement>[]>([]);
@@ -44,8 +46,8 @@ export function SheetMusic({
       return;
     }
 
-    setParsedMidi(new MidiParser(midi.toJSON(), difficulty));
-  }, [midi, difficulty]);
+    setParsedMidi(new MidiParser(midi.toJSON(), isFiveLane, difficulty));
+  }, [midi, isFiveLane, difficulty]);
 
   useEffect(() => {
     if (!vexflowContainerRef.current || !parsedMidi) {
