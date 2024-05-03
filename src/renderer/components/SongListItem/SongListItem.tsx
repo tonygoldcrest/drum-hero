@@ -1,4 +1,3 @@
-import { CSSProperties } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faChartSimple,
@@ -21,17 +20,15 @@ import { SongData } from '../../../types';
 
 export interface SongListItemProps {
   songData: SongData;
-  style: CSSProperties;
   onLikeChange: (id: string, liked: boolean) => void;
 }
 
 export function SongListItem({
   songData: { albumCover, id, name, artist, charter, diff_drums, liked },
-  style,
   onLikeChange,
 }: SongListItemProps) {
   return (
-    <Wrapper to={{ pathname: `/${id}` }} style={style}>
+    <Wrapper to={{ pathname: `/${id}` }}>
       <Album src={albumCover} />
       <MainInfo>
         <Name>{name}</Name>

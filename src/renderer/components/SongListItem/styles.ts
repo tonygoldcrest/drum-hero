@@ -1,12 +1,8 @@
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { theme } from '../../theme';
 
 export const Wrapper = styled(Link)`
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   display: flex;
   border-bottom: 1px solid #e5e1da;
@@ -16,15 +12,10 @@ export const Wrapper = styled(Link)`
   background: ${theme.color.foreground};
   align-items: center;
   transition: box-shadow 0.15s ease-in-out;
-
-  &:hover {
-    box-shadow: ${theme.boxShadow.soft};
-    z-index: 1;
-  }
 `;
 
 export const Album = styled.img`
-  height: 100%;
+  height: 80px;
   width: auto;
   object-fit: contain;
   aspect-ratio: 1;

@@ -1,6 +1,6 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useRef } from 'react';
-import { VirtualList, Wrapper } from './styles';
+import { VirtualList, VirtualListItem, Wrapper } from './styles';
 import { SongListItem } from '../SongListItem/SongListItem';
 import { SongData } from '../../../types';
 
@@ -30,15 +30,18 @@ export function SongList({ songList, className, onLikeChange }: SongListProps) {
           const songData = songList[virtualItem.index];
 
           return (
-            <SongListItem
-              songData={songData}
-              onLikeChange={onLikeChange}
+            <VirtualListItem
+              ref={rowVirtualizer.measureElement}
               key={songData.id}
+              data-index={virtualItem.index}
               style={{
-                height: `${virtualItem.size}px`,
-                transform: `translateY(${virtualItem.start}px)`,
+                transform: `translateY(${
+                  virtualItem.start - rowVirtualizer.options.scrollMargin
+                }px)`,
               }}
-            />
+            >
+              <SongListItem songData={songData} onLikeChange={onLikeChange} />
+            </VirtualListItem>
           );
         })}
       </VirtualList>

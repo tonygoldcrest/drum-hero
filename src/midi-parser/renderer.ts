@@ -11,6 +11,7 @@ import {
   Dot,
   Barline,
   Tuplet,
+  Voice,
 } from 'vexflow';
 import { Measure, MidiParser } from './parser';
 
@@ -47,7 +48,7 @@ export function renderMusic(
   const renderer = new Renderer(elementRef.current, Renderer.Backends.SVG);
 
   const context = renderer.getContext();
-  const lineHeight = showBarNumbers ? 150 : 110;
+  const lineHeight = showBarNumbers ? 180 : 130;
 
   renderer.resize(
     STAVE_WIDTH * STAVE_PER_ROW + 10,
@@ -135,6 +136,13 @@ function renderMeasure(
     return staveNote;
   });
 
+  const voice = new Voice({
+    num_beats: measure.timeSig[0],
+    beat_value: measure.timeSig[1],
+  })
+    .setStrict(false)
+    .addTickables(notes);
+
   const drawableTuplets = tuplets.map((tupletNotes) => new Tuplet(tupletNotes));
 
   const beams = Beam.generateBeams(notes, {
@@ -142,14 +150,16 @@ function renderMeasure(
     stem_direction: -1,
   });
 
-  Formatter.FormatAndDraw(context, stave, notes);
+  new Formatter().joinVoices([voice]).format([voice], STAVE_WIDTH - 40);
 
-  drawableTuplets.forEach((tuplet) => {
-    tuplet.setContext(context).draw();
-  });
+  voice.draw(context, stave);
 
   beams.forEach((b) => {
     b.setContext(context).draw();
+  });
+
+  drawableTuplets.forEach((tuplet) => {
+    tuplet.setContext(context).draw();
   });
 
   return stave;

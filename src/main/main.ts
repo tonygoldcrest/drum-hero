@@ -44,7 +44,7 @@ ipcMain.on('load-song', async (event, id) => {
   const songData = (store.get('songs') as StorageSchema['songs'])[id];
 
   glob(
-    `${songData.dir}/*(*.mid|*.ogg)`,
+    `${songData.dir}/*(*.mid|*.ogg|*.opus)`,
     { ignore: [`${songData.dir}/crowd.ogg`, `${songData.dir}/preview.ogg`] },
     (err, files) => {
       const midiFilePath = files.find((file) => path.extname(file) === '.mid');
@@ -52,7 +52,7 @@ ipcMain.on('load-song', async (event, id) => {
         return;
       }
       const audio = files
-        .filter((file) => path.extname(file) === '.ogg')
+        .filter((file) => ['.ogg', '.opus'].includes(path.extname(file)))
         .map((file) => ({
           src: `gh://${file}`,
           name: path.parse(file).name,
