@@ -4,6 +4,19 @@ Play your favourite Clone Hero tracks on drums, assisted by sheet music.
 
 [DOWNLOAD](https://github.com/peancored/drum-hero/releases)
 
+## Mac Users
+
+If you see this message pop up, that means that you need to remove the executable from quarantine. It's not signed, since it would require paying for Apple developer account.
+
+<img width="180" alt="image" src="https://github.com/peancored/drum-hero/assets/5630034/6f454fb1-55e7-482a-abad-bce6c41b161e">
+
+To remove from quarantine, open a terminal and run:
+
+```
+# Change the path if necessary
+xattr -r -d com.apple.quarantine /Applications/DrumHero.app
+```
+
 ## Why?
 
 Finding drumless tracks with sheet music to play along can be daunting. Thankfully, Clone Hero provides both. It has thousands of songs with what is essentially sheet music and for many of them it's possible to disable the drum audio. Albeit, the notes in these tracks are not 100% correct, they are often close enough. 
