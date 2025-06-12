@@ -36,6 +36,8 @@ export async function parseAndSaveSongs(
   store.delete('songs');
 
   glob(`${result.filePaths[0]}/**/notes.mid`, {}, (err, files) => {
+    const supportedImageExtensions = ['png', 'jpg', 'jpeg'];
+
     const songList = files
       .map((file) => path.join(path.dirname(file), 'song.ini'))
       .filter((file) => fs.existsSync(file))
@@ -43,14 +45,18 @@ export async function parseAndSaveSongs(
         info: ini.parse(fs.readFileSync(file, 'utf-8')),
         dir: path.dirname(file),
       }))
-      .map(({ info, dir }) => ({
-        id: randomUUID(),
-        dir,
-        albumCover: fs.existsSync(path.join(dir, 'album.png'))
-          ? `gh:///${path.join(dir, 'album.png')}`
-          : null,
-        ...(info.song ?? info.Song ?? info),
-      }));
+      .map(({ info, dir }) => {
+        const albumCoverPath = supportedImageExtensions
+          .map(ext => path.join(dir, `album.${ext}`))
+          .find(p => fs.existsSync(p));
+
+        return {
+          id: randomUUID(),
+          dir,
+          albumCover: albumCoverPath ? `gh:///${albumCoverPath}` : null,
+          ...(info.song ?? info.Song ?? info),
+        };
+      });
 
     const songs = songList.reduce((acc, song) => {
       acc[song.id] = song;
