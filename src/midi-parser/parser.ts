@@ -1,53 +1,26 @@
 import { HeaderJSON, MidiJSON, TrackJSON } from '@tonejs/midi';
 import { NoteJSON } from '@tonejs/midi/dist/Note';
 
-export interface Note {
-  notes: string[];
-  dotted: boolean;
-  duration: string;
-  isTriplet: boolean;
-  isRest: boolean;
-  tick: number;
-  durationTicks?: number;
-}
-
-export interface Beat {
-  notes: Note[];
-  startTick: number;
-  endTick: number;
-}
-
-export interface Measure {
-  timeSig: [number, number];
-  sigChange: boolean;
-  hasClef: boolean;
-  notes: Note[];
-  beats: Beat[];
-  startTick: number;
-  endTick: number;
-  durationTicks?: number;
-}
-
-export interface RawMidiNote {
-  note: NoteJSON;
-  key: string;
-}
-
-export interface Modifier {
-  forNotes: number[];
-  key: string;
-}
-
-export interface ModifierNote {
-  note: NoteJSON;
-  modifier: Modifier;
-}
-
-export interface Duration {
-  duration?: string;
-  isTriplet?: boolean;
-  dotted?: boolean;
-}
+/**
+ * Clone Hero drum midi -> sheet music model.
+ *
+ * Every charted gem is a zero-length midi event, so rhythm has to be
+ * inferred. The pipeline:
+ *
+ *  1. Map midi pitches to drum staff keys (applying pro-drums tom markers)
+ *     and split everything into two notation voices: hands (snare, toms,
+ *     cymbals, stems up) and feet (kick, stems down).
+ *  2. Build measures/beats from the time signature track.
+ *  3. For every beat of every voice, fit the onsets against a set of
+ *     candidate subdivision grids (straight, dotted, triplet, quintuplet,
+ *     septuplet, ...). Each candidate is scored by how far the onsets are
+ *     from its grid points plus a complexity prior, so an exact chart is
+ *     reproduced exactly and a humanized chart snaps to the most plausible
+ *     interpretation. A beat can also be split in half and each half fitted
+ *     independently (e.g. straight 16ths followed by a 16th triplet).
+ *  4. The winning grid is rendered into notes/rests whose durations merge
+ *     empty grid slots, with tuplet groups emitted as explicit metadata.
+ */
 
 export enum Difficulty {
   easy = 'easy',
@@ -58,6 +31,402 @@ export enum Difficulty {
 
 export interface MidiMapping {
   [key: number]: string;
+}
+
+export type VoiceId = 'hands' | 'feet';
+
+export interface TupletMeta {
+  id: number;
+  numNotes: number;
+  notesOccupied: number;
+}
+
+export interface Note {
+  notes: string[];
+  duration: string;
+  dots: number;
+  isRest: boolean;
+  tick: number;
+  tupletId?: number;
+}
+
+export interface MeasureVoice {
+  id: VoiceId;
+  notes: Note[];
+  tuplets: TupletMeta[];
+}
+
+export interface Measure {
+  timeSig: [number, number];
+  sigChange: boolean;
+  hasClef: boolean;
+  isCompound: boolean;
+  startTick: number;
+  endTick: number;
+  voices: MeasureVoice[];
+}
+
+export interface Modifier {
+  forNotes: number[];
+  key: string;
+}
+
+interface Onset {
+  tick: number;
+  keys: string[];
+}
+
+interface Meter {
+  beatsPerMeasure: number;
+  beatTicks: number;
+  beatFraction: number;
+  isCompound: boolean;
+}
+
+interface GridCandidate {
+  divisions: number;
+  notatedDivisor: number;
+  tuplet: { numNotes: number; notesOccupied: number } | null;
+  penalty: number;
+}
+
+interface GridFit {
+  candidate: GridCandidate;
+  score: number;
+  slots: number[];
+}
+
+interface SpanFit {
+  score: number;
+  events: Note[];
+  tuplets: TupletMeta[];
+}
+
+interface MarkerInterval {
+  startTick: number;
+  endTick: number;
+}
+
+interface BeatLocation {
+  measureIndex: number;
+  beatIndex: number;
+}
+
+const VOICE_IDS: VoiceId[] = ['hands', 'feet'];
+
+const FEET_KEYS = new Set(['e/4', 'f/4']);
+
+const REST_KEY = 'b/4';
+
+// An onset further than this fraction of a grid slot from every grid point
+// disqualifies the candidate (unless nothing else fits).
+const MAX_SLOT_ERROR = 0.35;
+
+// Flat cost of notating a beat as two independent half-beat groups.
+const SPLIT_PENALTY = 0.04;
+
+// Candidate subdivisions of a plain (non-dotted) beat. `notatedDivisor` is
+// the binary subdivision the written note values come from; for tuplet grids
+// the remaining scaling is carried by the tuplet ratio. Penalties encode how
+// "exotic" a reading is, so when several grids explain the onsets equally
+// well the simplest one wins (every n=2 pattern also fits n=4, etc).
+const SIMPLE_GRIDS: GridCandidate[] = [
+  { divisions: 1, notatedDivisor: 1, tuplet: null, penalty: 0 },
+  { divisions: 2, notatedDivisor: 2, tuplet: null, penalty: 0.01 },
+  { divisions: 4, notatedDivisor: 4, tuplet: null, penalty: 0.02 },
+  { divisions: 8, notatedDivisor: 8, tuplet: null, penalty: 0.045 },
+  { divisions: 16, notatedDivisor: 16, tuplet: null, penalty: 0.09 },
+  {
+    divisions: 3,
+    notatedDivisor: 2,
+    tuplet: { numNotes: 3, notesOccupied: 2 },
+    penalty: 0.06,
+  },
+  {
+    divisions: 6,
+    notatedDivisor: 4,
+    tuplet: { numNotes: 6, notesOccupied: 4 },
+    penalty: 0.1,
+  },
+  {
+    divisions: 12,
+    notatedDivisor: 8,
+    tuplet: { numNotes: 12, notesOccupied: 8 },
+    penalty: 0.15,
+  },
+  {
+    divisions: 5,
+    notatedDivisor: 4,
+    tuplet: { numNotes: 5, notesOccupied: 4 },
+    penalty: 0.26,
+  },
+  {
+    divisions: 7,
+    notatedDivisor: 4,
+    tuplet: { numNotes: 7, notesOccupied: 4 },
+    penalty: 0.3,
+  },
+  {
+    divisions: 9,
+    notatedDivisor: 8,
+    tuplet: { numNotes: 9, notesOccupied: 8 },
+    penalty: 0.34,
+  },
+];
+
+// Candidate subdivisions of a dotted (compound meter) beat. All of these are
+// expressible with plain or dotted values, no tuplets needed: dividing a
+// dotted quarter by 2 gives dotted eighths, by 3 gives straight eighths.
+const COMPOUND_GRIDS: GridCandidate[] = [
+  { divisions: 1, notatedDivisor: 1, tuplet: null, penalty: 0 },
+  { divisions: 3, notatedDivisor: 3, tuplet: null, penalty: 0.02 },
+  { divisions: 2, notatedDivisor: 2, tuplet: null, penalty: 0.05 },
+  { divisions: 6, notatedDivisor: 6, tuplet: null, penalty: 0.07 },
+  { divisions: 4, notatedDivisor: 4, tuplet: null, penalty: 0.1 },
+  { divisions: 12, notatedDivisor: 12, tuplet: null, penalty: 0.13 },
+];
+
+const BASE_DURATIONS: Array<[number, string]> = [
+  [1, 'w'],
+  [1 / 2, 'h'],
+  [1 / 4, 'q'],
+  [1 / 8, '8'],
+  [1 / 16, '16'],
+  [1 / 32, '32'],
+  [1 / 64, '64'],
+];
+
+// Note/rest value sizes (in grid slots) we are willing to merge into a single
+// written duration, largest first.
+const CHUNK_SIZES = [16, 12, 8, 6, 4, 3, 2, 1];
+
+const KEY_LETTERS = ['c', 'd', 'e', 'f', 'g', 'a', 'b'];
+
+function approxEqual(a: number, b: number) {
+  return Math.abs(a - b) < Math.max(a, b) * 1e-9;
+}
+
+/**
+ * Express a fraction of a whole note as a single written duration, if
+ * possible: either a plain binary value or a single-dotted one.
+ */
+function namedDuration(
+  fraction: number,
+): { duration: string; dots: number } | null {
+  const match = BASE_DURATIONS.find(
+    ([base]) =>
+      approxEqual(fraction, base) || approxEqual(fraction, base * 1.5),
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    duration: match[1],
+    dots: approxEqual(fraction, match[0]) ? 0 : 1,
+  };
+}
+
+function isPowerOfTwo(value: number) {
+  return Number.isInteger(Math.log2(value));
+}
+
+/**
+ * The slot index multiple a chunk of the given size must start on. Binary
+ * chunks sit on multiples of their own size, dotted chunks (3·2^k slots) on
+ * multiples of 2^(k+1) — e.g. a dotted eighth among 16ths can start on the
+ * beat or on the "and", but not on an off 16th.
+ */
+function chunkAlignment(size: number) {
+  return isPowerOfTwo(size) ? size : (size / 3) * 2;
+}
+
+/**
+ * Greedily split `span` grid slots starting at `startSlot` into the fewest
+ * metrically aligned written durations. `slotFraction` is the written value
+ * of one slot as a fraction of a whole note.
+ */
+function chunkSpan(
+  startSlot: number,
+  span: number,
+  slotFraction: number,
+  allowDotted: boolean,
+): number[] {
+  const fits = (candidate: number, position: number, remaining: number) => {
+    if (candidate > remaining || position % chunkAlignment(candidate)) {
+      return false;
+    }
+    const named = namedDuration(candidate * slotFraction);
+    return named !== null && (allowDotted || named.dots === 0);
+  };
+
+  const chunks: number[] = [];
+  let position = startSlot;
+  let remaining = span;
+
+  while (remaining > 0) {
+    const currentPosition = position;
+    const currentRemaining = remaining;
+    const size =
+      CHUNK_SIZES.find((candidate) =>
+        fits(candidate, currentPosition, currentRemaining),
+      ) ?? 1;
+
+    chunks.push(size);
+    position += size;
+    remaining -= size;
+  }
+
+  return chunks;
+}
+
+function keyPitch(key: string) {
+  const [letter, octave] = key.split('/');
+  return Number(octave) * 7 + KEY_LETTERS.indexOf(letter);
+}
+
+function sortKeys(keys: string[]) {
+  return [...new Set(keys)].sort((a, b) => keyPitch(a) - keyPitch(b));
+}
+
+/**
+ * Merge onsets closer than `threshold` ticks (humanized "simultaneous" hits
+ * and flams) into a single onset at the earlier tick.
+ */
+function mergeCloseOnsets(onsets: Onset[], threshold: number): Onset[] {
+  const merged: Onset[] = [];
+
+  onsets.forEach((onset) => {
+    const last = merged[merged.length - 1];
+    if (last && onset.tick - last.tick < threshold) {
+      last.keys.push(...onset.keys);
+    } else {
+      merged.push({ tick: onset.tick, keys: [...onset.keys] });
+    }
+  });
+
+  return merged;
+}
+
+function mergeClosestPair(onsets: Onset[]): Onset[] {
+  let closestIndex = 0;
+  let closestGap = Infinity;
+
+  onsets.forEach((onset, index) => {
+    if (index === 0) {
+      return;
+    }
+    const gap = onset.tick - onsets[index - 1].tick;
+    if (gap < closestGap) {
+      closestGap = gap;
+      closestIndex = index - 1;
+    }
+  });
+
+  return onsets
+    .map((onset, index) => {
+      if (index === closestIndex) {
+        return {
+          tick: onset.tick,
+          keys: [...onset.keys, ...onsets[index + 1].keys],
+        };
+      }
+      return onset;
+    })
+    .filter((_, index) => index !== closestIndex + 1);
+}
+
+function makeMeter(timeSig: [number, number], ppq: number): Meter {
+  const [numerator, denominator] = timeSig;
+  const pulseTicks = (ppq * 4) / denominator;
+  const isCompound = denominator >= 8 && numerator >= 6 && numerator % 3 === 0;
+  const beatsPerMeasure = isCompound ? numerator / 3 : numerator;
+  const beatTicks = isCompound ? pulseTicks * 3 : pulseTicks;
+
+  return {
+    beatsPerMeasure,
+    beatTicks,
+    beatFraction: beatTicks / (ppq * 4),
+    isCompound,
+  };
+}
+
+function intervalsCoverTick(intervals: MarkerInterval[], tick: number) {
+  let low = 0;
+  let high = intervals.length - 1;
+  let found = -1;
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    if (intervals[mid].startTick <= tick) {
+      found = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  return found >= 0 && intervals[found].endTick > tick;
+}
+
+/**
+ * Score every candidate grid against the onsets and return the best fit.
+ * Returns null only when every candidate collapses two onsets into the same
+ * slot (the caller then merges the offending onsets and retries).
+ */
+function pickGrid(
+  onsets: Onset[],
+  startTick: number,
+  durationTicks: number,
+  fraction: number,
+  candidates: GridCandidate[],
+): GridFit | null {
+  let strict: GridFit | null = null;
+  let loose: GridFit | null = null;
+
+  candidates.forEach((candidate) => {
+    if (!namedDuration(fraction / candidate.notatedDivisor)) {
+      return;
+    }
+
+    const spacing = durationTicks / candidate.divisions;
+    const slots: number[] = [];
+    let maxError = 0;
+    let totalError = 0;
+
+    const collision = onsets.some((onset) => {
+      const position = (onset.tick - startTick) / spacing;
+      const slot = Math.min(
+        candidate.divisions - 1,
+        Math.max(0, Math.round(position)),
+      );
+      if (slots.includes(slot)) {
+        return true;
+      }
+      slots.push(slot);
+      const error = Math.abs(position - slot);
+      maxError = Math.max(maxError, error);
+      totalError += error;
+      return false;
+    });
+
+    if (collision) {
+      return;
+    }
+
+    const score = totalError / onsets.length + maxError + candidate.penalty;
+    const fit = { candidate, score, slots };
+
+    if (maxError <= MAX_SLOT_ERROR && (!strict || score < strict.score)) {
+      strict = fit;
+    }
+    if (!loose || score < loose.score) {
+      loose = fit;
+    }
+  });
+
+  return strict ?? loose;
 }
 
 export class MidiParser {
@@ -146,15 +515,15 @@ export class MidiParser {
 
   measures: Measure[] = [];
 
-  rawMidiNotes: Map<number, RawMidiNote[]> = new Map();
+  header: HeaderJSON;
 
   endOfTrackTicks: number;
 
-  modifierNotes: ModifierNote[] = [];
+  private ppq: number;
 
-  header: HeaderJSON;
+  private meters: Meter[] = [];
 
-  durationMap: { [key: number]: Duration };
+  private nextTupletId = 0;
 
   constructor(
     data: MidiJSON,
@@ -167,56 +536,100 @@ export class MidiParser {
       throw new Error('no drum part');
     }
 
-    this.endOfTrackTicks = drumPart.endOfTrackTicks || 0;
-
     this.header = data.header;
+    this.ppq = data.header.ppq;
 
-    this.durationMap = this.constructDurationMap();
+    const lastNoteEnd = drumPart.notes.reduce(
+      (max, note) => Math.max(max, note.ticks + note.durationTicks),
+      0,
+    );
+    this.endOfTrackTicks = Math.max(drumPart.endOfTrackTicks ?? 0, lastNoteEnd);
 
-    this.processNotes(drumPart, isFiveLane, difficulty);
+    const onsets = this.collectOnsets(drumPart, isFiveLane, difficulty);
     this.createMeasures();
-    this.fillBeats();
-    this.extendNoteDuration();
-    this.processCompositeDuration();
-    this.flattenMeasures();
+    this.buildVoices(onsets);
   }
 
-  processNotes(
+  private collectOnsets(
     trackData: TrackJSON,
     isFiveLane: boolean,
     difficulty: Difficulty,
-  ) {
-    const mapping = isFiveLane ? this.mappingFiveLane : this.mapping;
+  ): Record<VoiceId, Onset[]> {
+    const mapping = (isFiveLane ? this.mappingFiveLane : this.mapping)[
+      difficulty
+    ];
 
+    const markerForGem = new Map<number, number>();
+    Object.entries(this.tomModifiers).forEach(([markerPitch, modifier]) => {
+      modifier.forNotes.forEach((gem) =>
+        markerForGem.set(gem, Number(markerPitch)),
+      );
+    });
+
+    const markerIntervals = new Map<number, MarkerInterval[]>();
     trackData.notes.forEach((note) => {
-      if (mapping[difficulty][note.midi]) {
-        const tickData = this.rawMidiNotes.get(note.ticks) ?? [];
-        tickData.push({
-          note,
-          key: mapping[difficulty][note.midi],
+      if (this.tomModifiers[note.midi]) {
+        const intervals = markerIntervals.get(note.midi) ?? [];
+        intervals.push({
+          startTick: note.ticks,
+          endTick: note.ticks + note.durationTicks,
         });
-        this.rawMidiNotes.set(note.ticks, tickData);
-      } else if (this.tomModifiers[note.midi]) {
-        this.modifierNotes.push({
-          note,
-          modifier: this.tomModifiers[note.midi],
-        });
+        markerIntervals.set(note.midi, intervals);
       }
     });
-  }
-
-  getNoteKey(note: RawMidiNote, modifiers: ModifierNote[]) {
-    return (
-      modifiers.find((modifier) =>
-        modifier.modifier.forNotes.includes(note.note.midi),
-      )?.modifier.key ?? note.key
+    markerIntervals.forEach((intervals) =>
+      intervals.sort((a, b) => a.startTick - b.startTick),
     );
+
+    const byTick: Record<VoiceId, Map<number, string[]>> = {
+      hands: new Map(),
+      feet: new Map(),
+    };
+
+    trackData.notes.forEach((note) => {
+      if (!mapping[note.midi]) {
+        return;
+      }
+
+      const key = this.gemKey(note, mapping, markerForGem, markerIntervals);
+      const voice: VoiceId = FEET_KEYS.has(key) ? 'feet' : 'hands';
+      const keys = byTick[voice].get(note.ticks) ?? [];
+      keys.push(key);
+      byTick[voice].set(note.ticks, keys);
+    });
+
+    const flamThreshold = this.ppq / 24;
+    const result = {} as Record<VoiceId, Onset[]>;
+
+    VOICE_IDS.forEach((voice) => {
+      const sorted = [...byTick[voice].entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([tick, keys]) => ({ tick, keys }));
+      result[voice] = mergeCloseOnsets(sorted, flamThreshold);
+    });
+
+    return result;
   }
 
-  createMeasures() {
-    const { ppq } = this.header;
-    const endOfTrackTicks = this.endOfTrackTicks ?? 0;
+  private gemKey(
+    note: NoteJSON,
+    mapping: MidiMapping,
+    markerForGem: Map<number, number>,
+    markerIntervals: Map<number, MarkerInterval[]>,
+  ): string {
+    const markerPitch = markerForGem.get(note.midi);
 
+    if (markerPitch !== undefined) {
+      const intervals = markerIntervals.get(markerPitch);
+      if (intervals && intervalsCoverTick(intervals, note.ticks)) {
+        return this.tomModifiers[markerPitch].key;
+      }
+    }
+
+    return mapping[note.midi];
+  }
+
+  private createMeasures() {
     const timeSignatures =
       this.header.timeSignatures.length > 0
         ? this.header.timeSignatures
@@ -230,303 +643,362 @@ export class MidiParser {
     let startTick = 0;
 
     timeSignatures.forEach((timeSigData, index) => {
-      const timeSignature: [number, number] = [
-        timeSigData.timeSignature[0],
-        timeSigData.timeSignature[1],
+      const timeSig: [number, number] = [
+        timeSigData.timeSignature[0] ?? 4,
+        timeSigData.timeSignature[1] ?? 4,
       ];
-      const pulsesPerDivision = ppq / (timeSignature[1] / 4);
-      const totalTimeSigTicks =
-        (timeSignatures[index + 1]?.ticks ?? endOfTrackTicks) -
+      const meter = makeMeter(timeSig, this.ppq);
+      const measureTicks = meter.beatsPerMeasure * meter.beatTicks;
+      const sectionTicks =
+        (timeSignatures[index + 1]?.ticks ?? this.endOfTrackTicks) -
         timeSigData.ticks;
-
-      const numberOfMeasures = Math.ceil(
-        totalTimeSigTicks / pulsesPerDivision / timeSignature[0],
+      const numberOfMeasures = Math.max(
+        0,
+        Math.ceil(sectionTicks / measureTicks - 1e-9),
       );
 
       for (let measure = 0; measure < numberOfMeasures; measure += 1) {
-        const endTick = startTick + timeSignature[0] * pulsesPerDivision;
-
         this.measures.push({
-          timeSig: timeSignature,
-          hasClef: index === 0 && measure === 0,
+          timeSig,
+          hasClef: this.measures.length === 0,
           sigChange: measure === 0,
-          notes: [],
-          beats: this.getBeats(timeSignature, startTick, endTick),
+          isCompound: meter.isCompound,
           startTick,
-          endTick,
+          endTick: startTick + measureTicks,
+          voices: [],
         });
+        this.meters.push(meter);
 
-        startTick += timeSignature[0] * pulsesPerDivision;
+        startTick += measureTicks;
       }
     });
   }
 
-  getBeats(
-    timeSignature: [number, number],
-    measureStartTick: number,
-    measureEndTick: number,
-  ): Beat[] {
-    const numberOfBeats = timeSignature[0];
-    const measureDuration = measureEndTick - measureStartTick;
-    const beatDuration = measureDuration / numberOfBeats;
-
-    return new Array(numberOfBeats).fill(null).map((_, index) => ({
-      startTick: measureStartTick + index * beatDuration,
-      endTick: measureStartTick + (index + 1) * beatDuration,
-      notes: [],
-    }));
-  }
-
-  fillBeats() {
-    const step = 1;
-
-    this.measures.forEach((measure) => {
-      measure.beats.forEach((beat) => {
-        for (
-          let currentTick = beat.startTick;
-          currentTick < beat.endTick;
-          currentTick += step
-        ) {
-          const tickNotes = this.rawMidiNotes.get(currentTick);
-
-          const currentModifierNotes = this.modifierNotes.filter(
-            (modifier) =>
-              currentTick >= modifier.note.ticks &&
-              currentTick < modifier.note.ticks + modifier.note.durationTicks,
-          );
-
-          if (tickNotes) {
-            beat.notes.push({
-              notes: tickNotes.map((note) =>
-                this.getNoteKey(note, currentModifierNotes),
-              ),
-              isRest: false,
-              dotted: false,
-              isTriplet: false,
-              duration: '32',
-              tick: currentTick,
-            });
-          } else if (currentTick === beat.startTick) {
-            beat.notes.push({
-              notes: ['b/4'],
-              isTriplet: false,
-              isRest: true,
-              dotted: false,
-              duration: '32r',
-              tick: currentTick,
-            });
-          }
-        }
-      });
-    });
-  }
-
-  flattenMeasures() {
-    this.measures.forEach((measure) => {
-      measure.notes = this.collapseQRests(
-        measure.beats.map((beat) => beat.notes).flat(),
-      );
-    });
-  }
-
-  collapseQRests(notes: Note[]) {
-    const result: Note[] = [];
-    let consecutiveRests: Note[] = [];
-
-    notes.forEach((note) => {
-      if (note.duration === 'qr' && consecutiveRests.length < 4) {
-        consecutiveRests.push(note);
-      } else {
-        if (consecutiveRests.length > 0) {
-          result.push(this.getCollapsedRest(consecutiveRests));
-          consecutiveRests = [];
-        }
-
-        result.push(note);
-      }
-    });
-
-    if (consecutiveRests.length > 0) {
-      result.push(this.getCollapsedRest(consecutiveRests));
+  private buildVoices(onsets: Record<VoiceId, Onset[]>) {
+    if (this.measures.length === 0) {
+      return;
     }
 
-    return result;
-  }
-
-  getCollapsedRest(notes: Note[]) {
-    let duration: string;
-    let dotted = false;
-    switch (notes.length) {
-      case 2:
-        duration = 'hr';
-        break;
-      case 3:
-        duration = 'hrd';
-        dotted = true;
-        break;
-      case 4:
-        duration = 'wr';
-        break;
-      default:
-        duration = 'qr';
-    }
-
-    return {
-      notes: ['b/4'],
-      isRest: true,
-      dotted,
-      isTriplet: false,
-      duration,
-      tick: 0,
+    const buckets = {
+      hands: this.bucketOnsets(onsets.hands),
+      feet: this.bucketOnsets(onsets.feet),
     };
-  }
 
-  extendNoteDuration() {
-    this.measures.forEach((measure) => {
-      measure.beats.forEach((beat) => {
-        beat.notes.forEach((note, index) => {
-          const noteDuration =
-            (beat.notes[index + 1]?.tick ?? beat.endTick) - note.tick;
+    this.measures.forEach((measure, measureIndex) => {
+      const meter = this.meters[measureIndex];
+      const voices: MeasureVoice[] = [];
 
-          note.durationTicks = noteDuration;
-
-          if (!this.durationMap[noteDuration]) {
-            note.duration = '';
-            return;
-          }
-
-          const { duration, dotted, isTriplet } =
-            this.durationMap[noteDuration];
-
-          note.duration = duration
-            ? `${duration}${note.isRest ? 'r' : ''}`
-            : '';
-
-          if (dotted) {
-            note.dotted = true;
-          }
-          if (isTriplet) {
-            note.isTriplet = true;
-          }
-        });
+      VOICE_IDS.forEach((voiceId) => {
+        const beatOnsets = buckets[voiceId][measureIndex];
+        if (beatOnsets.every((beat) => beat.length === 0)) {
+          return;
+        }
+        voices.push(
+          this.buildMeasureVoice(voiceId, measure, meter, beatOnsets),
+        );
       });
+
+      if (voices.length === 0) {
+        voices.push({
+          id: 'hands',
+          notes: [
+            {
+              notes: [REST_KEY],
+              duration: 'w',
+              dots: 0,
+              isRest: true,
+              tick: measure.startTick,
+            },
+          ],
+          tuplets: [],
+        });
+      }
+
+      measure.voices = voices;
     });
   }
 
-  processCompositeDuration() {
-    const availableDurations = Object.keys(this.durationMap).map((key) =>
-      Number(key),
+  /**
+   * Distribute onsets into [measure][beat] buckets. An onset within a small
+   * tolerance before a beat boundary belongs to the next beat — that catches
+   * negative humanization jitter at beat and measure boundaries.
+   */
+  private bucketOnsets(onsets: Onset[]): Onset[][][] {
+    const buckets = this.measures.map((_, measureIndex) =>
+      new Array(this.meters[measureIndex].beatsPerMeasure)
+        .fill(null)
+        .map(() => [] as Onset[]),
     );
 
-    this.measures.forEach((measure) => {
-      measure.beats.forEach((beat) => {
-        beat.notes = beat.notes
-          .map((note) => {
-            if (note.duration) {
-              return note;
-            }
-
-            const atomicDurations = this.getSubsets(
-              availableDurations,
-              note.durationTicks ?? 0,
-            );
-
-            if (atomicDurations.length === 0) {
-              return this.getClosestDuration(availableDurations, note);
-            }
-
-            return atomicDurations
-              .sort((a, b) => a.length - b.length)[0]
-              .sort((a, b) => b - a)
-              .map((durationTicks, index) => {
-                const { duration, dotted, isTriplet } =
-                  this.durationMap[durationTicks];
-
-                const isRest = note.isRest || index !== 0;
-                const newNote: Note = {
-                  isTriplet: isTriplet ?? false,
-                  dotted: dotted ?? false,
-                  durationTicks,
-                  isRest,
-                  tick: 0,
-                  duration: `${duration}${isRest ? 'r' : ''}`,
-                  notes: isRest ? ['b/4'] : note.notes,
-                };
-
-                return newNote;
-              });
-          })
-          .flat();
-      });
-    });
-  }
-
-  getClosestDuration(availableDurations: number[], note: Note) {
-    let durationDiff = Infinity;
-    let closestDurationKey = this.header.ppq / 16;
-    availableDurations.forEach((duration) => {
-      const diff = Math.abs(duration - (note.durationTicks ?? 0));
-      if (diff < durationDiff) {
-        closestDurationKey = duration;
-        durationDiff = diff;
-      }
+    onsets.forEach((onset) => {
+      const { measureIndex, beatIndex } = this.findBeat(onset.tick);
+      buckets[measureIndex][beatIndex].push(onset);
     });
 
-    const { duration, isTriplet, dotted } =
-      this.durationMap[closestDurationKey];
-
-    return [
-      {
-        isTriplet: isTriplet ?? false,
-        dotted: dotted ?? false,
-        durationTicks: note.durationTicks,
-        isRest: note.isRest,
-        tick: 0,
-        duration: `${duration}${note.isRest ? 'r' : ''}`,
-        notes: note.isRest ? ['b/4'] : note.notes,
-      },
-    ];
+    return buckets;
   }
 
-  getSubsets(array: number[], sum: number) {
-    const result: number[][] = [];
+  private findBeat(tick: number): BeatLocation {
+    let low = 0;
+    let high = this.measures.length - 1;
+    let measureIndex = this.measures.length - 1;
 
-    function fork(i = 0, s = 0, t: number[] = []) {
-      if (s === sum) {
-        result.push(t);
-        return;
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2);
+      if (this.measures[mid].startTick <= tick) {
+        measureIndex = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
       }
-      if (i === array.length) {
-        return;
-      }
-      if (s + array[i] <= sum) {
-        fork(i + 1, s + array[i], t.concat(array[i]));
-      }
-      fork(i + 1, s, t);
     }
 
-    fork();
+    const measure = this.measures[measureIndex];
+    const meter = this.meters[measureIndex];
+    let beatIndex = Math.min(
+      meter.beatsPerMeasure - 1,
+      Math.max(0, Math.floor((tick - measure.startTick) / meter.beatTicks)),
+    );
+
+    const beatEnd = measure.startTick + (beatIndex + 1) * meter.beatTicks;
+    if (beatEnd - tick <= meter.beatTicks / 32) {
+      if (beatIndex + 1 < meter.beatsPerMeasure) {
+        beatIndex += 1;
+      } else if (measureIndex + 1 < this.measures.length) {
+        return { measureIndex: measureIndex + 1, beatIndex: 0 };
+      }
+    }
+
+    return { measureIndex, beatIndex };
+  }
+
+  private buildMeasureVoice(
+    id: VoiceId,
+    measure: Measure,
+    meter: Meter,
+    beatOnsets: Onset[][],
+  ): MeasureVoice {
+    const notes: Note[] = [];
+    const tuplets: TupletMeta[] = [];
+    let beatIndex = 0;
+
+    while (beatIndex < meter.beatsPerMeasure) {
+      if (beatOnsets[beatIndex].length === 0) {
+        let run = 1;
+        while (
+          beatIndex + run < meter.beatsPerMeasure &&
+          beatOnsets[beatIndex + run].length === 0
+        ) {
+          run += 1;
+        }
+
+        // Collapse the run of silent beats into as few rests as the meter
+        // allows. Dotted rests read poorly in simple meters but are the norm
+        // in compound ones.
+        let slot = beatIndex;
+        chunkSpan(beatIndex, run, meter.beatFraction, meter.isCompound).forEach(
+          (size) => {
+            const named = namedDuration(size * meter.beatFraction);
+            if (named) {
+              notes.push({
+                notes: [REST_KEY],
+                duration: named.duration,
+                dots: named.dots,
+                isRest: true,
+                tick: Math.round(measure.startTick + slot * meter.beatTicks),
+              });
+            }
+            slot += size;
+          },
+        );
+
+        beatIndex += run;
+      } else {
+        const beatStart = measure.startTick + beatIndex * meter.beatTicks;
+        const fit = this.fitSpan(
+          beatOnsets[beatIndex],
+          beatStart,
+          meter.beatTicks,
+          meter.beatFraction,
+          meter.isCompound,
+          true,
+        );
+        notes.push(...fit.events);
+        tuplets.push(...fit.tuplets);
+        beatIndex += 1;
+      }
+    }
+
+    return { id, notes, tuplets };
+  }
+
+  /**
+   * Notate the onsets of one beat (or half-beat): pick the best-fitting
+   * subdivision grid and turn it into notes/rests, optionally preferring an
+   * independent fit of each half of the span.
+   */
+  private fitSpan(
+    onsets: Onset[],
+    startTick: number,
+    durationTicks: number,
+    fraction: number,
+    isCompound: boolean,
+    allowSplit: boolean,
+  ): SpanFit {
+    if (onsets.length === 0) {
+      const named = namedDuration(fraction) ?? { duration: 'q', dots: 0 };
+      return {
+        score: 0,
+        events: [
+          {
+            notes: [REST_KEY],
+            duration: named.duration,
+            dots: named.dots,
+            isRest: true,
+            tick: Math.round(startTick),
+          },
+        ],
+        tuplets: [],
+      };
+    }
+
+    const candidates = isCompound ? COMPOUND_GRIDS : SIMPLE_GRIDS;
+    let activeOnsets = onsets;
+    let fit = pickGrid(
+      activeOnsets,
+      startTick,
+      durationTicks,
+      fraction,
+      candidates,
+    );
+
+    // Every grid rejected means two onsets are too close to separate at any
+    // supported resolution — notate them as one chord and retry.
+    while (!fit && activeOnsets.length > 1) {
+      activeOnsets = mergeClosestPair(activeOnsets);
+      fit = pickGrid(
+        activeOnsets,
+        startTick,
+        durationTicks,
+        fraction,
+        candidates,
+      );
+    }
+
+    if (!fit) {
+      fit = {
+        candidate: candidates[0],
+        score: 0,
+        slots: [0],
+      };
+      activeOnsets = [activeOnsets[0]];
+    }
+
+    let result = this.buildSpanEvents(
+      fit,
+      activeOnsets,
+      startTick,
+      durationTicks,
+      fraction,
+    );
+
+    if (
+      allowSplit &&
+      !isCompound &&
+      activeOnsets.length > 1 &&
+      namedDuration(fraction / 2)
+    ) {
+      const mid = startTick + durationTicks / 2;
+      const tolerance = durationTicks / 32;
+      const left = activeOnsets.filter((onset) => mid - onset.tick > tolerance);
+      const right = activeOnsets.filter(
+        (onset) => mid - onset.tick <= tolerance,
+      );
+
+      const leftFit = this.fitSpan(
+        left,
+        startTick,
+        durationTicks / 2,
+        fraction / 2,
+        false,
+        false,
+      );
+      const rightFit = this.fitSpan(
+        right,
+        mid,
+        durationTicks / 2,
+        fraction / 2,
+        false,
+        false,
+      );
+      const splitScore = (leftFit.score + rightFit.score) / 2 + SPLIT_PENALTY;
+
+      if (splitScore < result.score) {
+        result = {
+          score: splitScore,
+          events: [...leftFit.events, ...rightFit.events],
+          tuplets: [...leftFit.tuplets, ...rightFit.tuplets],
+        };
+      }
+    }
 
     return result;
   }
 
-  constructDurationMap() {
-    const { ppq } = this.header;
+  private buildSpanEvents(
+    fit: GridFit,
+    onsets: Onset[],
+    startTick: number,
+    durationTicks: number,
+    fraction: number,
+  ): SpanFit {
+    const { candidate, slots } = fit;
+    const spacing = durationTicks / candidate.divisions;
+    const slotFraction = fraction / candidate.notatedDivisor;
 
-    return {
-      [ppq]: { duration: 'q' },
-      [ppq / 2]: { duration: '8' },
-      [ppq / 3]: { duration: '8', isTriplet: true },
-      [ppq / 2 + ppq / 4]: { duration: '8d', dotted: true },
-      [ppq / 4]: { duration: '16' },
-      [ppq / 4 + ppq / 8]: { duration: '16d', dotted: true },
-      [ppq / 6]: { duration: '16', isTriplet: true },
-      [ppq / 8]: { duration: '32' },
-      [ppq / 8 + ppq / 16]: { duration: '32d', dotted: true },
-      [ppq / 12]: { duration: '32', isTriplet: true },
-      [ppq / 16]: { duration: '64' },
-      [ppq / 16 + ppq / 32]: { duration: '64d', dotted: true },
-      [ppq / 24]: { duration: '64', isTriplet: true },
-    };
+    const occupants = new Map<number, Onset>();
+    slots.forEach((slot, index) => occupants.set(slot, onsets[index]));
+
+    const boundaries = [...new Set([0, ...slots])].sort((a, b) => a - b);
+    const events: Note[] = [];
+
+    boundaries.forEach((boundary, index) => {
+      const next = boundaries[index + 1] ?? candidate.divisions;
+      const onset = occupants.get(boundary);
+      let slot = boundary;
+
+      chunkSpan(boundary, next - boundary, slotFraction, true).forEach(
+        (size, chunkIndex) => {
+          const named = namedDuration(size * slotFraction);
+          if (named) {
+            const isRest = !onset || chunkIndex > 0;
+            events.push({
+              notes: isRest ? [REST_KEY] : sortKeys(onset.keys),
+              duration: named.duration,
+              dots: named.dots,
+              isRest,
+              tick: Math.round(startTick + slot * spacing),
+            });
+          }
+          slot += size;
+        },
+      );
+    });
+
+    const tuplets: TupletMeta[] = [];
+    if (candidate.tuplet && events.length > 1) {
+      const id = this.nextTupletId;
+      this.nextTupletId += 1;
+      events.forEach((event) => {
+        event.tupletId = id;
+      });
+      tuplets.push({
+        id,
+        numNotes: candidate.tuplet.numNotes,
+        notesOccupied: candidate.tuplet.notesOccupied,
+      });
+    }
+
+    return { score: fit.score, events, tuplets };
   }
 }

@@ -6,6 +6,7 @@ import {
   StaveNote,
   TextJustification,
   Formatter,
+  Fraction,
   ModifierPosition,
   Beam,
   Dot,
@@ -13,7 +14,7 @@ import {
   Tuplet,
   Voice,
 } from 'vexflow';
-import { Measure, MidiParser } from './parser';
+import { Measure, MeasureVoice, MidiParser, VoiceId } from './parser';
 
 export interface RenderData {
   stave: Stave;
@@ -34,6 +35,12 @@ const NOTE_COLOR_MAP: { [key: string]: string } = {
   'd/5': '#2980b9', // blue
   'a/4': '#27ae60', // green
 };
+
+// Hands take the upper voice (stems up), feet the lower one (stems down).
+// Rests of each voice sit away from the middle line so the voices don't
+// collide.
+const STEM_DIRECTION: Record<VoiceId, number> = { hands: 1, feet: -1 };
+const REST_KEY: Record<VoiceId, string> = { hands: 'b/4', feet: 'd/4' };
 
 export function renderMusic(
   elementRef: React.RefObject<HTMLDivElement>,
@@ -70,6 +77,76 @@ export function renderMusic(
   }));
 }
 
+function buildVoice(
+  measureVoice: MeasureVoice,
+  measure: Measure,
+  enableColors: boolean,
+) {
+  const stemDirection = STEM_DIRECTION[measureVoice.id];
+  const tupletGroups = new Map<number, StaveNote[]>();
+
+  const staveNotes = measureVoice.notes.map((note) => {
+    const isMeasureRest = note.isRest && note.duration === 'w';
+    const staveNote = new StaveNote({
+      keys: note.isRest ? [REST_KEY[measureVoice.id]] : note.notes,
+      duration: `${note.duration}${'d'.repeat(note.dots)}${
+        note.isRest ? 'r' : ''
+      }`,
+      align_center: isMeasureRest,
+      stem_direction: stemDirection,
+    });
+
+    if (note.dots > 0) {
+      Dot.buildAndAttach([staveNote], {
+        all: true,
+      });
+    }
+
+    if (enableColors && !note.isRest) {
+      staveNote.keys.forEach((key, keyIndex) => {
+        staveNote.setKeyStyle(keyIndex, { fillStyle: NOTE_COLOR_MAP[key] });
+      });
+    }
+
+    if (note.tupletId !== undefined) {
+      const group = tupletGroups.get(note.tupletId) ?? [];
+      group.push(staveNote);
+      tupletGroups.set(note.tupletId, group);
+    }
+
+    return staveNote;
+  });
+
+  // Tuplets scale note ticks, so they must exist before beaming/formatting.
+  const tuplets = measureVoice.tuplets
+    .filter((meta) => (tupletGroups.get(meta.id)?.length ?? 0) > 1)
+    .map(
+      (meta) =>
+        new Tuplet(tupletGroups.get(meta.id) as StaveNote[], {
+          num_notes: meta.numNotes,
+          notes_occupied: meta.notesOccupied,
+          location: stemDirection,
+        }),
+    );
+
+  const voice = new Voice({
+    num_beats: measure.timeSig[0],
+    beat_value: measure.timeSig[1],
+  })
+    .setStrict(false)
+    .addTickables(staveNotes);
+
+  const beams = Beam.generateBeams(staveNotes, {
+    flat_beams: true,
+    stem_direction: stemDirection,
+    groups: measure.isCompound
+      ? [new Fraction(3, measure.timeSig[1])]
+      : undefined,
+  });
+
+  return { voice, beams, tuplets };
+}
+
 function renderMeasure(
   context: RenderContext,
   measure: Measure,
@@ -100,66 +177,23 @@ function renderMeasure(
 
   stave.setContext(context).draw();
 
-  const tuplets: StaveNote[][] = [];
-  let currentTuplet: StaveNote[] | null = null;
+  const voicesData = measure.voices.map((measureVoice) =>
+    buildVoice(measureVoice, measure, enableColors),
+  );
+  const voices = voicesData.map(({ voice }) => voice);
 
-  const notes = measure.notes.map((note) => {
-    const staveNote = new StaveNote({
-      keys: note.notes,
-      duration: note.duration,
-      align_center: note.duration === 'wr',
+  new Formatter().joinVoices(voices).format(voices, STAVE_WIDTH - 40);
+
+  voicesData.forEach(({ voice, beams, tuplets }) => {
+    voice.draw(context, stave);
+
+    beams.forEach((beam) => {
+      beam.setContext(context).draw();
     });
 
-    if (enableColors) {
-      staveNote.keys.forEach((n, idx) => {
-        staveNote.setKeyStyle(idx, { fillStyle: NOTE_COLOR_MAP[n] });
-      });
-    }
-
-    if (
-      note.isTriplet &&
-      (!currentTuplet || (currentTuplet && currentTuplet.length === 3))
-    ) {
-      currentTuplet = [staveNote];
-      tuplets.push(currentTuplet);
-    } else if (note.isTriplet && currentTuplet) {
-      currentTuplet.push(staveNote);
-    } else if (!note.isTriplet && currentTuplet) {
-      currentTuplet = null;
-    }
-
-    if (note.dotted) {
-      Dot.buildAndAttach([staveNote], {
-        all: true,
-      });
-    }
-    return staveNote;
-  });
-
-  const voice = new Voice({
-    num_beats: measure.timeSig[0],
-    beat_value: measure.timeSig[1],
-  })
-    .setStrict(false)
-    .addTickables(notes);
-
-  const drawableTuplets = tuplets.map((tupletNotes) => new Tuplet(tupletNotes));
-
-  const beams = Beam.generateBeams(notes, {
-    flat_beams: true,
-    stem_direction: -1,
-  });
-
-  new Formatter().joinVoices([voice]).format([voice], STAVE_WIDTH - 40);
-
-  voice.draw(context, stave);
-
-  beams.forEach((b) => {
-    b.setContext(context).draw();
-  });
-
-  drawableTuplets.forEach((tuplet) => {
-    tuplet.setContext(context).draw();
+    tuplets.forEach((tuplet) => {
+      tuplet.setContext(context).draw();
+    });
   });
 
   return stave;
