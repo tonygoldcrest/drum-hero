@@ -592,7 +592,7 @@ export class MidiParser {
       }
 
       const key = this.gemKey(note, mapping, markerForGem, markerIntervals);
-      const voice: VoiceId = FEET_KEYS.has(key) ? 'feet' : 'hands';
+      const voice: VoiceId = 'hands';
       const keys = byTick[voice].get(note.ticks) ?? [];
       keys.push(key);
       byTick[voice].set(note.ticks, keys);

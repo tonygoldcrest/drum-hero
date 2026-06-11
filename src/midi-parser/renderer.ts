@@ -39,7 +39,7 @@ const NOTE_COLOR_MAP: { [key: string]: string } = {
 // Hands take the upper voice (stems up), feet the lower one (stems down).
 // Rests of each voice sit away from the middle line so the voices don't
 // collide.
-const STEM_DIRECTION: Record<VoiceId, number> = { hands: 1, feet: -1 };
+const STEM_DIRECTION: Record<VoiceId, number> = { hands: -1, feet: -1 };
 const REST_KEY: Record<VoiceId, string> = { hands: 'b/4', feet: 'd/4' };
 
 export function renderMusic(
