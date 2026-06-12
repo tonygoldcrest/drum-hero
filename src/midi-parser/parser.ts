@@ -11,15 +11,15 @@ import { NoteJSON } from '@tonejs/midi/dist/Note';
  *     Drum notation puts everything on one voice with stems down, so kicks,
  *     snares, toms and cymbals that share a tick become a single chord.
  *  2. Build measures/beats from the time signature track.
- *  3. For every beat, fit the onsets against a set of candidate subdivision
- *     grids (straight, dotted, triplet, quintuplet, septuplet, ...). Each
- *     candidate is scored by how far the onsets are from its grid points plus
- *     a complexity prior, so an exact chart is reproduced exactly and a
- *     humanized chart snaps to the most plausible interpretation. A beat can
- *     also be split in half and each half fitted independently (e.g. straight
- *     16ths followed by a 16th triplet).
- *  4. The winning grid is rendered into notes/rests whose durations merge
- *     empty grid slots, with tuplet groups emitted as explicit metadata.
+ *  3. Per beat, collapse hits too close to separate without ever dropping one:
+ *     different drums become a chord, the same drum a flam (earlier hit kept as
+ *     a grace note). This guarantees the remaining onsets are separable.
+ *  4. Notate each beat by generating candidate notations — every whole-beat
+ *     subdivision (straight, triplet, quintuplet, septuplet, ...) plus recursive
+ *     half-splits — and picking the lowest `complexity + λ·distortion`. An exact
+ *     chart reproduces literally (zero distortion); a messy off-grid chart is
+ *     regularized only when that buys enough readability. Tuplet groups are
+ *     emitted as explicit metadata.
  */
 
 export enum Difficulty {
@@ -80,23 +80,23 @@ interface Meter {
   isCompound: boolean;
 }
 
-interface GridCandidate {
-  divisions: number;
+interface NotationInfo {
   notatedDivisor: number;
   tuplet: { numNotes: number; notesOccupied: number } | null;
-  penalty: number;
 }
 
-interface GridFit {
-  candidate: GridCandidate;
-  score: number;
-  slots: number[];
-}
-
-interface SpanFit {
-  score: number;
+/**
+ * One way to notate a span: notes/rests plus the tuplet groups they belong to.
+ * `complexity` (how busy/ugly the result looks) and `dispSum` (how far onsets
+ * were moved from their literal ticks) feed the cost function; the lowest-cost
+ * candidate for a span wins.
+ */
+interface Candidate {
   events: Note[];
   tuplets: TupletMeta[];
+  complexity: number;
+  dispSum: number;
+  onsetCount: number;
 }
 
 interface MarkerInterval {
@@ -111,80 +111,48 @@ interface BeatLocation {
 
 const REST_KEY = 'b/4';
 
-// Finest in-time subdivision of a beat. Hits that fall in the same slot at this
-// resolution can't be drawn as distinct in-time notes, so they collapse to a
-// chord (different drums) or a flam/grace note (same drum) instead of being
-// dropped. Also the resolution floor that guarantees the grid fitter can always
-// separate every remaining onset.
-const MAX_DIVISIONS = 16;
+// Whole-span subdivisions offered in a simple (non-compound) meter, keyed by the
+// number of slots. `notatedDivisor` is the binary value the written notes are
+// drawn from; the remaining scaling is carried by the tuplet ratio. Composite
+// tuplets (6, 9, 12) are intentionally absent — they read better when built from
+// stacked atomic groups (two triplets, not one 6:4), which the recursive split
+// produces. The largest key is the resolution floor (finest in-time grid).
+const SIMPLE_DIVISORS: { [slots: number]: NotationInfo } = {
+  1: { notatedDivisor: 1, tuplet: null },
+  2: { notatedDivisor: 2, tuplet: null },
+  3: { notatedDivisor: 2, tuplet: { numNotes: 3, notesOccupied: 2 } },
+  4: { notatedDivisor: 4, tuplet: null },
+  5: { notatedDivisor: 4, tuplet: { numNotes: 5, notesOccupied: 4 } },
+  7: { notatedDivisor: 4, tuplet: { numNotes: 7, notesOccupied: 4 } },
+  8: { notatedDivisor: 8, tuplet: null },
+  16: { notatedDivisor: 16, tuplet: null },
+};
 
-// An onset further than this fraction of a grid slot from every grid point
-// disqualifies the candidate (unless nothing else fits).
-const MAX_SLOT_ERROR = 0.35;
+// Whole-span subdivisions in a compound (dotted-beat) meter. Dividing a dotted
+// value by these yields plain/dotted durations, so no tuplets are needed.
+const COMPOUND_DIVISORS: { [slots: number]: NotationInfo } = {
+  1: { notatedDivisor: 1, tuplet: null },
+  2: { notatedDivisor: 2, tuplet: null },
+  3: { notatedDivisor: 3, tuplet: null },
+  4: { notatedDivisor: 4, tuplet: null },
+  6: { notatedDivisor: 6, tuplet: null },
+  12: { notatedDivisor: 12, tuplet: null },
+};
 
-// Flat cost of notating a beat as two independent half-beat groups.
-const SPLIT_PENALTY = 0.04;
-
-// Candidate subdivisions of a plain (non-dotted) beat. `notatedDivisor` is
-// the binary subdivision the written note values come from; for tuplet grids
-// the remaining scaling is carried by the tuplet ratio. Penalties encode how
-// "exotic" a reading is, so when several grids explain the onsets equally
-// well the simplest one wins (every n=2 pattern also fits n=4, etc).
-const SIMPLE_GRIDS: GridCandidate[] = [
-  { divisions: 1, notatedDivisor: 1, tuplet: null, penalty: 0 },
-  { divisions: 2, notatedDivisor: 2, tuplet: null, penalty: 0.01 },
-  { divisions: 4, notatedDivisor: 4, tuplet: null, penalty: 0.02 },
-  { divisions: 8, notatedDivisor: 8, tuplet: null, penalty: 0.045 },
-  { divisions: 16, notatedDivisor: 16, tuplet: null, penalty: 0.09 },
-  {
-    divisions: 3,
-    notatedDivisor: 2,
-    tuplet: { numNotes: 3, notesOccupied: 2 },
-    penalty: 0.06,
-  },
-  {
-    divisions: 6,
-    notatedDivisor: 4,
-    tuplet: { numNotes: 6, notesOccupied: 4 },
-    penalty: 0.1,
-  },
-  {
-    divisions: 12,
-    notatedDivisor: 8,
-    tuplet: { numNotes: 12, notesOccupied: 8 },
-    penalty: 0.15,
-  },
-  {
-    divisions: 5,
-    notatedDivisor: 4,
-    tuplet: { numNotes: 5, notesOccupied: 4 },
-    penalty: 0.26,
-  },
-  {
-    divisions: 7,
-    notatedDivisor: 4,
-    tuplet: { numNotes: 7, notesOccupied: 4 },
-    penalty: 0.3,
-  },
-  {
-    divisions: 9,
-    notatedDivisor: 8,
-    tuplet: { numNotes: 9, notesOccupied: 8 },
-    penalty: 0.34,
-  },
-];
-
-// Candidate subdivisions of a dotted (compound meter) beat. All of these are
-// expressible with plain or dotted values, no tuplets needed: dividing a
-// dotted quarter by 2 gives dotted eighths, by 3 gives straight eighths.
-const COMPOUND_GRIDS: GridCandidate[] = [
-  { divisions: 1, notatedDivisor: 1, tuplet: null, penalty: 0 },
-  { divisions: 3, notatedDivisor: 3, tuplet: null, penalty: 0.02 },
-  { divisions: 2, notatedDivisor: 2, tuplet: null, penalty: 0.05 },
-  { divisions: 6, notatedDivisor: 6, tuplet: null, penalty: 0.07 },
-  { divisions: 4, notatedDivisor: 4, tuplet: null, penalty: 0.1 },
-  { divisions: 12, notatedDivisor: 12, tuplet: null, penalty: 0.13 },
-];
+// Cost-function weights — the "look and feel" knobs. A candidate's cost is
+// `complexity + LAMBDA · meanDistortion`. Complexity sums filler rests wedged
+// between hits, sub-16th note values, distinct durations, and raw symbol count;
+// distortion is the mean tick displacement of onsets from their literal
+// positions as a fraction of a beat. "Prefer the original unless it's a mess"
+// falls out for free: an exact chart has zero distortion and minimal complexity,
+// so it always wins; a messy literal reading only loses when a simpler grid is
+// cheap enough to justify the movement.
+const W_FILL = 3.0;
+const W_FINE = 2.0;
+const W_VAR = 1.0;
+const W_EVT = 0.5;
+const W_SPLIT = 0.5;
+const LAMBDA = 15;
 
 const BASE_DURATIONS: Array<[number, string]> = [
   [1, 'w'],
@@ -295,18 +263,20 @@ function sortKeys(keys: string[]) {
  * without ever dropping a hit. Two onsets too close to separate become either a
  * chord (different drums — meant to be simultaneous) or a flam (same drum — the
  * earlier hit is kept as a grace note on the later one). After this every
- * returned onset occupies a distinct `MAX_DIVISIONS` slot, so the grid fitter
- * can always give each its own position.
+ * returned onset occupies a distinct finest-grid slot, so the grid fitter can
+ * always give each its own position. `finestDivisions` is the finest subdivision
+ * the meter offers (the resolution floor).
  */
 function resolveNearCoincidence(
   onsets: Onset[],
   beatStart: number,
   beatTicks: number,
+  finestDivisions: number,
 ): Onset[] {
-  const spacing = beatTicks / MAX_DIVISIONS;
+  const spacing = beatTicks / finestDivisions;
   const slotOf = (tick: number) =>
     Math.min(
-      MAX_DIVISIONS - 1,
+      finestDivisions - 1,
       Math.max(0, Math.round((tick - beatStart) / spacing)),
     );
 
@@ -392,63 +362,267 @@ function intervalsCoverTick(intervals: MarkerInterval[], tick: number) {
   return found >= 0 && intervals[found].endTick > tick;
 }
 
+function halvingsPast16th(duration: string): number {
+  if (duration === '32') return 1;
+  if (duration === '64') return 2;
+  return 0;
+}
+
+/** How busy/ugly a notated span looks; higher is worse. */
+function complexityOf(events: Note[]): number {
+  let filler = 0;
+  let fine = 0;
+  const values = new Set<string>();
+
+  events.forEach((event, index) => {
+    // A rest is "filler" if it is wedged between hits (a hit before and after);
+    // leading and trailing rests are real silence, not clutter.
+    if (
+      event.isRest &&
+      events.slice(0, index).some((e) => !e.isRest) &&
+      events.slice(index + 1).some((e) => !e.isRest)
+    ) {
+      filler += 1;
+    }
+    fine += halvingsPast16th(event.duration);
+    values.add(`${event.duration}.${event.dots}`);
+  });
+
+  return (
+    W_FILL * filler +
+    W_FINE * fine +
+    W_VAR * Math.max(0, values.size - 1) +
+    W_EVT * events.length
+  );
+}
+
+function candidateCost(candidate: Candidate, beatTicks: number): number {
+  const distortion = candidate.onsetCount
+    ? candidate.dispSum / candidate.onsetCount / beatTicks
+    : 0;
+  return candidate.complexity + LAMBDA * distortion;
+}
+
+function restFill(startTick: number, fraction: number): Candidate {
+  const named = namedDuration(fraction) ?? { duration: 'q', dots: 0 };
+  return {
+    events: [
+      {
+        notes: [REST_KEY],
+        duration: named.duration,
+        dots: named.dots,
+        isRest: true,
+        tick: Math.round(startTick),
+      },
+    ],
+    tuplets: [],
+    complexity: 0,
+    dispSum: 0,
+    onsetCount: 0,
+  };
+}
+
 /**
- * Score every candidate grid against the onsets and return the best fit.
- * Returns null only when every candidate collapses two onsets into the same
- * slot (the caller then merges the offending onsets and retries).
+ * Notate a span on a single uniform grid of `divisions` slots. Returns null if
+ * the grid can't represent the span (two onsets land in one slot, or the slot
+ * value isn't a writable duration). Each note tiles up to the next onset's slot,
+ * so there are no filler rests beyond what an awkward gap forces.
  */
-function pickGrid(
+function buildGrid(
   onsets: Onset[],
   startTick: number,
   durationTicks: number,
   fraction: number,
-  candidates: GridCandidate[],
-): GridFit | null {
-  let strict: GridFit | null = null;
-  let loose: GridFit | null = null;
+  divisions: number,
+  info: NotationInfo,
+  nextId: () => number,
+): Candidate | null {
+  const slotFraction = fraction / info.notatedDivisor;
+  if (!namedDuration(slotFraction)) {
+    return null;
+  }
 
-  candidates.forEach((candidate) => {
-    if (!namedDuration(fraction / candidate.notatedDivisor)) {
-      return;
-    }
+  const spacing = durationTicks / divisions;
+  const slotOf = (tick: number) =>
+    Math.min(
+      divisions - 1,
+      Math.max(0, Math.round((tick - startTick) / spacing)),
+    );
 
-    const spacing = durationTicks / candidate.divisions;
-    const slots: number[] = [];
-    let maxError = 0;
-    let totalError = 0;
+  const slots = onsets.map((onset) => slotOf(onset.tick));
+  if (new Set(slots).size !== slots.length) {
+    return null;
+  }
 
-    const collision = onsets.some((onset) => {
-      const position = (onset.tick - startTick) / spacing;
-      const slot = Math.min(
-        candidate.divisions - 1,
-        Math.max(0, Math.round(position)),
-      );
-      if (slots.includes(slot)) {
-        return true;
-      }
-      slots.push(slot);
-      const error = Math.abs(position - slot);
-      maxError = Math.max(maxError, error);
-      totalError += error;
-      return false;
+  const occupants = new Map<number, Onset>();
+  let dispSum = 0;
+  slots.forEach((slot, index) => {
+    occupants.set(slot, onsets[index]);
+    dispSum += Math.abs(startTick + slot * spacing - onsets[index].tick);
+  });
+
+  const boundaries = [...new Set([0, ...slots])].sort((a, b) => a - b);
+  const events: Note[] = [];
+
+  boundaries.forEach((boundary, index) => {
+    const next = boundaries[index + 1] ?? divisions;
+    const onset = occupants.get(boundary);
+    let slot = boundary;
+
+    chunkSpan(boundary, next - boundary, slotFraction, true).forEach(
+      (size, chunkIndex) => {
+        const named = namedDuration(size * slotFraction);
+        if (named) {
+          const isRest = !onset || chunkIndex > 0;
+          events.push({
+            notes: isRest ? [REST_KEY] : sortKeys(onset.keys),
+            duration: named.duration,
+            dots: named.dots,
+            isRest,
+            tick: Math.round(startTick + slot * spacing),
+            graceNotes: isRest ? undefined : onset.graceNotes,
+          });
+        }
+        slot += size;
+      },
+    );
+  });
+
+  const tuplets: TupletMeta[] = [];
+  if (info.tuplet && events.length > 1) {
+    const id = nextId();
+    events.forEach((event) => {
+      event.tupletId = id;
     });
+    tuplets.push({
+      id,
+      numNotes: info.tuplet.numNotes,
+      notesOccupied: info.tuplet.notesOccupied,
+    });
+  }
 
-    if (collision) {
+  return {
+    events,
+    tuplets,
+    complexity: complexityOf(events),
+    dispSum,
+    onsetCount: onsets.length,
+  };
+}
+
+/**
+ * Best notation of one span: try every whole-span grid the meter offers, plus a
+ * recursive split into halves, and keep the lowest-cost candidate. Completeness
+ * is structural — every candidate gives each onset its own slot, so a note is
+ * never dropped regardless of which candidate wins.
+ */
+function notateSpan(
+  onsets: Onset[],
+  startTick: number,
+  durationTicks: number,
+  fraction: number,
+  divisors: { [slots: number]: NotationInfo },
+  minSpacing: number,
+  beatTicks: number,
+  allowSplit: boolean,
+  nextId: () => number,
+): Candidate {
+  if (onsets.length === 0) {
+    return restFill(startTick, fraction);
+  }
+
+  const candidates: Candidate[] = [];
+
+  Object.keys(divisors).forEach((key) => {
+    const divisions = Number(key);
+    if (durationTicks / divisions < minSpacing - 1e-9) {
       return;
     }
-
-    const score = totalError / onsets.length + maxError + candidate.penalty;
-    const fit = { candidate, score, slots };
-
-    if (maxError <= MAX_SLOT_ERROR && (!strict || score < strict.score)) {
-      strict = fit;
+    const info = divisors[divisions];
+    // Only use a quintuplet/septuplet when the onsets actually fill it; a prime
+    // tuplet held loosely (e.g. 6 even notes forced into a 7:4) is a misfit that
+    // should decompose or use a binary grid instead.
+    if (info.tuplet && divisions >= 5 && onsets.length < divisions) {
+      return;
     }
-    if (!loose || score < loose.score) {
-      loose = fit;
+    const candidate = buildGrid(
+      onsets,
+      startTick,
+      durationTicks,
+      fraction,
+      divisions,
+      info,
+      nextId,
+    );
+    if (candidate) {
+      candidates.push(candidate);
     }
   });
 
-  return strict ?? loose;
+  if (
+    allowSplit &&
+    onsets.length > 1 &&
+    namedDuration(fraction / 2) &&
+    durationTicks / 2 >= minSpacing - 1e-9
+  ) {
+    const mid = startTick + durationTicks / 2;
+    const tolerance = durationTicks / 32;
+    const left = onsets.filter((onset) => mid - onset.tick > tolerance);
+    const right = onsets.filter((onset) => mid - onset.tick <= tolerance);
+    const leftC = notateSpan(
+      left,
+      startTick,
+      durationTicks / 2,
+      fraction / 2,
+      divisors,
+      minSpacing,
+      beatTicks,
+      true,
+      nextId,
+    );
+    const rightC = notateSpan(
+      right,
+      mid,
+      durationTicks / 2,
+      fraction / 2,
+      divisors,
+      minSpacing,
+      beatTicks,
+      true,
+      nextId,
+    );
+    const events = [...leftC.events, ...rightC.events];
+    candidates.push({
+      events,
+      tuplets: [...leftC.tuplets, ...rightC.tuplets],
+      complexity: complexityOf(events) + W_SPLIT,
+      dispSum: leftC.dispSum + rightC.dispSum,
+      onsetCount: leftC.onsetCount + rightC.onsetCount,
+    });
+  }
+
+  if (candidates.length === 0) {
+    // Unreachable in practice: the resolver guarantees the finest grid separates
+    // every onset. Fall back to it regardless of the spacing floor.
+    const finest = Math.max(...Object.keys(divisors).map(Number));
+    return (
+      buildGrid(
+        onsets,
+        startTick,
+        durationTicks,
+        fraction,
+        finest,
+        divisors[finest],
+        nextId,
+      ) ?? restFill(startTick, fraction)
+    );
+  }
+
+  return candidates.reduce((best, candidate) =>
+    candidateCost(candidate, beatTicks) < candidateCost(best, beatTicks)
+      ? candidate
+      : best,
+  );
 }
 
 export class MidiParser {
@@ -781,6 +955,14 @@ export class MidiParser {
   ): { notes: Note[]; tuplets: TupletMeta[] } {
     const notes: Note[] = [];
     const tuplets: TupletMeta[] = [];
+    const divisors = meter.isCompound ? COMPOUND_DIVISORS : SIMPLE_DIVISORS;
+    const finest = Math.max(...Object.keys(divisors).map(Number));
+    const minSpacing = meter.beatTicks / finest;
+    const nextId = () => {
+      const id = this.nextTupletId;
+      this.nextTupletId += 1;
+      return id;
+    };
     let beatIndex = 0;
 
     while (beatIndex < meter.beatsPerMeasure) {
@@ -820,174 +1002,25 @@ export class MidiParser {
           beatOnsets[beatIndex],
           beatStart,
           meter.beatTicks,
+          finest,
         );
-        const fit = this.fitSpan(
+        const candidate = notateSpan(
           resolved,
           beatStart,
           meter.beatTicks,
           meter.beatFraction,
-          meter.isCompound,
-          true,
+          divisors,
+          minSpacing,
+          meter.beatTicks,
+          !meter.isCompound,
+          nextId,
         );
-        notes.push(...fit.events);
-        tuplets.push(...fit.tuplets);
+        notes.push(...candidate.events);
+        tuplets.push(...candidate.tuplets);
         beatIndex += 1;
       }
     }
 
     return { notes, tuplets };
-  }
-
-  /**
-   * Notate the onsets of one beat (or half-beat): pick the best-fitting
-   * subdivision grid and turn it into notes/rests, optionally preferring an
-   * independent fit of each half of the span.
-   */
-  private fitSpan(
-    onsets: Onset[],
-    startTick: number,
-    durationTicks: number,
-    fraction: number,
-    isCompound: boolean,
-    allowSplit: boolean,
-  ): SpanFit {
-    if (onsets.length === 0) {
-      const named = namedDuration(fraction) ?? { duration: 'q', dots: 0 };
-      return {
-        score: 0,
-        events: [
-          {
-            notes: [REST_KEY],
-            duration: named.duration,
-            dots: named.dots,
-            isRest: true,
-            tick: Math.round(startTick),
-          },
-        ],
-        tuplets: [],
-      };
-    }
-
-    const candidates = isCompound ? COMPOUND_GRIDS : SIMPLE_GRIDS;
-    // The near-coincidence resolver guarantees every onset sits in a distinct
-    // MAX_DIVISIONS slot, so the finest grid always separates them and pickGrid
-    // cannot fail. No more merge-to-fit fallback (which dropped notes).
-    const fit = pickGrid(
-      onsets,
-      startTick,
-      durationTicks,
-      fraction,
-      candidates,
-    ) ?? {
-      candidate: candidates[candidates.length - 1],
-      score: 0,
-      slots: onsets.map((_, i) => i),
-    };
-
-    let result = this.buildSpanEvents(
-      fit,
-      onsets,
-      startTick,
-      durationTicks,
-      fraction,
-    );
-
-    if (
-      allowSplit &&
-      !isCompound &&
-      onsets.length > 1 &&
-      namedDuration(fraction / 2)
-    ) {
-      const mid = startTick + durationTicks / 2;
-      const tolerance = durationTicks / 32;
-      const left = onsets.filter((onset) => mid - onset.tick > tolerance);
-      const right = onsets.filter((onset) => mid - onset.tick <= tolerance);
-
-      const leftFit = this.fitSpan(
-        left,
-        startTick,
-        durationTicks / 2,
-        fraction / 2,
-        false,
-        false,
-      );
-      const rightFit = this.fitSpan(
-        right,
-        mid,
-        durationTicks / 2,
-        fraction / 2,
-        false,
-        false,
-      );
-      const splitScore = (leftFit.score + rightFit.score) / 2 + SPLIT_PENALTY;
-
-      if (splitScore < result.score) {
-        result = {
-          score: splitScore,
-          events: [...leftFit.events, ...rightFit.events],
-          tuplets: [...leftFit.tuplets, ...rightFit.tuplets],
-        };
-      }
-    }
-
-    return result;
-  }
-
-  private buildSpanEvents(
-    fit: GridFit,
-    onsets: Onset[],
-    startTick: number,
-    durationTicks: number,
-    fraction: number,
-  ): SpanFit {
-    const { candidate, slots } = fit;
-    const spacing = durationTicks / candidate.divisions;
-    const slotFraction = fraction / candidate.notatedDivisor;
-
-    const occupants = new Map<number, Onset>();
-    slots.forEach((slot, index) => occupants.set(slot, onsets[index]));
-
-    const boundaries = [...new Set([0, ...slots])].sort((a, b) => a - b);
-    const events: Note[] = [];
-
-    boundaries.forEach((boundary, index) => {
-      const next = boundaries[index + 1] ?? candidate.divisions;
-      const onset = occupants.get(boundary);
-      let slot = boundary;
-
-      chunkSpan(boundary, next - boundary, slotFraction, true).forEach(
-        (size, chunkIndex) => {
-          const named = namedDuration(size * slotFraction);
-          if (named) {
-            const isRest = !onset || chunkIndex > 0;
-            events.push({
-              notes: isRest ? [REST_KEY] : sortKeys(onset.keys),
-              duration: named.duration,
-              dots: named.dots,
-              isRest,
-              tick: Math.round(startTick + slot * spacing),
-              graceNotes: isRest ? undefined : onset.graceNotes,
-            });
-          }
-          slot += size;
-        },
-      );
-    });
-
-    const tuplets: TupletMeta[] = [];
-    if (candidate.tuplet && events.length > 1) {
-      const id = this.nextTupletId;
-      this.nextTupletId += 1;
-      events.forEach((event) => {
-        event.tupletId = id;
-      });
-      tuplets.push({
-        id,
-        numNotes: candidate.tuplet.numNotes,
-        notesOccupied: candidate.tuplet.notesOccupied,
-      });
-    }
-
-    return { score: fit.score, events, tuplets };
   }
 }
