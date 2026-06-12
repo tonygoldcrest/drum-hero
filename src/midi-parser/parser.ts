@@ -46,6 +46,9 @@ export interface Note {
   isRest: boolean;
   tick: number;
   tupletId?: number;
+  // Ornamental hits (flams/drags) drawn before this note, out of time. Each
+  // entry is a chord of keys.
+  graceNotes?: string[][];
 }
 
 export interface Measure {
@@ -67,6 +70,7 @@ export interface Modifier {
 interface Onset {
   tick: number;
   keys: string[];
+  graceNotes?: string[][];
 }
 
 interface Meter {
@@ -106,6 +110,13 @@ interface BeatLocation {
 }
 
 const REST_KEY = 'b/4';
+
+// Finest in-time subdivision of a beat. Hits that fall in the same slot at this
+// resolution can't be drawn as distinct in-time notes, so they collapse to a
+// chord (different drums) or a flam/grace note (same drum) instead of being
+// dropped. Also the resolution floor that guarantees the grid fitter can always
+// separate every remaining onset.
+const MAX_DIVISIONS = 16;
 
 // An onset further than this fraction of a grid slot from every grid point
 // disqualifies the candidate (unless nothing else fits).
@@ -280,50 +291,72 @@ function sortKeys(keys: string[]) {
 }
 
 /**
- * Merge onsets closer than `threshold` ticks (humanized "simultaneous" hits
- * and flams) into a single onset at the earlier tick.
+ * Collapse the onsets of one beat that fall in the same finest-resolution slot,
+ * without ever dropping a hit. Two onsets too close to separate become either a
+ * chord (different drums — meant to be simultaneous) or a flam (same drum — the
+ * earlier hit is kept as a grace note on the later one). After this every
+ * returned onset occupies a distinct `MAX_DIVISIONS` slot, so the grid fitter
+ * can always give each its own position.
  */
-function mergeCloseOnsets(onsets: Onset[], threshold: number): Onset[] {
-  const merged: Onset[] = [];
+function resolveNearCoincidence(
+  onsets: Onset[],
+  beatStart: number,
+  beatTicks: number,
+): Onset[] {
+  const spacing = beatTicks / MAX_DIVISIONS;
+  const slotOf = (tick: number) =>
+    Math.min(
+      MAX_DIVISIONS - 1,
+      Math.max(0, Math.round((tick - beatStart) / spacing)),
+    );
 
+  const clusters: Onset[][] = [];
   onsets.forEach((onset) => {
-    const last = merged[merged.length - 1];
-    if (last && onset.tick - last.tick < threshold) {
-      last.keys.push(...onset.keys);
+    const last = clusters[clusters.length - 1];
+    if (last && slotOf(last[0].tick) === slotOf(onset.tick)) {
+      last.push(onset);
     } else {
-      merged.push({ tick: onset.tick, keys: [...onset.keys] });
+      clusters.push([onset]);
     }
   });
 
-  return merged;
+  return clusters.map(resolveCluster);
 }
 
-function mergeClosestPair(onsets: Onset[]): Onset[] {
-  let closestIndex = 0;
-  let closestGap = Infinity;
+function resolveCluster(cluster: Onset[]): Onset {
+  if (cluster.length === 1) {
+    return cluster[0];
+  }
 
-  onsets.forEach((onset, index) => {
-    if (index === 0) {
-      return;
-    }
-    const gap = onset.tick - onsets[index - 1].tick;
-    if (gap < closestGap) {
-      closestGap = gap;
-      closestIndex = index - 1;
+  const occurrences = cluster.flatMap((onset) =>
+    onset.keys.map((key) => ({ tick: onset.tick, key })),
+  );
+
+  // For each drum, its latest occurrence is the main hit; earlier repeats of the
+  // same drum become grace notes.
+  const lastTickByKey = new Map<string, number>();
+  occurrences.forEach(({ tick, key }) => {
+    lastTickByKey.set(key, Math.max(lastTickByKey.get(key) ?? -Infinity, tick));
+  });
+
+  const graceByTick = new Map<number, Set<string>>();
+  occurrences.forEach(({ tick, key }) => {
+    if (tick < (lastTickByKey.get(key) as number)) {
+      const keys = graceByTick.get(tick) ?? new Set<string>();
+      keys.add(key);
+      graceByTick.set(tick, keys);
     }
   });
 
-  return onsets
-    .map((onset, index) => {
-      if (index === closestIndex) {
-        return {
-          tick: onset.tick,
-          keys: [...onset.keys, ...onsets[index + 1].keys],
-        };
-      }
-      return onset;
-    })
-    .filter((_, index) => index !== closestIndex + 1);
+  const graceNotes = [...graceByTick.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([, keys]) => sortKeys([...keys]));
+
+  return {
+    tick: cluster[cluster.length - 1].tick,
+    keys: sortKeys([...lastTickByKey.keys()]),
+    graceNotes: graceNotes.length > 0 ? graceNotes : undefined,
+  };
 }
 
 function makeMeter(timeSig: [number, number], ppq: number): Meter {
@@ -583,11 +616,9 @@ export class MidiParser {
       byTick.set(note.ticks, keys);
     });
 
-    const sorted = [...byTick.entries()]
+    return [...byTick.entries()]
       .sort((a, b) => a[0] - b[0])
       .map(([tick, keys]) => ({ tick, keys }));
-
-    return mergeCloseOnsets(sorted, this.ppq / 24);
   }
 
   private gemKey(
@@ -785,8 +816,13 @@ export class MidiParser {
         beatIndex += run;
       } else {
         const beatStart = measure.startTick + beatIndex * meter.beatTicks;
-        const fit = this.fitSpan(
+        const resolved = resolveNearCoincidence(
           beatOnsets[beatIndex],
+          beatStart,
+          meter.beatTicks,
+        );
+        const fit = this.fitSpan(
+          resolved,
           beatStart,
           meter.beatTicks,
           meter.beatFraction,
@@ -833,40 +869,24 @@ export class MidiParser {
     }
 
     const candidates = isCompound ? COMPOUND_GRIDS : SIMPLE_GRIDS;
-    let activeOnsets = onsets;
-    let fit = pickGrid(
-      activeOnsets,
+    // The near-coincidence resolver guarantees every onset sits in a distinct
+    // MAX_DIVISIONS slot, so the finest grid always separates them and pickGrid
+    // cannot fail. No more merge-to-fit fallback (which dropped notes).
+    const fit = pickGrid(
+      onsets,
       startTick,
       durationTicks,
       fraction,
       candidates,
-    );
-
-    // Every grid rejected means two onsets are too close to separate at any
-    // supported resolution — notate them as one chord and retry.
-    while (!fit && activeOnsets.length > 1) {
-      activeOnsets = mergeClosestPair(activeOnsets);
-      fit = pickGrid(
-        activeOnsets,
-        startTick,
-        durationTicks,
-        fraction,
-        candidates,
-      );
-    }
-
-    if (!fit) {
-      fit = {
-        candidate: candidates[0],
-        score: 0,
-        slots: [0],
-      };
-      activeOnsets = [activeOnsets[0]];
-    }
+    ) ?? {
+      candidate: candidates[candidates.length - 1],
+      score: 0,
+      slots: onsets.map((_, i) => i),
+    };
 
     let result = this.buildSpanEvents(
       fit,
-      activeOnsets,
+      onsets,
       startTick,
       durationTicks,
       fraction,
@@ -875,15 +895,13 @@ export class MidiParser {
     if (
       allowSplit &&
       !isCompound &&
-      activeOnsets.length > 1 &&
+      onsets.length > 1 &&
       namedDuration(fraction / 2)
     ) {
       const mid = startTick + durationTicks / 2;
       const tolerance = durationTicks / 32;
-      const left = activeOnsets.filter((onset) => mid - onset.tick > tolerance);
-      const right = activeOnsets.filter(
-        (onset) => mid - onset.tick <= tolerance,
-      );
+      const left = onsets.filter((onset) => mid - onset.tick > tolerance);
+      const right = onsets.filter((onset) => mid - onset.tick <= tolerance);
 
       const leftFit = this.fitSpan(
         left,
@@ -948,6 +966,7 @@ export class MidiParser {
               dots: named.dots,
               isRest,
               tick: Math.round(startTick + slot * spacing),
+              graceNotes: isRest ? undefined : onset.graceNotes,
             });
           }
           slot += size;

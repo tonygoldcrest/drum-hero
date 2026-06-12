@@ -13,6 +13,8 @@ import {
   Barline,
   Tuplet,
   Voice,
+  GraceNote,
+  GraceNoteGroup,
 } from 'vexflow';
 import { Measure, MidiParser } from './parser';
 
@@ -92,6 +94,23 @@ function buildVoice(measure: Measure, enableColors: boolean) {
       Dot.buildAndAttach([staveNote], {
         all: true,
       });
+    }
+
+    if (note.graceNotes?.length) {
+      const graceNotes = note.graceNotes.map(
+        (keys) =>
+          new GraceNote({
+            keys,
+            duration: '8',
+            slash: true,
+            stem_direction: STEM_DIRECTION,
+          }),
+      );
+      const graceGroup = new GraceNoteGroup(graceNotes, false);
+      if (graceNotes.length > 1) {
+        graceGroup.beamNotes();
+      }
+      staveNote.addModifier(graceGroup, 0);
     }
 
     if (enableColors && !note.isRest) {
