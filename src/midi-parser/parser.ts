@@ -7,17 +7,17 @@ import { NoteJSON } from '@tonejs/midi/dist/Note';
  * Every charted gem is a zero-length midi event, so rhythm has to be
  * inferred. The pipeline:
  *
- *  1. Map midi pitches to drum staff keys (applying pro-drums tom markers)
- *     and split everything into two notation voices: hands (snare, toms,
- *     cymbals, stems up) and feet (kick, stems down).
+ *  1. Map midi pitches to drum staff keys (applying pro-drums tom markers).
+ *     Drum notation puts everything on one voice with stems down, so kicks,
+ *     snares, toms and cymbals that share a tick become a single chord.
  *  2. Build measures/beats from the time signature track.
- *  3. For every beat of every voice, fit the onsets against a set of
- *     candidate subdivision grids (straight, dotted, triplet, quintuplet,
- *     septuplet, ...). Each candidate is scored by how far the onsets are
- *     from its grid points plus a complexity prior, so an exact chart is
- *     reproduced exactly and a humanized chart snaps to the most plausible
- *     interpretation. A beat can also be split in half and each half fitted
- *     independently (e.g. straight 16ths followed by a 16th triplet).
+ *  3. For every beat, fit the onsets against a set of candidate subdivision
+ *     grids (straight, dotted, triplet, quintuplet, septuplet, ...). Each
+ *     candidate is scored by how far the onsets are from its grid points plus
+ *     a complexity prior, so an exact chart is reproduced exactly and a
+ *     humanized chart snaps to the most plausible interpretation. A beat can
+ *     also be split in half and each half fitted independently (e.g. straight
+ *     16ths followed by a 16th triplet).
  *  4. The winning grid is rendered into notes/rests whose durations merge
  *     empty grid slots, with tuplet groups emitted as explicit metadata.
  */
@@ -32,8 +32,6 @@ export enum Difficulty {
 export interface MidiMapping {
   [key: number]: string;
 }
-
-export type VoiceId = 'hands' | 'feet';
 
 export interface TupletMeta {
   id: number;
@@ -50,12 +48,6 @@ export interface Note {
   tupletId?: number;
 }
 
-export interface MeasureVoice {
-  id: VoiceId;
-  notes: Note[];
-  tuplets: TupletMeta[];
-}
-
 export interface Measure {
   timeSig: [number, number];
   sigChange: boolean;
@@ -63,7 +55,8 @@ export interface Measure {
   isCompound: boolean;
   startTick: number;
   endTick: number;
-  voices: MeasureVoice[];
+  notes: Note[];
+  tuplets: TupletMeta[];
 }
 
 export interface Modifier {
@@ -111,10 +104,6 @@ interface BeatLocation {
   measureIndex: number;
   beatIndex: number;
 }
-
-const VOICE_IDS: VoiceId[] = ['hands', 'feet'];
-
-const FEET_KEYS = new Set(['e/4', 'f/4']);
 
 const REST_KEY = 'b/4';
 
@@ -547,14 +536,14 @@ export class MidiParser {
 
     const onsets = this.collectOnsets(drumPart, isFiveLane, difficulty);
     this.createMeasures();
-    this.buildVoices(onsets);
+    this.buildMeasures(onsets);
   }
 
   private collectOnsets(
     trackData: TrackJSON,
     isFiveLane: boolean,
     difficulty: Difficulty,
-  ): Record<VoiceId, Onset[]> {
+  ): Onset[] {
     const mapping = (isFiveLane ? this.mappingFiveLane : this.mapping)[
       difficulty
     ];
@@ -581,10 +570,7 @@ export class MidiParser {
       intervals.sort((a, b) => a.startTick - b.startTick),
     );
 
-    const byTick: Record<VoiceId, Map<number, string[]>> = {
-      hands: new Map(),
-      feet: new Map(),
-    };
+    const byTick = new Map<number, string[]>();
 
     trackData.notes.forEach((note) => {
       if (!mapping[note.midi]) {
@@ -592,23 +578,16 @@ export class MidiParser {
       }
 
       const key = this.gemKey(note, mapping, markerForGem, markerIntervals);
-      const voice: VoiceId = 'hands';
-      const keys = byTick[voice].get(note.ticks) ?? [];
+      const keys = byTick.get(note.ticks) ?? [];
       keys.push(key);
-      byTick[voice].set(note.ticks, keys);
+      byTick.set(note.ticks, keys);
     });
 
-    const flamThreshold = this.ppq / 24;
-    const result = {} as Record<VoiceId, Onset[]>;
+    const sorted = [...byTick.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([tick, keys]) => ({ tick, keys }));
 
-    VOICE_IDS.forEach((voice) => {
-      const sorted = [...byTick[voice].entries()]
-        .sort((a, b) => a[0] - b[0])
-        .map(([tick, keys]) => ({ tick, keys }));
-      result[voice] = mergeCloseOnsets(sorted, flamThreshold);
-    });
-
-    return result;
+    return mergeCloseOnsets(sorted, this.ppq / 24);
   }
 
   private gemKey(
@@ -665,7 +644,8 @@ export class MidiParser {
           isCompound: meter.isCompound,
           startTick,
           endTick: startTick + measureTicks,
-          voices: [],
+          notes: [],
+          tuplets: [],
         });
         this.meters.push(meter);
 
@@ -674,47 +654,38 @@ export class MidiParser {
     });
   }
 
-  private buildVoices(onsets: Record<VoiceId, Onset[]>) {
+  private buildMeasures(onsets: Onset[]) {
     if (this.measures.length === 0) {
       return;
     }
 
-    const buckets = {
-      hands: this.bucketOnsets(onsets.hands),
-      feet: this.bucketOnsets(onsets.feet),
-    };
+    const buckets = this.bucketOnsets(onsets);
 
     this.measures.forEach((measure, measureIndex) => {
       const meter = this.meters[measureIndex];
-      const voices: MeasureVoice[] = [];
+      const beatOnsets = buckets[measureIndex];
 
-      VOICE_IDS.forEach((voiceId) => {
-        const beatOnsets = buckets[voiceId][measureIndex];
-        if (beatOnsets.every((beat) => beat.length === 0)) {
-          return;
-        }
-        voices.push(
-          this.buildMeasureVoice(voiceId, measure, meter, beatOnsets),
-        );
-      });
-
-      if (voices.length === 0) {
-        voices.push({
-          id: 'hands',
-          notes: [
-            {
-              notes: [REST_KEY],
-              duration: 'w',
-              dots: 0,
-              isRest: true,
-              tick: measure.startTick,
-            },
-          ],
-          tuplets: [],
-        });
+      if (beatOnsets.every((beat) => beat.length === 0)) {
+        measure.notes = [
+          {
+            notes: [REST_KEY],
+            duration: 'w',
+            dots: 0,
+            isRest: true,
+            tick: measure.startTick,
+          },
+        ];
+        measure.tuplets = [];
+        return;
       }
 
-      measure.voices = voices;
+      const { notes, tuplets } = this.buildMeasureNotes(
+        measure,
+        meter,
+        beatOnsets,
+      );
+      measure.notes = notes;
+      measure.tuplets = tuplets;
     });
   }
 
@@ -772,12 +743,11 @@ export class MidiParser {
     return { measureIndex, beatIndex };
   }
 
-  private buildMeasureVoice(
-    id: VoiceId,
+  private buildMeasureNotes(
     measure: Measure,
     meter: Meter,
     beatOnsets: Onset[][],
-  ): MeasureVoice {
+  ): { notes: Note[]; tuplets: TupletMeta[] } {
     const notes: Note[] = [];
     const tuplets: TupletMeta[] = [];
     let beatIndex = 0;
@@ -829,7 +799,7 @@ export class MidiParser {
       }
     }
 
-    return { id, notes, tuplets };
+    return { notes, tuplets };
   }
 
   /**

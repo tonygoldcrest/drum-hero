@@ -14,7 +14,7 @@ import {
   Tuplet,
   Voice,
 } from 'vexflow';
-import { Measure, MeasureVoice, MidiParser, VoiceId } from './parser';
+import { Measure, MidiParser } from './parser';
 
 export interface RenderData {
   stave: Stave;
@@ -36,11 +36,8 @@ const NOTE_COLOR_MAP: { [key: string]: string } = {
   'a/4': '#27ae60', // green
 };
 
-// Hands take the upper voice (stems up), feet the lower one (stems down).
-// Rests of each voice sit away from the middle line so the voices don't
-// collide.
-const STEM_DIRECTION: Record<VoiceId, number> = { hands: -1, feet: -1 };
-const REST_KEY: Record<VoiceId, string> = { hands: 'b/4', feet: 'd/4' };
+const STEM_DIRECTION = -1;
+const REST_KEY = 'b/4';
 
 export function renderMusic(
   elementRef: React.RefObject<HTMLDivElement>,
@@ -77,23 +74,18 @@ export function renderMusic(
   }));
 }
 
-function buildVoice(
-  measureVoice: MeasureVoice,
-  measure: Measure,
-  enableColors: boolean,
-) {
-  const stemDirection = STEM_DIRECTION[measureVoice.id];
+function buildVoice(measure: Measure, enableColors: boolean) {
   const tupletGroups = new Map<number, StaveNote[]>();
 
-  const staveNotes = measureVoice.notes.map((note) => {
+  const staveNotes = measure.notes.map((note) => {
     const isMeasureRest = note.isRest && note.duration === 'w';
     const staveNote = new StaveNote({
-      keys: note.isRest ? [REST_KEY[measureVoice.id]] : note.notes,
+      keys: note.isRest ? [REST_KEY] : note.notes,
       duration: `${note.duration}${'d'.repeat(note.dots)}${
         note.isRest ? 'r' : ''
       }`,
       align_center: isMeasureRest,
-      stem_direction: stemDirection,
+      stem_direction: STEM_DIRECTION,
     });
 
     if (note.dots > 0) {
@@ -117,15 +109,15 @@ function buildVoice(
     return staveNote;
   });
 
-  // Tuplets scale note ticks, so they must exist before beaming/formatting.
-  const tuplets = measureVoice.tuplets
+  const tuplets = measure.tuplets
     .filter((meta) => (tupletGroups.get(meta.id)?.length ?? 0) > 1)
     .map(
       (meta) =>
         new Tuplet(tupletGroups.get(meta.id) as StaveNote[], {
           num_notes: meta.numNotes,
           notes_occupied: meta.notesOccupied,
-          location: stemDirection,
+          ratioed: false,
+          location: STEM_DIRECTION,
         }),
     );
 
@@ -138,7 +130,7 @@ function buildVoice(
 
   const beams = Beam.generateBeams(staveNotes, {
     flat_beams: true,
-    stem_direction: stemDirection,
+    stem_direction: STEM_DIRECTION,
     groups: measure.isCompound
       ? [new Fraction(3, measure.timeSig[1])]
       : undefined,
@@ -177,23 +169,18 @@ function renderMeasure(
 
   stave.setContext(context).draw();
 
-  const voicesData = measure.voices.map((measureVoice) =>
-    buildVoice(measureVoice, measure, enableColors),
-  );
-  const voices = voicesData.map(({ voice }) => voice);
+  const { voice, beams, tuplets } = buildVoice(measure, enableColors);
 
-  new Formatter().joinVoices(voices).format(voices, STAVE_WIDTH - 40);
+  new Formatter().joinVoices([voice]).format([voice], STAVE_WIDTH - 40);
 
-  voicesData.forEach(({ voice, beams, tuplets }) => {
-    voice.draw(context, stave);
+  voice.draw(context, stave);
 
-    beams.forEach((beam) => {
-      beam.setContext(context).draw();
-    });
+  beams.forEach((beam) => {
+    beam.setContext(context).draw();
+  });
 
-    tuplets.forEach((tuplet) => {
-      tuplet.setContext(context).draw();
-    });
+  tuplets.forEach((tuplet) => {
+    tuplet.setContext(context).draw();
   });
 
   return stave;
