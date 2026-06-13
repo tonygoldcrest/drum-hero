@@ -2528,7 +2528,7 @@ class MenuBuilder {
 }
 function resolveHtmlPath(_htmlFileName) {
   if (process.env.NODE_ENV === "development") {
-    return process.env.VITE_DEV_SERVER_URL;
+    return process.env["ELECTRON_RENDERER_URL"];
   }
   return `file://${path$2.resolve(__dirname, "../renderer/index.html")}`;
 }

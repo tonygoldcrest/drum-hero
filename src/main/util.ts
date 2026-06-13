@@ -10,7 +10,7 @@ import { StorageSchema } from '../types';
 
 export function resolveHtmlPath(_htmlFileName: string) {
   if (process.env.NODE_ENV === 'development') {
-    return process.env.VITE_DEV_SERVER_URL!;
+    return process.env['ELECTRON_RENDERER_URL']!;
   }
   return `file://${path.resolve(__dirname, '../renderer/index.html')}`;
 }

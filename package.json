@@ -1,4 +1,5 @@
 {
+  "name": "drum-hero",
   "description": "Play your favorite Clone Hero drum tracks",
   "version": "0.1.0",
   "keywords": [
@@ -22,8 +23,8 @@
     "build": "electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "lint": "cross-env NODE_ENV=development eslint . --ext .js,.jsx,.ts,.tsx",
-    "package": "npm run build && electron-builder build --mac --publish never",
-    "package:win": "npm run build && electron-builder build -w --x64 --publish never",
+    "package": "yarn build && electron-builder build --mac --publish never",
+    "package:win": "yarn build && electron-builder build -w --x64 --publish never",
     "rebuild": "electron-rebuild --parallel --types prod,dev,optional",
     "start": "electron-vite dev",
     "storybook": "storybook dev -p 6006",
