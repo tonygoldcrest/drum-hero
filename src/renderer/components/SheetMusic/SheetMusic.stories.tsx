@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { SheetMusic } from './SheetMusic';
-import { Difficulty } from '../../../midi-parser/parser';
 import {
   buildDrumMidi,
   hit,
@@ -10,18 +9,26 @@ import {
   Hit,
   MeasureSpec,
 } from './drumMidiFixture';
+import { Difficulty } from '../../../midi-parser/types';
 
-function Sheet({ measures }: { measures: MeasureSpec[] }) {
+function Sheet({
+  measures,
+  parserVersion,
+}: {
+  measures: MeasureSpec[];
+  parserVersion: 'v1' | 'v2';
+}) {
   return (
     <div style={{ padding: 24, background: '#fff', overflow: 'auto' }}>
       <SheetMusic
         midiData={buildDrumMidi(measures) as unknown as Buffer}
-        showBarNumbers
+        showBarNumbers={false}
         enableColors
         currentTime={0}
         onSelectMeasure={() => {}}
         difficulty={Difficulty.expert}
         isFiveLane={false}
+        parserVersion={parserVersion}
       />
     </div>
   );
@@ -106,27 +113,22 @@ const MEASURES: MeasureSpec[] = [
 ];
 
 const meta: Meta<typeof Sheet> = {
-  title: 'SheetMusic/Use cases',
+  title: 'Parser',
   component: Sheet,
+  argTypes: {
+    parserVersion: {
+      options: ['v1', 'v2'],
+      default: 'v2',
+      control: { type: 'radio' },
+    },
+  },
 };
 export default meta;
 
 type Story = StoryObj<typeof Sheet>;
 
-export const AllUseCases: Story = {
-  parameters: {
-    docs: {
-      description: {
-        story: [
-          'Every measure is a use case (bar numbers shown):',
-          '0 quarters · 1 eighths · 2 sixteenths · 3 dotted-eighth+sixteenth · 4 single hit (long notes not produced yet)',
-          '5 quarter+half rest · 6 eighth rest · 7 dotted-quarter rest on a strong beat (currently split) · 8 sixteenth rest · 9 whole-measure rest',
-          '10 eighth triplet · 11 two 16th-triplets (currently 6:4) · 12 quintuplet · 13 septuplet · 14 twelve even (currently two 6:4)',
-          '15 flam · 16 drag · 17 near-coincident kick+snare → chord · 18 mixed beat · 19 real off-grid fill (Spinal Tap bar 94) · 20 toms',
-          '21 3/4 · 22 6/8 · 23 5/4 · 24 7/8 · 25 2/4',
-        ].join('\n\n'),
-      },
-    },
-  },
-  render: () => <Sheet measures={MEASURES} />,
+export const Parser: Story = {
+  render: ({ parserVersion }) => (
+    <Sheet measures={MEASURES} parserVersion={parserVersion} />
+  ),
 };

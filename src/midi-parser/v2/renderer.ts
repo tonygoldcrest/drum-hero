@@ -16,12 +16,8 @@ import {
   GraceNote,
   GraceNoteGroup,
 } from 'vexflow';
-import { Measure, MidiParser } from './parser';
-
-export interface RenderData {
-  stave: Stave;
-  measure: Measure;
-}
+import { MidiParser } from './parser';
+import { Measure, RenderData } from './types';
 
 const STAVE_WIDTH = 600;
 const STAVE_PER_ROW = 2;

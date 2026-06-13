@@ -1,5 +1,7 @@
 import { HeaderJSON, MidiJSON, TrackJSON } from '@tonejs/midi';
 import { NoteJSON } from '@tonejs/midi/dist/Note';
+import { Measure, MidiMapping, Modifier, Note, TupletMeta } from './types';
+import { Difficulty } from '../types';
 
 /**
  * Clone Hero drum midi -> sheet music model.
@@ -21,51 +23,6 @@ import { NoteJSON } from '@tonejs/midi/dist/Note';
  *     regularized only when that buys enough readability. Tuplet groups are
  *     emitted as explicit metadata.
  */
-
-export enum Difficulty {
-  easy = 'easy',
-  medium = 'medium',
-  hard = 'hard',
-  expert = 'expert',
-}
-
-export interface MidiMapping {
-  [key: number]: string;
-}
-
-export interface TupletMeta {
-  id: number;
-  numNotes: number;
-  notesOccupied: number;
-}
-
-export interface Note {
-  notes: string[];
-  duration: string;
-  dots: number;
-  isRest: boolean;
-  tick: number;
-  tupletId?: number;
-  // Ornamental hits (flams/drags) drawn before this note, out of time. Each
-  // entry is a chord of keys.
-  graceNotes?: string[][];
-}
-
-export interface Measure {
-  timeSig: [number, number];
-  sigChange: boolean;
-  hasClef: boolean;
-  isCompound: boolean;
-  startTick: number;
-  endTick: number;
-  notes: Note[];
-  tuplets: TupletMeta[];
-}
-
-export interface Modifier {
-  forNotes: number[];
-  key: string;
-}
 
 interface Onset {
   tick: number;
@@ -123,6 +80,7 @@ const SIMPLE_DIVISORS: { [slots: number]: NotationInfo } = {
   3: { notatedDivisor: 2, tuplet: { numNotes: 3, notesOccupied: 2 } },
   4: { notatedDivisor: 4, tuplet: null },
   5: { notatedDivisor: 4, tuplet: { numNotes: 5, notesOccupied: 4 } },
+  6: { notatedDivisor: 4, tuplet: { numNotes: 6, notesOccupied: 4 } },
   7: { notatedDivisor: 4, tuplet: { numNotes: 7, notesOccupied: 4 } },
   8: { notatedDivisor: 8, tuplet: null },
   16: { notatedDivisor: 16, tuplet: null },
@@ -625,6 +583,143 @@ function notateSpan(
   );
 }
 
+interface RestValue {
+  ticks: number;
+  duration: string;
+  dots: number;
+  align: number; // the offset multiple this value may start on
+}
+
+// Rest durations largest-first, plain and single-dotted, for re-grouping a run
+// of consecutive rests. A dotted value must start on a multiple of twice its
+// base (a dotted quarter on a beat or the "and", not an off-beat).
+function restValues(ppq: number): RestValue[] {
+  const whole = ppq * 4;
+  const bases: Array<[number, string]> = [
+    [whole, 'w'],
+    [whole / 2, 'h'],
+    [whole / 4, 'q'],
+    [whole / 8, '8'],
+    [whole / 16, '16'],
+    [whole / 32, '32'],
+    [whole / 64, '64'],
+  ];
+  const values: RestValue[] = [];
+  bases.forEach(([ticks, duration]) => {
+    values.push({ ticks, duration, dots: 0, align: ticks });
+    values.push({ ticks: ticks * 1.5, duration, dots: 1, align: ticks * 2 });
+  });
+  return values.sort((a, b) => b.ticks - a.ticks);
+}
+
+/**
+ * Fill `[spanStart, spanEnd)` of silence with the fewest metrically legal rests.
+ * Each rest must align to its own grid, and (in meters with an even number of
+ * beats) may not cross the measure midpoint unless it starts at the barline —
+ * so beats 2–3 of 4/4 stay two quarter rests rather than a half rest that hides
+ * the downbeat of beat 3.
+ */
+function fillRestSpan(
+  spanStart: number,
+  spanEnd: number,
+  measureStart: number,
+  measureTicks: number,
+  values: RestValue[],
+  guardMid: boolean,
+): Note[] {
+  const mid = measureStart + measureTicks / 2;
+  const out: Note[] = [];
+  let pos = spanStart;
+  let safety = 0;
+
+  while (pos < spanEnd - 1e-6 && safety < 128) {
+    safety += 1;
+    const start = pos;
+    const remaining = spanEnd - start;
+    const offset = start - measureStart;
+    const choice =
+      values.find((value) => {
+        if (value.ticks > remaining + 1e-6) {
+          return false;
+        }
+        const m = offset % value.align;
+        if (m > 1e-6 && value.align - m > 1e-6) {
+          return false;
+        }
+        if (
+          guardMid &&
+          start < mid - 1e-6 &&
+          start + value.ticks > mid + 1e-6 &&
+          Math.abs(start - measureStart) > 1e-6
+        ) {
+          return false;
+        }
+        return true;
+      }) ?? values[values.length - 1];
+
+    out.push({
+      notes: [REST_KEY],
+      duration: choice.duration,
+      dots: choice.dots,
+      isRest: true,
+      tick: Math.round(pos),
+    });
+    pos += choice.ticks;
+  }
+
+  return out;
+}
+
+/**
+ * Re-group each maximal run of plain rests in a measure so consecutive rests
+ * built by different parts of the pipeline (a silent beat next to a beat's
+ * leading rest) combine into the fewest legal values. Rests that belong to a
+ * tuplet are left untouched.
+ */
+function mergeMeasureRests(
+  notes: Note[],
+  measureStart: number,
+  measureTicks: number,
+  ppq: number,
+  guardMid: boolean,
+): Note[] {
+  const values = restValues(ppq);
+  const out: Note[] = [];
+  let i = 0;
+
+  while (i < notes.length) {
+    const note = notes[i];
+    if (note.isRest && note.tupletId === undefined) {
+      let j = i;
+      while (
+        j < notes.length &&
+        notes[j].isRest &&
+        notes[j].tupletId === undefined
+      ) {
+        j += 1;
+      }
+      const spanEnd =
+        j < notes.length ? notes[j].tick : measureStart + measureTicks;
+      out.push(
+        ...fillRestSpan(
+          note.tick,
+          spanEnd,
+          measureStart,
+          measureTicks,
+          values,
+          guardMid,
+        ),
+      );
+      i = j;
+    } else {
+      out.push(note);
+      i += 1;
+    }
+  }
+
+  return out;
+}
+
 export class MidiParser {
   mapping: { [key in Difficulty]: MidiMapping } = {
     expert: {
@@ -889,7 +984,13 @@ export class MidiParser {
         meter,
         beatOnsets,
       );
-      measure.notes = notes;
+      measure.notes = mergeMeasureRests(
+        notes,
+        measure.startTick,
+        measure.endTick - measure.startTick,
+        this.ppq,
+        meter.beatsPerMeasure % 2 === 0,
+      );
       measure.tuplets = tuplets;
     });
   }
