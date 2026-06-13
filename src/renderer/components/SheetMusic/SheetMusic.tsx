@@ -1,8 +1,13 @@
 import { RefObject, createRef, useEffect, useRef, useState } from 'react';
 import { Midi } from '@tonejs/midi';
 import { MeasureHighlight, VexflowContainer, Wrapper } from './styles';
-import { Difficulty, MidiParser } from '../../../midi-parser/parser';
-import { RenderData, renderMusic } from '../../../midi-parser/renderer';
+import { MidiParser as MidiParserV2 } from '../../../midi-parser/v2/parser';
+import { renderMusic as renderMusicV2 } from '../../../midi-parser/v2/renderer';
+import { MidiParser as MidiParserV1 } from '../../../midi-parser/v1/parser';
+import { renderMusic as renderMusicV1 } from '../../../midi-parser/v1/renderer';
+import { Difficulty } from '../../../midi-parser/types';
+import { RenderData as RenderDataV2 } from '../../../midi-parser/v2/types';
+import { RenderData as RenderDataV1 } from '../../../midi-parser/v1/types';
 
 export interface SheetMusicProps {
   midiData?: Buffer;
@@ -12,6 +17,7 @@ export interface SheetMusicProps {
   onSelectMeasure: (time: number) => void;
   difficulty: Difficulty;
   isFiveLane: boolean;
+  parserVersion?: 'v1' | 'v2';
 }
 
 export function SheetMusic({
@@ -22,13 +28,18 @@ export function SheetMusic({
   onSelectMeasure,
   difficulty,
   isFiveLane,
+  parserVersion = 'v2',
 }: SheetMusicProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const highlightsRef = useRef<RefObject<HTMLButtonElement>[]>([]);
   const vexflowContainerRef = useRef<HTMLDivElement>(null);
-  const [parsedMidi, setParsedMidi] = useState<MidiParser | null>(null);
+  const [parsedMidi, setParsedMidi] = useState<
+    MidiParserV1 | MidiParserV2 | null
+  >(null);
   const [midi, setMidi] = useState<Midi | null>(null);
-  const [renderData, setRenderData] = useState<RenderData[]>([]);
+  const [renderData, setRenderData] = useState<(RenderDataV1 | RenderDataV2)[]>(
+    [],
+  );
   const [highlightedMeasureIndex, setHighlightedMeasureIndex] =
     useState<number>(-1);
 
@@ -46,11 +57,22 @@ export function SheetMusic({
       return;
     }
 
-    setParsedMidi(new MidiParser(midi.toJSON(), isFiveLane, difficulty));
-  }, [midi, isFiveLane, difficulty]);
+    setParsedMidi(
+      parserVersion === 'v2'
+        ? new MidiParserV2(midi.toJSON(), isFiveLane, difficulty)
+        : new MidiParserV1(midi.toJSON(), isFiveLane, difficulty),
+    );
+  }, [midi, isFiveLane, difficulty, parserVersion]);
 
   useEffect(() => {
     if (!vexflowContainerRef.current || !parsedMidi) {
+      return;
+    }
+
+    if (parserVersion === 'v2' && !(parsedMidi instanceof MidiParserV2)) {
+      return;
+    }
+    if (parserVersion === 'v1' && !(parsedMidi instanceof MidiParserV1)) {
       return;
     }
 
@@ -61,14 +83,21 @@ export function SheetMusic({
     }
 
     setRenderData(
-      renderMusic(
-        vexflowContainerRef,
-        parsedMidi,
-        showBarNumbers,
-        enableColors,
-      ),
+      parserVersion === 'v2'
+        ? renderMusicV2(
+            vexflowContainerRef,
+            parsedMidi as MidiParserV2,
+            showBarNumbers,
+            enableColors,
+          )
+        : renderMusicV1(
+            vexflowContainerRef,
+            parsedMidi as MidiParserV1,
+            showBarNumbers,
+            enableColors,
+          ),
     );
-  }, [parsedMidi, showBarNumbers, enableColors]);
+  }, [parsedMidi, showBarNumbers, enableColors, parserVersion]);
 
   useEffect(() => {
     if (!midi || !renderData) {
