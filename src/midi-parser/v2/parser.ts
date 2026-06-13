@@ -70,10 +70,7 @@ const REST_KEY = 'b/4';
 
 // Whole-span subdivisions offered in a simple (non-compound) meter, keyed by the
 // number of slots. `notatedDivisor` is the binary value the written notes are
-// drawn from; the remaining scaling is carried by the tuplet ratio. Composite
-// tuplets (6, 9, 12) are intentionally absent — they read better when built from
-// stacked atomic groups (two triplets, not one 6:4), which the recursive split
-// produces. The largest key is the resolution floor (finest in-time grid).
+// drawn from; the remaining scaling is carried by the tuplet ratio.
 const SIMPLE_DIVISORS: { [slots: number]: NotationInfo } = {
   1: { notatedDivisor: 1, tuplet: null },
   2: { notatedDivisor: 2, tuplet: null },
