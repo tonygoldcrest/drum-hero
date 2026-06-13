@@ -1,5 +1,4 @@
 /* eslint import/prefer-default-export: off */
-import { URL } from 'url';
 import path from 'path';
 import { dialog } from 'electron';
 import { glob } from 'glob';
@@ -9,14 +8,11 @@ import ElectronStore from 'electron-store';
 import { randomUUID } from 'crypto';
 import { StorageSchema } from '../types';
 
-export function resolveHtmlPath(htmlFileName: string) {
+export function resolveHtmlPath(_htmlFileName: string) {
   if (process.env.NODE_ENV === 'development') {
-    const port = process.env.PORT || 1212;
-    const url = new URL(`http://localhost:${port}`);
-    url.pathname = htmlFileName;
-    return url.href;
+    return process.env.VITE_DEV_SERVER_URL!;
   }
-  return `file://${path.resolve(__dirname, '../renderer/', htmlFileName)}`;
+  return `file://${path.resolve(__dirname, '../renderer/index.html')}`;
 }
 
 export async function parseAndSaveSongs(

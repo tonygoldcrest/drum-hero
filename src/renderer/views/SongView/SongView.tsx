@@ -19,7 +19,7 @@ import { Playback } from '../../components/Playback/Playback';
 import { SettingsMenu } from '../../components/SettingsMenu/SettingsMenu';
 import { AudioVolume } from '../../components/AudioVolume/AudioVolume';
 import { TrackConfig } from '../../services/audio-player/types';
-import { Difficulty } from '../../../midi-parser/parser';
+import { Difficulty } from '../../../midi-parser/types';
 import { VolumeControl } from './types';
 
 export function SongView() {
