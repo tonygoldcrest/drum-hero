@@ -204,15 +204,11 @@ function renderMeasure(
   const renderedNotes = staveNotes
     .map((staveNote, i) => ({
       tick: measure.notes[i].tick,
-      x: staveNote.getAbsoluteX(),
-      noteHeadEls: staveNote.noteHeads
-        .map((nh) => nh.getSVGElement())
-        .filter((el): el is SVGElement => el != null),
+      note: staveNote,
       isMeasureRest:
         measure.notes[i].isRest && measure.notes[i].duration === 'w',
     }))
-    .filter((n) => !n.isMeasureRest)
-    .map(({ tick, x, noteHeadEls }) => ({ tick, x, noteHeadEls }));
+    .map(({ tick, note }) => ({ tick, note }));
 
   return { stave, renderedNotes };
 }

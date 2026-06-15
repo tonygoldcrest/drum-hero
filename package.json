@@ -97,6 +97,7 @@
     "electron-log": "^4.4.8",
     "electron-store": "^8.1.0",
     "electron-updater": "^6.1.4",
+    "es-toolkit": "^1.47.1",
     "fuse.js": "^7.0.0",
     "ini": "^4.1.1",
     "lodash": "^4.17.21",

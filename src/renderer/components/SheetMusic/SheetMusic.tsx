@@ -8,7 +8,6 @@ import {
 } from 'react';
 import { parseChartFile } from 'scan-chart';
 
-type ParsedChart = ReturnType<typeof parseChartFile>;
 import {
   CursorLine,
   MeasureHighlight,
@@ -17,8 +16,18 @@ import {
 } from './styles';
 import { ChartParser } from '../../../chart-parser/parser';
 import { renderMusic } from '../../../chart-parser/renderer';
-import { Difficulty, RenderData } from '../../../chart-parser/types';
+import {
+  Difficulty,
+  ParsedChart,
+  RenderData,
+} from '../../../chart-parser/types';
 import { PlayheadStyle } from '../../views/SongView/types';
+import {
+  getCursorX,
+  getNoteSvg,
+  secondsToTicks,
+  ticksToSeconds,
+} from './utils';
 
 export interface SheetMusicProps {
   fileData?: Buffer;
@@ -30,49 +39,6 @@ export interface SheetMusicProps {
   difficulty: Difficulty;
   isFiveLane: boolean;
   playheadStyle: PlayheadStyle;
-}
-
-function ticksToSeconds(
-  tick: number,
-  resolution: number,
-  tempos: ParsedChart['tempos'],
-): number {
-  let tempo = tempos[0] ?? { tick: 0, beatsPerMinute: 120, msTime: 0 };
-
-  for (const t of tempos) {
-    if (t.tick <= tick) {
-      tempo = t;
-    } else {
-      break;
-    }
-  }
-
-  const deltaTicks = tick - tempo.tick;
-  const msPerTick = 60000 / tempo.beatsPerMinute / resolution;
-
-  return (tempo.msTime + deltaTicks * msPerTick) / 1000;
-}
-
-function secondsToTicks(
-  seconds: number,
-  resolution: number,
-  tempos: ParsedChart['tempos'],
-): number {
-  const ms = seconds * 1000;
-  let tempo = tempos[0] ?? { tick: 0, beatsPerMinute: 120, msTime: 0 };
-
-  for (const t of tempos) {
-    if (t.msTime <= ms) {
-      tempo = t;
-    } else {
-      break;
-    }
-  }
-
-  const deltaMs = ms - tempo.msTime;
-  const ticksPerMs = (tempo.beatsPerMinute * resolution) / 60000;
-
-  return Math.round(tempo.tick + deltaMs * ticksPerMs);
 }
 
 export function SheetMusic({
@@ -196,12 +162,19 @@ export function SheetMusic({
       }
     }
 
-    if (noteIdx === -1 || renderedNotes[noteIdx].noteHeadEls.length === 0) {
+    if (noteIdx === -1) {
       return null;
     }
+
+    const noteSvgs = getNoteSvg(renderedNotes[noteIdx].note);
+
+    if (noteSvgs.length === 0) {
+      return null;
+    }
+
     return {
       key: `${highlightedMeasureIndex}-${noteIdx}`,
-      noteHeadEls: renderedNotes[noteIdx].noteHeadEls,
+      noteHeadEls: noteSvgs,
       noteIdx,
       measureIdx: highlightedMeasureIndex,
       renderedNotes,
@@ -242,7 +215,7 @@ export function SheetMusic({
     }
 
     activeNoteInfo.noteHeadEls.forEach((el) =>
-      applyTransform(el, 'scale(1.3)'),
+      applyTransform(el, 'scale(1.5)'),
     );
 
     prevActiveNoteRef.current = activeNoteInfo;
@@ -297,12 +270,13 @@ export function SheetMusic({
     if (isBackward) {
       clearAll();
       for (let m = 0; m < measureIdx; m++) {
-        renderData[m]?.renderedNotes.forEach(({ noteHeadEls }) =>
-          noteHeadEls.forEach(grey),
+        renderData[m]?.renderedNotes.forEach(({ note }) =>
+          getNoteSvg(note).forEach(grey),
         );
       }
+
       for (let i = 0; i < noteIdx; i++) {
-        curRenderedNotes[i].noteHeadEls.forEach(grey);
+        getNoteSvg(curRenderedNotes[i].note).forEach(grey);
       }
     } else {
       const fromMeasure = prev?.measureIdx ?? 0;
@@ -310,20 +284,20 @@ export function SheetMusic({
 
       if (fromMeasure === measureIdx) {
         for (let i = fromNote; i < noteIdx; i++) {
-          curRenderedNotes[i].noteHeadEls.forEach(grey);
+          getNoteSvg(curRenderedNotes[i].note).forEach(grey);
         }
       } else {
         const prevMeasureNotes = renderData[fromMeasure]?.renderedNotes ?? [];
         for (let i = fromNote; i < prevMeasureNotes.length; i++) {
-          prevMeasureNotes[i].noteHeadEls.forEach(grey);
+          getNoteSvg(prevMeasureNotes[i].note).forEach(grey);
         }
         for (let m = fromMeasure + 1; m < measureIdx; m++) {
-          renderData[m]?.renderedNotes.forEach(({ noteHeadEls }) =>
-            noteHeadEls.forEach(grey),
+          renderData[m]?.renderedNotes.forEach(({ note }) =>
+            getNoteSvg(note).forEach(grey),
           );
         }
         for (let i = 0; i < noteIdx; i++) {
-          curRenderedNotes[i].noteHeadEls.forEach(grey);
+          getNoteSvg(curRenderedNotes[i].note).forEach(grey);
         }
       }
     }
@@ -346,63 +320,15 @@ export function SheetMusic({
     if (playheadStyle !== 'Cursor' || !chart || highlightedMeasureIndex < 0) {
       return null;
     }
+
     const measureData = renderData[highlightedMeasureIndex];
 
     if (!measureData) {
       return null;
     }
 
-    const { measure, stave, renderedNotes } = measureData;
-    const currentTick = secondsToTicks(
-      currentTime,
-      chart.resolution,
-      chart.tempos,
-    );
-
-    let x: number;
-
-    if (renderedNotes.length === 0) {
-      const progress = Math.min(
-        1,
-        Math.max(
-          0,
-          (currentTick - measure.startTick) /
-            (measure.endTick - measure.startTick),
-        ),
-      );
-      x = stave.getX() + progress * stave.getWidth();
-    } else {
-      let noteIdx = -1;
-      for (let i = 0; i < renderedNotes.length; i++) {
-        if (renderedNotes[i].tick <= currentTick) {
-          noteIdx = i;
-        } else {
-          break;
-        }
-      }
-
-      if (noteIdx === -1) {
-        x = renderedNotes[0].x;
-      } else {
-        const cur = renderedNotes[noteIdx];
-        const next = renderedNotes[noteIdx + 1];
-
-        if (!next) {
-          const ticksLeft = measure.endTick - cur.tick;
-          const staveRight = stave.getX() + stave.getWidth();
-          x =
-            ticksLeft > 0
-              ? cur.x +
-                ((currentTick - cur.tick) / ticksLeft) * (staveRight - cur.x)
-              : cur.x;
-        } else {
-          x =
-            cur.x +
-            ((currentTick - cur.tick) / (next.tick - cur.tick)) *
-              (next.x - cur.x);
-        }
-      }
-    }
+    const { stave } = measureData;
+    const x = getCursorX(currentTime, chart, measureData);
 
     return {
       left: x,

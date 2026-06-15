@@ -15,10 +15,24 @@ export const LayoutContent = styled(Content)`
   overflow: auto;
   display: flex;
   flex-flow: column;
+  align-items: center;
   background: ${theme.color.foreground};
   border-radius: ${theme.borderRadius}px;
   box-shadow: ${theme.boxShadow.soft};
   color: ${theme.color.text.primary};
+`;
+
+export const Title = styled(Typography.Title)`
+  margin: 0 auto;
+`;
+
+export const Subtitle = styled.div`
+  margin-left: auto;
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  flex-flow: column;
+  align-items: flex-end;
 `;
 
 export const SheetMusicView = styled.div`
@@ -26,10 +40,6 @@ export const SheetMusicView = styled.div`
   flex-flow: column;
   align-items: center;
   min-width: max-content;
-`;
-
-export const Title = styled(Typography.Title)`
-  margin: 0 auto;
 `;
 
 export const Sidebar = styled(Sider)`

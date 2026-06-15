@@ -1,4 +1,4 @@
-import { Stave } from 'vexflow';
+import { Stave, StaveNote } from 'vexflow';
 import { parseChartFile } from 'scan-chart';
 
 export interface Note {
@@ -47,6 +47,5 @@ export type ParsedChart = ReturnType<typeof parseChartFile>;
 
 export interface RenderedNote {
   tick: number;
-  x: number;
-  noteHeadEls: SVGElement[];
+  note: StaveNote;
 }

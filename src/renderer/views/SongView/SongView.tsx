@@ -11,6 +11,7 @@ import {
   SecondaryText,
   SelectWrapper,
   StyledSelect,
+  Subtitle,
 } from './styles';
 import { IpcLoadSongResponse, SongData } from '../../../types';
 import { SheetMusic } from '../../components/SheetMusic/SheetMusic';
@@ -351,9 +352,11 @@ export function SongView() {
           <LayoutContent>
             {songData && (
               <SheetMusicView>
-                <Title>
-                  {songData.name} by {songData.artist}
-                </Title>
+                <Title>{songData.name}</Title>
+                <Subtitle>
+                  <div>Music by {songData.artist}</div>
+                  <div>Arranged by {songData.charter}</div>
+                </Subtitle>
                 <SheetMusic
                   currentTime={currentPlayback}
                   fileData={fileData}
