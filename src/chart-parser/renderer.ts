@@ -57,9 +57,8 @@ export function renderMusic(
     Math.ceil(song.measures.length / STAVE_PER_ROW) * lineHeight + 50,
   );
 
-  return song.measures.map((measure, index) => ({
-    measure,
-    stave: renderMeasure(
+  return song.measures.map((measure, index) => {
+    const { stave, renderedNotes } = renderMeasure(
       context,
       measure,
       index,
@@ -68,8 +67,9 @@ export function renderMusic(
       index === song.measures.length - 1,
       showBarNumbers,
       enableColors,
-    ),
-  }));
+    );
+    return { measure, stave, renderedNotes };
+  });
 }
 
 function buildVoice(measure: Measure, enableColors: boolean) {
@@ -151,7 +151,7 @@ function buildVoice(measure: Measure, enableColors: boolean) {
       : undefined,
   });
 
-  return { voice, beams, tuplets };
+  return { voice, beams, tuplets, staveNotes };
 }
 
 function renderMeasure(
@@ -184,7 +184,10 @@ function renderMeasure(
 
   stave.setContext(context).draw();
 
-  const { voice, beams, tuplets } = buildVoice(measure, enableColors);
+  const { voice, beams, tuplets, staveNotes } = buildVoice(
+    measure,
+    enableColors,
+  );
 
   new Formatter().joinVoices([voice]).format([voice], STAVE_WIDTH - 40);
 
@@ -198,5 +201,18 @@ function renderMeasure(
     tuplet.setContext(context).draw();
   });
 
-  return stave;
+  const renderedNotes = staveNotes
+    .map((staveNote, i) => ({
+      tick: measure.notes[i].tick,
+      x: staveNote.getAbsoluteX(),
+      noteHeadEls: staveNote.noteHeads
+        .map((nh) => nh.getSVGElement())
+        .filter((el): el is SVGElement => el != null),
+      isMeasureRest:
+        measure.notes[i].isRest && measure.notes[i].duration === 'w',
+    }))
+    .filter((n) => !n.isMeasureRest)
+    .map(({ tick, x, noteHeadEls }) => ({ tick, x, noteHeadEls }));
+
+  return { stave, renderedNotes };
 }

@@ -36,3 +36,18 @@ export const MeasureHighlight = styled.button<{ $highlighted: boolean }>`
     z-index: -1;
   }
 `;
+
+export const CursorLine = styled.div`
+  position: absolute;
+  z-index: 1;
+  width: 7px;
+  transform: translateX(-50%);
+  background: rgba(229, 225, 218, 0.5);
+  backdrop-filter: blur(2px);
+  border-radius: 3px;
+  border: 2px solid rgba(45, 52, 54, 1);
+  pointer-events: none;
+  box-shadow:
+    rgba(0, 0, 0, 0.16) 0px 3px 6px,
+    rgba(0, 0, 0, 0.23) 0px 3px 6px;
+`;

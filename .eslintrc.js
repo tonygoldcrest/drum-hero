@@ -1,4 +1,9 @@
 module.exports = {
+  env: {
+    node: true,
+    browser: true,
+    es2022: true,
+  },
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
@@ -17,7 +22,10 @@ module.exports = {
     'no-shadow': 'off',
     '@typescript-eslint/no-shadow': 'error',
     'no-unused-vars': 'off',
-    '@typescript-eslint/no-unused-vars': 'error',
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+    ],
     'no-use-before-define': 'off',
     'no-empty-function': 'off',
     'no-useless-constructor': 'off',
@@ -33,6 +41,14 @@ module.exports = {
     ecmaVersion: 2022,
     sourceType: 'module',
   },
+  overrides: [
+    {
+      files: ['scripts/**/*.js'],
+      rules: {
+        '@typescript-eslint/no-var-requires': 'off',
+      },
+    },
+  ],
   settings: {
     'import/parsers': {
       '@typescript-eslint/parser': ['.ts', '.tsx'],

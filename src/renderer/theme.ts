@@ -3,6 +3,7 @@ export const theme = {
     soft: 'rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px',
   },
   color: {
+    dark: '#2D3436',
     primaryDark: '#50a5b2',
     primary: '#92C7CF',
     primaryLight: '#AAD7D9',

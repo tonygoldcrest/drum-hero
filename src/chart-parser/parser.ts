@@ -1,8 +1,7 @@
 import { type NoteEvent } from 'scan-chart';
 
-import { Measure, Note, TupletMeta } from './types';
-import { Difficulty, ParsedChart } from '../types';
-import { noteToKey } from '../utils';
+import { Difficulty, ParsedChart, Measure, Note, TupletMeta } from './types';
+import { noteToKey } from './utils';
 
 /**
  * Clone Hero drum midi -> sheet music model.

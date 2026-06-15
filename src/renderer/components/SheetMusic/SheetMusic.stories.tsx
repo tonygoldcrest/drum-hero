@@ -11,13 +11,7 @@ import {
 } from './drumMidiFixture';
 import { Difficulty } from '../../../chart-parser/types';
 
-function Sheet({
-  measures,
-  parserVersion,
-}: {
-  measures: MeasureSpec[];
-  parserVersion: 'v1' | 'v2';
-}) {
+function Sheet({ measures }: { measures: MeasureSpec[] }) {
   return (
     <div style={{ padding: 24, background: '#fff', overflow: 'auto' }}>
       <SheetMusic
@@ -29,7 +23,7 @@ function Sheet({
         onSelectMeasure={() => {}}
         difficulty={Difficulty.expert}
         isFiveLane={false}
-        parserVersion={parserVersion}
+        playheadStyle="None"
       />
     </div>
   );
@@ -116,20 +110,11 @@ const MEASURES: MeasureSpec[] = [
 const meta: Meta<typeof Sheet> = {
   title: 'Parser',
   component: Sheet,
-  argTypes: {
-    parserVersion: {
-      options: ['v1', 'v2'],
-      default: 'v2',
-      control: { type: 'radio' },
-    },
-  },
 };
 export default meta;
 
 type Story = StoryObj<typeof Sheet>;
 
 export const Parser: Story = {
-  render: ({ parserVersion }) => (
-    <Sheet measures={MEASURES} parserVersion={parserVersion} />
-  ),
+  render: () => <Sheet measures={MEASURES} />,
 };

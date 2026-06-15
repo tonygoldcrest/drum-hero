@@ -9,8 +9,8 @@ import {
   Title,
   SheetMusicView,
   SecondaryText,
-  DifficultySelect,
-  DifficultyConfig,
+  SelectWrapper,
+  StyledSelect,
 } from './styles';
 import { IpcLoadSongResponse, SongData } from '../../../types';
 import { SheetMusic } from '../../components/SheetMusic/SheetMusic';
@@ -20,7 +20,7 @@ import { SettingsMenu } from '../../components/SettingsMenu/SettingsMenu';
 import { AudioVolume } from '../../components/AudioVolume/AudioVolume';
 import { TrackConfig } from '../../services/audio-player/types';
 import { Difficulty } from '../../../chart-parser/types';
-import { VolumeControl } from './types';
+import { PLAYHEAD_STYLES, PlayheadStyle, VolumeControl } from './types';
 
 export function SongView() {
   const [fileData, setFileData] = useState<Buffer>();
@@ -29,6 +29,7 @@ export function SongView() {
   const [showBarNumbers, setShowBarNumbers] = useState(false);
   const [enableColors, setEnableColors] = useState(true);
   const [difficulty, setDifficulty] = useState<Difficulty>(Difficulty.expert);
+  const [playheadStyle, setPlayheadStyle] = useState<PlayheadStyle>('Cursor');
   const [currentPlayback, setCurrentPlayback] = useState(0);
   const [songData, setSongData] = useState<SongData | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -290,9 +291,9 @@ export function SongView() {
             onExpandClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
             isLoading={audioPlayer === null}
           >
-            <DifficultyConfig>
+            <SelectWrapper>
               <SecondaryText>Difficulty</SecondaryText>
-              <DifficultySelect
+              <StyledSelect
                 value={difficulty}
                 options={Object.values(Difficulty).map((diff) => ({
                   value: diff,
@@ -300,7 +301,18 @@ export function SongView() {
                 }))}
                 onChange={(value) => setDifficulty(value as Difficulty)}
               />
-            </DifficultyConfig>
+            </SelectWrapper>
+            <SelectWrapper>
+              <SecondaryText>Playhead Style</SecondaryText>
+              <StyledSelect
+                value={playheadStyle}
+                options={PLAYHEAD_STYLES.map((style) => ({
+                  value: style,
+                  label: <span>{style}</span>,
+                }))}
+                onChange={(value) => setPlayheadStyle(value as PlayheadStyle)}
+              />
+            </SelectWrapper>
             {...volumeSliders}
             <>
               <Switch
@@ -347,6 +359,7 @@ export function SongView() {
                   fileData={fileData}
                   format={format}
                   difficulty={difficulty}
+                  playheadStyle={playheadStyle}
                   showBarNumbers={showBarNumbers}
                   enableColors={enableColors}
                   isFiveLane={songData.five_lane_drums === 'True'}

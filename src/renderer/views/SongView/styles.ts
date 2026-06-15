@@ -45,13 +45,13 @@ export const SecondaryText = styled.div`
   color: ${theme.color.text.tertiary};
 `;
 
-export const DifficultyConfig = styled.div`
+export const SelectWrapper = styled.div`
   display: flex;
   flex-grow: 1;
   flex-flow: column;
 `;
 
-export const DifficultySelect = styled(Select)`
+export const StyledSelect = styled(Select)`
   flex-grow: 1;
   margin-top: 3px;
 `;
