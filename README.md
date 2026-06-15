@@ -19,7 +19,7 @@ xattr -r -d com.apple.quarantine /Applications/DrumHero.app
 
 ## Why?
 
-Finding drumless tracks with sheet music to play along can be daunting. Thankfully, Clone Hero provides both. It has thousands of songs with what is essentially sheet music and for many of them it's possible to disable the drum audio. Albeit, the notes in these tracks are not 100% correct, they are often close enough. 
+Finding drumless tracks with sheet music to play along can be daunting. Thankfully, Clone Hero provides both. It has thousands of songs with what is essentially sheet music and for many of them it's possible to disable the drum audio. Albeit, the notes in these tracks are not 100% correct, they are often close enough.
 
 My goal was to create a tool that I can use to start moving away from only playing Clone Hero to something more serious. The next step for me is to learn to sightread the actual music, and this tool helps tremendously with that.
 
@@ -48,13 +48,13 @@ If you don't have one, download songs from known sources you can find online.
 ## Roadmap
 
 - [x] 5-lane track support (GH songs are not supported for now)
-- [ ] .chart support for custom charts.
+- [x] .chart support for custom charts.
 - [x] Double-kick support
 - [ ] Practice mode - selecting measures makes the song loop within them
 
 ## Known bugs
 
-* Triplets sometimes render incorrectly
+* ~~Triplets sometimes render incorrectly~~
 
 ## Acknowledgements
 

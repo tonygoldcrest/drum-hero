@@ -4,6 +4,7 @@ import {
   faHeart as faHeartSolid,
 } from '@fortawesome/free-solid-svg-icons';
 import { faHeart } from '@fortawesome/free-regular-svg-icons';
+import appIcon from '../../../../assets/icon.png';
 import {
   AdditionalInfo,
   Album,
@@ -29,7 +30,12 @@ export function SongListItem({
 }: SongListItemProps) {
   return (
     <Wrapper to={{ pathname: `/${id}` }}>
-      <Album src={albumCover} />
+      <Album
+        src={albumCover ?? appIcon}
+        onError={(e) => {
+          e.currentTarget.src = appIcon;
+        }}
+      />
       <MainInfo>
         <Name>{name}</Name>
         <Artist>{artist}</Artist>

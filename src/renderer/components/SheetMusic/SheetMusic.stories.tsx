@@ -9,7 +9,7 @@ import {
   Hit,
   MeasureSpec,
 } from './drumMidiFixture';
-import { Difficulty } from '../../../midi-parser/types';
+import { Difficulty } from '../../../chart-parser/types';
 
 function Sheet({
   measures,
@@ -21,7 +21,8 @@ function Sheet({
   return (
     <div style={{ padding: 24, background: '#fff', overflow: 'auto' }}>
       <SheetMusic
-        midiData={buildDrumMidi(measures) as unknown as Buffer}
+        fileData={buildDrumMidi(measures) as unknown as Buffer}
+        format="mid"
         showBarNumbers={false}
         enableColors
         currentTime={0}

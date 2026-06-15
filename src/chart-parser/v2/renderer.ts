@@ -16,7 +16,7 @@ import {
   GraceNote,
   GraceNoteGroup,
 } from 'vexflow';
-import { MidiParser } from './parser';
+import { ChartParser } from './parser';
 import { Measure, RenderData } from './types';
 
 const STAVE_WIDTH = 600;
@@ -39,7 +39,7 @@ const REST_KEY = 'b/4';
 
 export function renderMusic(
   elementRef: React.RefObject<HTMLDivElement>,
-  song: MidiParser,
+  song: ChartParser,
   showBarNumbers: boolean = true,
   enableColors: boolean = false,
 ): RenderData[] {

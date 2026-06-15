@@ -1,5 +1,3 @@
-/* eslint global-require: off, no-console: off, promise/always-return: off */
-
 /**
  * This module executes inside of electron's main process. You can start
  * electron renderer process from here and communicate with the other processes
@@ -44,21 +42,29 @@ ipcMain.on('load-song', async (event, id) => {
   const songData = (store.get('songs') as StorageSchema['songs'])[id];
 
   glob(
-    `${songData.dir}/*(*.mid|*.ogg|*.opus)`,
+    `${songData.dir}/*(*.mid|*.chart|*.ogg|*.opus)`,
     { ignore: [`${songData.dir}/crowd.ogg`, `${songData.dir}/preview.ogg`] },
     (err, files) => {
       const midiFilePath = files.find((file) => path.extname(file) === '.mid');
-      if (!midiFilePath) {
+      const chartFilePath = files.find(
+        (file) => path.extname(file) === '.chart',
+      );
+
+      if (!midiFilePath && !chartFilePath) {
         return;
       }
+
       const audio = files
         .filter((file) => ['.ogg', '.opus'].includes(path.extname(file)))
         .map((file) => ({
           src: `gh://${file}`,
           name: path.parse(file).name,
         }));
-      const midiData = fs.readFileSync(midiFilePath);
-      event.reply('load-song', { data: songData, midi: midiData, audio });
+
+      const format = midiFilePath ? 'mid' : 'chart';
+      const fileData = fs.readFileSync(midiFilePath ?? chartFilePath!);
+
+      event.reply('load-song', { data: songData, fileData, format, audio });
     },
   );
 });
@@ -206,7 +212,9 @@ app
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the
       // dock icon is clicked and there are no other windows open.
-      if (mainWindow === null) createWindow();
+      if (mainWindow === null) {
+        createWindow();
+      }
     });
   })
   .catch(console.log);

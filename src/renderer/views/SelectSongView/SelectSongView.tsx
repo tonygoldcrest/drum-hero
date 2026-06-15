@@ -62,6 +62,7 @@ export function SelectSongView() {
       <SongListContainer>
         <SongList
           songList={filteredSongList}
+          scrollKey={nameFilter}
           onLikeChange={(id, liked) => {
             const song = songList.find((s) => s.id === id);
 

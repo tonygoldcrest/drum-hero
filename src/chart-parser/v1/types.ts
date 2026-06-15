@@ -1,4 +1,3 @@
-import { NoteJSON } from '@tonejs/midi/dist/Note';
 import { Stave } from 'vexflow';
 
 export interface Note {
@@ -26,21 +25,6 @@ export interface Measure {
   startTick: number;
   endTick: number;
   durationTicks?: number;
-}
-
-export interface RawMidiNote {
-  note: NoteJSON;
-  key: string;
-}
-
-export interface Modifier {
-  forNotes: number[];
-  key: string;
-}
-
-export interface ModifierNote {
-  note: NoteJSON;
-  modifier: Modifier;
 }
 
 export interface Duration {

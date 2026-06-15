@@ -5,8 +5,9 @@ module.exports = {
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
     'plugin:import/typescript',
+    'plugin:prettier/recommended',
   ],
-  plugins: ['@typescript-eslint', 'import'],
+  plugins: ['@typescript-eslint', 'import', 'prettier'],
   rules: {
     'react/react-in-jsx-scope': 'off',
     'react/jsx-filename-extension': 'off',
@@ -26,6 +27,7 @@ module.exports = {
     'no-bitwise': 'off',
     camelcase: 'off',
     'no-underscore-dangle': 'off',
+    curly: ['error', 'all'],
   },
   parserOptions: {
     ecmaVersion: 2022,

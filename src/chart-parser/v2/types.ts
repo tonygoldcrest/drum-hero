@@ -23,19 +23,10 @@ export interface Measure {
   tuplets: TupletMeta[];
 }
 
-export interface MidiMapping {
-  [key: number]: string;
-}
-
 export interface TupletMeta {
   id: number;
   numNotes: number;
   notesOccupied: number;
-}
-
-export interface Modifier {
-  forNotes: number[];
-  key: string;
 }
 
 export interface RenderData {

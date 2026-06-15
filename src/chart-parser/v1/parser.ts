@@ -1,193 +1,81 @@
-import { HeaderJSON, MidiJSON, TrackJSON } from '@tonejs/midi';
-import { Difficulty, MidiMapping } from '../types';
-import {
-  Beat,
-  Duration,
-  Measure,
-  Modifier,
-  ModifierNote,
-  Note,
-  RawMidiNote,
-} from './types';
+import { type NoteEvent } from 'scan-chart';
 
-export class MidiParser {
-  mapping: { [key in Difficulty]: MidiMapping } = {
-    expert: {
-      95: 'e/4', // kick
-      96: 'f/4', // kick
-      97: 'c/5', // snare
-      98: 'g/5/x2', // yellow cymbal
-      99: 'f/5/x2', // blue cymbal
-      100: 'a/5/x2', // green cymbal
-    },
-    hard: {
-      84: 'f/4', // kick
-      85: 'c/5', // snare
-      86: 'g/5/x2', // yellow cymbal
-      87: 'f/5/x2', // blue cymbal
-      88: 'a/5/x2', // green cymbal
-    },
-    medium: {
-      72: 'f/4', // kick
-      73: 'c/5', // snare
-      74: 'g/5/x2', // yellow cymbal
-      75: 'f/5/x2', // blue cymbal
-      76: 'a/5/x2', // green cymbal
-    },
-    easy: {
-      60: 'f/4', // kick
-      61: 'c/5', // snare
-      62: 'g/5/x2', // yellow cymbal
-      63: 'f/5/x2', // blue cymbal
-      64: 'a/5/x2', // green cymbal
-    },
-  };
+import { Difficulty, ParsedChart } from '../types';
+import { Beat, Duration, Measure, Note } from './types';
+import { noteToKey } from '../utils';
 
-  mappingFiveLane: { [key in Difficulty]: MidiMapping } = {
-    expert: {
-      95: 'e/4', // kick
-      96: 'f/4', // kick
-      97: 'c/5', // snare
-      98: 'g/5/x2', // yellow cymbal
-      99: 'd/5', // blue tom
-      100: 'a/5/x2', // green cymbal
-      101: 'a/4', // green tom
-    },
-    hard: {
-      84: 'f/4', // kick
-      85: 'c/5', // snare
-      86: 'g/5/x2', // yellow cymbal
-      87: 'd/5', // blue tom
-      88: 'a/5/x2', // green cymbal
-      89: 'a/4', // green tom
-    },
-    medium: {
-      72: 'f/4', // kick
-      73: 'c/5', // snare
-      74: 'g/5/x2', // yellow cymbal
-      75: 'd/5', // blue tom
-      76: 'a/5/x2', // green cymbal
-      77: 'a/4', // green tom
-    },
-    easy: {
-      60: 'f/4', // kick
-      61: 'c/5', // snare
-      62: 'g/5/x2', // yellow cymbal
-      63: 'd/5', // blue tom
-      64: 'a/5/x2', // green cymbal
-      65: 'a/4', // green tom
-    },
-  };
-
-  tomModifiers: { [key: number]: Modifier } = {
-    110: {
-      forNotes: [98, 86, 74, 62],
-      key: 'e/5', // yellow tom
-    },
-    111: {
-      forNotes: [99, 87, 75, 63],
-      key: 'd/5', // blue tom
-    },
-    112: {
-      forNotes: [100, 88, 76, 64],
-      key: 'a/4', // green tom
-    },
-  };
-
+export class ChartParser {
   measures: Measure[] = [];
 
-  rawMidiNotes: Map<number, RawMidiNote[]> = new Map();
+  rawNotesByTick: Map<number, string[]> = new Map();
 
   endOfTrackTicks: number;
 
-  modifierNotes: ModifierNote[] = [];
-
-  header: HeaderJSON;
+  private ppq: number;
 
   durationMap: { [key: number]: Duration };
 
   constructor(
-    data: MidiJSON,
+    chart: ParsedChart,
     isFiveLane: boolean,
     difficulty: Difficulty = Difficulty.expert,
   ) {
-    const drumPart = data.tracks.find((track) => track.name === 'PART DRUMS');
+    const drumTrack = chart.trackData.find(
+      (t) => t.instrument === 'drums' && t.difficulty === difficulty,
+    );
 
-    if (!drumPart) {
+    if (!drumTrack) {
       throw new Error('no drum part');
     }
 
-    this.endOfTrackTicks = drumPart.endOfTrackTicks || 0;
+    this.ppq = chart.resolution;
 
-    this.header = data.header;
+    const allTicks = drumTrack.noteEventGroups.flat().map((e) => e.tick);
+    this.endOfTrackTicks = allTicks.length > 0 ? Math.max(...allTicks) + 1 : 0;
 
     this.durationMap = this.constructDurationMap();
 
-    this.processNotes(drumPart, isFiveLane, difficulty);
-    this.createMeasures();
+    this.processNotes(drumTrack.noteEventGroups, isFiveLane);
+    this.createMeasures(chart.timeSignatures);
     this.fillBeats();
     this.extendNoteDuration();
     this.processCompositeDuration();
     this.flattenMeasures();
   }
 
-  processNotes(
-    trackData: TrackJSON,
-    isFiveLane: boolean,
-    difficulty: Difficulty,
-  ) {
-    const mapping = isFiveLane ? this.mappingFiveLane : this.mapping;
-
-    trackData.notes.forEach((note) => {
-      if (mapping[difficulty][note.midi]) {
-        const tickData = this.rawMidiNotes.get(note.ticks) ?? [];
-        tickData.push({
-          note,
-          key: mapping[difficulty][note.midi],
-        });
-        this.rawMidiNotes.set(note.ticks, tickData);
-      } else if (this.tomModifiers[note.midi]) {
-        this.modifierNotes.push({
-          note,
-          modifier: this.tomModifiers[note.midi],
-        });
+  processNotes(noteEventGroups: NoteEvent[][], isFiveLane: boolean) {
+    for (const group of noteEventGroups) {
+      for (const event of group) {
+        const key = noteToKey(event.type, event.flags, isFiveLane);
+        if (!key) {
+          continue;
+        }
+        const keys = this.rawNotesByTick.get(event.tick) ?? [];
+        keys.push(key);
+        this.rawNotesByTick.set(event.tick, keys);
       }
-    });
+    }
   }
 
-  getNoteKey(note: RawMidiNote, modifiers: ModifierNote[]) {
-    return (
-      modifiers.find((modifier) =>
-        modifier.modifier.forNotes.includes(note.note.midi),
-      )?.modifier.key ?? note.key
-    );
-  }
-
-  createMeasures() {
-    const { ppq } = this.header;
+  createMeasures(timeSignatures: ParsedChart['timeSignatures']) {
+    const ppq = this.ppq;
     const endOfTrackTicks = this.endOfTrackTicks ?? 0;
 
-    const timeSignatures =
-      this.header.timeSignatures.length > 0
-        ? this.header.timeSignatures
-        : [
-            {
-              ticks: 0,
-              timeSignature: [4, 4],
-            },
-          ];
+    const sigs =
+      timeSignatures.length > 0
+        ? timeSignatures
+        : [{ tick: 0, numerator: 4, denominator: 4 }];
 
     let startTick = 0;
 
-    timeSignatures.forEach((timeSigData, index) => {
+    sigs.forEach((sigData, index) => {
       const timeSignature: [number, number] = [
-        timeSigData.timeSignature[0],
-        timeSigData.timeSignature[1],
+        sigData.numerator,
+        sigData.denominator,
       ];
       const pulsesPerDivision = ppq / (timeSignature[1] / 4);
       const totalTimeSigTicks =
-        (timeSignatures[index + 1]?.ticks ?? endOfTrackTicks) -
-        timeSigData.ticks;
+        (sigs[index + 1]?.tick ?? endOfTrackTicks) - sigData.tick;
 
       const numberOfMeasures = Math.ceil(
         totalTimeSigTicks / pulsesPerDivision / timeSignature[0],
@@ -237,19 +125,11 @@ export class MidiParser {
           currentTick < beat.endTick;
           currentTick += step
         ) {
-          const tickNotes = this.rawMidiNotes.get(currentTick);
+          const tickKeys = this.rawNotesByTick.get(currentTick);
 
-          const currentModifierNotes = this.modifierNotes.filter(
-            (modifier) =>
-              currentTick >= modifier.note.ticks &&
-              currentTick < modifier.note.ticks + modifier.note.durationTicks,
-          );
-
-          if (tickNotes) {
+          if (tickKeys) {
             beat.notes.push({
-              notes: tickNotes.map((note) =>
-                this.getNoteKey(note, currentModifierNotes),
-              ),
+              notes: tickKeys,
               isRest: false,
               dotted: false,
               isTriplet: false,
@@ -413,7 +293,7 @@ export class MidiParser {
 
   getClosestDuration(availableDurations: number[], note: Note) {
     let durationDiff = Infinity;
-    let closestDurationKey = this.header.ppq / 16;
+    let closestDurationKey = this.ppq / 16;
     availableDurations.forEach((duration) => {
       const diff = Math.abs(duration - (note.durationTicks ?? 0));
       if (diff < durationDiff) {
@@ -461,7 +341,7 @@ export class MidiParser {
   }
 
   constructDurationMap() {
-    const { ppq } = this.header;
+    const ppq = this.ppq;
 
     return {
       [ppq]: { duration: 'q' },

@@ -1,5 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { VirtualList, VirtualListItem, Wrapper } from './styles';
 import { SongListItem } from '../SongListItem/SongListItem';
 import { SongData } from '../../../types';
@@ -8,10 +8,20 @@ export interface SongListProps {
   songList: SongData[];
   className?: string;
   onLikeChange: (id: string, liked: boolean) => void;
+  scrollKey?: string;
 }
 
-export function SongList({ songList, className, onLikeChange }: SongListProps) {
+export function SongList({
+  songList,
+  className,
+  onLikeChange,
+  scrollKey,
+}: SongListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    parentRef.current?.scrollTo(0, 0);
+  }, [scrollKey]);
 
   const rowVirtualizer = useVirtualizer({
     count: songList.length,

@@ -2542,27 +2542,38 @@ async function parseAndSaveSongs(store2, callback) {
     return;
   }
   store2.delete("songs");
-  globExports.glob(`${result.filePaths[0]}/**/notes.mid`, {}, (err, files) => {
-    const supportedImageExtensions = ["png", "jpg", "jpeg"];
-    const songList = files.map((file) => path$2.join(path$2.dirname(file), "song.ini")).filter((file) => fs$3.existsSync(file)).map((file) => ({
-      info: ini.parse(fs$3.readFileSync(file, "utf-8")),
-      dir: path$2.dirname(file)
-    })).map(({ info, dir }) => {
-      const albumCoverPath = supportedImageExtensions.map((ext2) => path$2.join(dir, `album.${ext2}`)).find((p) => fs$3.existsSync(p));
-      return {
-        id: crypto.randomUUID(),
-        dir,
-        albumCover: albumCoverPath ? `gh:///${albumCoverPath}` : null,
-        ...info.song ?? info.Song ?? info
-      };
-    });
-    const songs = songList.reduce((acc, song) => {
-      acc[song.id] = song;
-      return acc;
-    }, {});
-    store2.set("songs", songs);
-    callback?.(songs);
-  });
+  globExports.glob(
+    `${result.filePaths[0]}/**/{notes.mid,notes.chart}`,
+    {},
+    (err, files) => {
+      const supportedImageExtensions = ["png", "jpg", "jpeg"];
+      const dirToFile = /* @__PURE__ */ new Map();
+      for (const file of files) {
+        const dir = path$2.dirname(file);
+        if (!dirToFile.has(dir) || path$2.extname(file) === ".mid") {
+          dirToFile.set(dir, file);
+        }
+      }
+      const songList = [...dirToFile.keys()].map((dir) => path$2.join(dir, "song.ini")).filter((file) => fs$3.existsSync(file)).map((file) => ({
+        info: ini.parse(fs$3.readFileSync(file, "utf-8")),
+        dir: path$2.dirname(file)
+      })).map(({ info, dir }) => {
+        const albumCoverPath = supportedImageExtensions.map((ext2) => path$2.join(dir, `album.${ext2}`)).find((p) => fs$3.existsSync(p));
+        return {
+          id: crypto.randomUUID(),
+          dir,
+          albumCover: albumCoverPath ? `gh:///${albumCoverPath}` : null,
+          ...info.song ?? info.Song ?? info
+        };
+      });
+      const songs = songList.reduce((acc, song) => {
+        acc[song.id] = song;
+        return acc;
+      }, {});
+      store2.set("songs", songs);
+      callback?.(songs);
+    }
+  );
 }
 class AppUpdater {
   constructor() {
@@ -2577,19 +2588,23 @@ let powerSaveBlockerId = -1;
 electron.ipcMain.on("load-song", async (event, id) => {
   const songData = store.get("songs")[id];
   glob(
-    `${songData.dir}/*(*.mid|*.ogg|*.opus)`,
+    `${songData.dir}/*(*.mid|*.chart|*.ogg|*.opus)`,
     { ignore: [`${songData.dir}/crowd.ogg`, `${songData.dir}/preview.ogg`] },
     (err, files) => {
       const midiFilePath = files.find((file) => path$2.extname(file) === ".mid");
-      if (!midiFilePath) {
+      const chartFilePath = files.find(
+        (file) => path$2.extname(file) === ".chart"
+      );
+      if (!midiFilePath && !chartFilePath) {
         return;
       }
       const audio = files.filter((file) => [".ogg", ".opus"].includes(path$2.extname(file))).map((file) => ({
         src: `gh://${file}`,
         name: path$2.parse(file).name
       }));
-      const midiData = fs$3.readFileSync(midiFilePath);
-      event.reply("load-song", { data: songData, midi: midiData, audio });
+      const format = midiFilePath ? "mid" : "chart";
+      const fileData = fs$3.readFileSync(midiFilePath ?? chartFilePath);
+      event.reply("load-song", { data: songData, fileData, format, audio });
     }
   );
 });
@@ -2694,6 +2709,8 @@ electron.app.whenReady().then(() => {
   });
   createWindow();
   electron.app.on("activate", () => {
-    if (mainWindow === null) createWindow();
+    if (mainWindow === null) {
+      createWindow();
+    }
   });
 }).catch(console.log);

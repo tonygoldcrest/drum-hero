@@ -1,16 +1,19 @@
 import { RefObject, createRef, useEffect, useRef, useState } from 'react';
-import { Midi } from '@tonejs/midi';
+import { parseChartFile } from 'scan-chart';
+
+type ParsedChart = ReturnType<typeof parseChartFile>;
 import { MeasureHighlight, VexflowContainer, Wrapper } from './styles';
-import { MidiParser as MidiParserV2 } from '../../../midi-parser/v2/parser';
-import { renderMusic as renderMusicV2 } from '../../../midi-parser/v2/renderer';
-import { MidiParser as MidiParserV1 } from '../../../midi-parser/v1/parser';
-import { renderMusic as renderMusicV1 } from '../../../midi-parser/v1/renderer';
-import { Difficulty } from '../../../midi-parser/types';
-import { RenderData as RenderDataV2 } from '../../../midi-parser/v2/types';
-import { RenderData as RenderDataV1 } from '../../../midi-parser/v1/types';
+import { ChartParser as ChartParserV2 } from '../../../chart-parser/v2/parser';
+import { renderMusic as renderMusicV2 } from '../../../chart-parser/v2/renderer';
+import { ChartParser as ChartParserV1 } from '../../../chart-parser/v1/parser';
+import { renderMusic as renderMusicV1 } from '../../../chart-parser/v1/renderer';
+import { Difficulty } from '../../../chart-parser/types';
+import { RenderData as RenderDataV2 } from '../../../chart-parser/v2/types';
+import { RenderData as RenderDataV1 } from '../../../chart-parser/v1/types';
 
 export interface SheetMusicProps {
-  midiData?: Buffer;
+  fileData?: Buffer;
+  format?: 'mid' | 'chart';
   showBarNumbers: boolean;
   enableColors: boolean;
   currentTime: number;
@@ -20,8 +23,52 @@ export interface SheetMusicProps {
   parserVersion?: 'v1' | 'v2';
 }
 
+function ticksToSeconds(
+  tick: number,
+  resolution: number,
+  tempos: ParsedChart['tempos'],
+): number {
+  let tempo = tempos[0] ?? { tick: 0, beatsPerMinute: 120, msTime: 0 };
+
+  for (const t of tempos) {
+    if (t.tick <= tick) {
+      tempo = t;
+    } else {
+      break;
+    }
+  }
+
+  const deltaTicks = tick - tempo.tick;
+  const msPerTick = 60000 / tempo.beatsPerMinute / resolution;
+
+  return (tempo.msTime + deltaTicks * msPerTick) / 1000;
+}
+
+function secondsToTicks(
+  seconds: number,
+  resolution: number,
+  tempos: ParsedChart['tempos'],
+): number {
+  const ms = seconds * 1000;
+  let tempo = tempos[0] ?? { tick: 0, beatsPerMinute: 120, msTime: 0 };
+
+  for (const t of tempos) {
+    if (t.msTime <= ms) {
+      tempo = t;
+    } else {
+      break;
+    }
+  }
+
+  const deltaMs = ms - tempo.msTime;
+  const ticksPerMs = (tempo.beatsPerMinute * resolution) / 60000;
+
+  return Math.round(tempo.tick + deltaMs * ticksPerMs);
+}
+
 export function SheetMusic({
-  midiData,
+  fileData,
+  format = 'mid',
   showBarNumbers,
   enableColors,
   currentTime,
@@ -34,9 +81,9 @@ export function SheetMusic({
   const highlightsRef = useRef<RefObject<HTMLButtonElement>[]>([]);
   const vexflowContainerRef = useRef<HTMLDivElement>(null);
   const [parsedMidi, setParsedMidi] = useState<
-    MidiParserV1 | MidiParserV2 | null
+    ChartParserV1 | ChartParserV2 | null
   >(null);
-  const [midi, setMidi] = useState<Midi | null>(null);
+  const [chart, setChart] = useState<ParsedChart | null>(null);
   const [renderData, setRenderData] = useState<(RenderDataV1 | RenderDataV2)[]>(
     [],
   );
@@ -44,35 +91,34 @@ export function SheetMusic({
     useState<number>(-1);
 
   useEffect(() => {
-    if (!vexflowContainerRef.current || !midiData) {
+    if (!vexflowContainerRef.current || !fileData) {
       return;
     }
-
-    const mid = new Midi(midiData);
-    setMidi(mid);
-  }, [midiData]);
+    const parsed = parseChartFile(new Uint8Array(fileData), format);
+    setChart(parsed);
+  }, [fileData, format]);
 
   useEffect(() => {
-    if (!midi) {
+    if (!chart) {
       return;
     }
 
     setParsedMidi(
       parserVersion === 'v2'
-        ? new MidiParserV2(midi.toJSON(), isFiveLane, difficulty)
-        : new MidiParserV1(midi.toJSON(), isFiveLane, difficulty),
+        ? new ChartParserV2(chart, isFiveLane, difficulty)
+        : new ChartParserV1(chart, isFiveLane, difficulty),
     );
-  }, [midi, isFiveLane, difficulty, parserVersion]);
+  }, [chart, isFiveLane, difficulty, parserVersion]);
 
   useEffect(() => {
     if (!vexflowContainerRef.current || !parsedMidi) {
       return;
     }
 
-    if (parserVersion === 'v2' && !(parsedMidi instanceof MidiParserV2)) {
+    if (parserVersion === 'v2' && !(parsedMidi instanceof ChartParserV2)) {
       return;
     }
-    if (parserVersion === 'v1' && !(parsedMidi instanceof MidiParserV1)) {
+    if (parserVersion === 'v1' && !(parsedMidi instanceof ChartParserV1)) {
       return;
     }
 
@@ -86,13 +132,13 @@ export function SheetMusic({
       parserVersion === 'v2'
         ? renderMusicV2(
             vexflowContainerRef,
-            parsedMidi as MidiParserV2,
+            parsedMidi as ChartParserV2,
             showBarNumbers,
             enableColors,
           )
         : renderMusicV1(
             vexflowContainerRef,
-            parsedMidi as MidiParserV1,
+            parsedMidi as ChartParserV1,
             showBarNumbers,
             enableColors,
           ),
@@ -100,7 +146,7 @@ export function SheetMusic({
   }, [parsedMidi, showBarNumbers, enableColors, parserVersion]);
 
   useEffect(() => {
-    if (!midi || !renderData) {
+    if (!chart || !renderData) {
       return;
     }
 
@@ -108,7 +154,11 @@ export function SheetMusic({
       createRef<HTMLButtonElement>(),
     );
 
-    const currentTick = midi.header.secondsToTicks(currentTime) ?? 0;
+    const currentTick = secondsToTicks(
+      currentTime,
+      chart.resolution,
+      chart.tempos,
+    );
     const highlightedMeasure = renderData.find(
       ({ measure }) =>
         currentTick >= measure.startTick && currentTick < measure.endTick,
@@ -119,7 +169,7 @@ export function SheetMusic({
     }
 
     setHighlightedMeasureIndex(renderData.indexOf(highlightedMeasure));
-  }, [currentTime, midi, renderData]);
+  }, [currentTime, chart, renderData]);
 
   useEffect(() => {
     if (highlightsRef.current.length === 0) {
@@ -146,11 +196,13 @@ export function SheetMusic({
         }}
         $highlighted={isHighlighted}
         onClick={() => {
-          if (!midi) {
+          if (!chart) {
             return;
           }
 
-          onSelectMeasure(midi.header.ticksToSeconds(measure.startTick));
+          onSelectMeasure(
+            ticksToSeconds(measure.startTick, chart.resolution, chart.tempos),
+          );
         }}
       />
     );

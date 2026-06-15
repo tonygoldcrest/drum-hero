@@ -19,11 +19,12 @@ import { Playback } from '../../components/Playback/Playback';
 import { SettingsMenu } from '../../components/SettingsMenu/SettingsMenu';
 import { AudioVolume } from '../../components/AudioVolume/AudioVolume';
 import { TrackConfig } from '../../services/audio-player/types';
-import { Difficulty } from '../../../midi-parser/types';
+import { Difficulty } from '../../../chart-parser/types';
 import { VolumeControl } from './types';
 
 export function SongView() {
-  const [midiData, setMidiData] = useState<Buffer>();
+  const [fileData, setFileData] = useState<Buffer>();
+  const [format, setFormat] = useState<'mid' | 'chart'>('mid');
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [showBarNumbers, setShowBarNumbers] = useState(false);
   const [enableColors, setEnableColors] = useState(true);
@@ -58,8 +59,9 @@ export function SongView() {
   const loadSong = useCallback(() => {
     window.electron.ipcRenderer.once<IpcLoadSongResponse>(
       'load-song',
-      ({ data, midi, audio }) => {
-        setMidiData(midi);
+      ({ data, fileData: fd, format: fmt, audio }) => {
+        setFileData(fd);
+        setFormat(fmt);
         setSongData(data);
 
         const drums = audio
@@ -342,7 +344,8 @@ export function SongView() {
                 </Title>
                 <SheetMusic
                   currentTime={currentPlayback}
-                  midiData={midiData}
+                  fileData={fileData}
+                  format={format}
                   difficulty={difficulty}
                   showBarNumbers={showBarNumbers}
                   enableColors={enableColors}

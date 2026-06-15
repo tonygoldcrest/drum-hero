@@ -1,7 +1,7 @@
 export interface SongData {
   id: string;
   dir: string;
-  albumCover: string;
+  albumCover: string | null;
   album: string;
   album_track: string;
   artist: string;
@@ -59,7 +59,8 @@ export interface AudioData {
 
 export interface IpcLoadSongResponse {
   data: SongData;
-  midi: Buffer;
+  fileData: Buffer;
+  format: 'mid' | 'chart';
   audio: AudioData[];
 }
 

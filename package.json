@@ -71,7 +71,14 @@
       "out"
     ],
     "transform": {
-      "\\.(ts|tsx|js|jsx)$": ["ts-jest", { "tsconfig": { "module": "CommonJS" } }]
+      "\\.(ts|tsx|js|jsx)$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "module": "CommonJS"
+          }
+        }
+      ]
     },
     "transformIgnorePatterns": [
       "node_modules/(?!(antd|@ant-design|styled-components|rc-[^/]+|@rc-component|@fortawesome)/)"
@@ -96,6 +103,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.16.0",
+    "scan-chart": "^8.0.1",
     "styled-components": "^6.1.8",
     "use-debounce": "^10.0.0",
     "vexflow": "^4.2.3"
@@ -126,11 +134,13 @@
     "eslint": "^8.49.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-erb": "^4.1.0-0",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^3.6.0",
     "eslint-plugin-compat": "^4.2.0",
     "eslint-plugin-import": "^2.28.1",
     "eslint-plugin-jest": "^27.4.0",
     "eslint-plugin-jsx-a11y": "^6.7.1",
+    "eslint-plugin-prettier": "^5.5.6",
     "eslint-plugin-promise": "^6.1.1",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",

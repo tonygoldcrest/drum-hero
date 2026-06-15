@@ -31,35 +31,48 @@ export async function parseAndSaveSongs(
 
   store.delete('songs');
 
-  glob(`${result.filePaths[0]}/**/notes.mid`, {}, (err, files) => {
-    const supportedImageExtensions = ['png', 'jpg', 'jpeg'];
+  glob(
+    `${result.filePaths[0]}/**/{notes.mid,notes.chart}`,
+    {},
+    (err, files) => {
+      const supportedImageExtensions = ['png', 'jpg', 'jpeg'];
 
-    const songList = files
-      .map((file) => path.join(path.dirname(file), 'song.ini'))
-      .filter((file) => fs.existsSync(file))
-      .map((file) => ({
-        info: ini.parse(fs.readFileSync(file, 'utf-8')),
-        dir: path.dirname(file),
-      }))
-      .map(({ info, dir }) => {
-        const albumCoverPath = supportedImageExtensions
-          .map(ext => path.join(dir, `album.${ext}`))
-          .find(p => fs.existsSync(p));
+      // De-duplicate directories; prefer .mid over .chart when both exist
+      const dirToFile = new Map<string, string>();
+      for (const file of files) {
+        const dir = path.dirname(file);
+        if (!dirToFile.has(dir) || path.extname(file) === '.mid') {
+          dirToFile.set(dir, file);
+        }
+      }
 
-        return {
-          id: randomUUID(),
-          dir,
-          albumCover: albumCoverPath ? `gh:///${albumCoverPath}` : null,
-          ...(info.song ?? info.Song ?? info),
-        };
-      });
+      const songList = [...dirToFile.keys()]
+        .map((dir) => path.join(dir, 'song.ini'))
+        .filter((file) => fs.existsSync(file))
+        .map((file) => ({
+          info: ini.parse(fs.readFileSync(file, 'utf-8')),
+          dir: path.dirname(file),
+        }))
+        .map(({ info, dir }) => {
+          const albumCoverPath = supportedImageExtensions
+            .map((ext) => path.join(dir, `album.${ext}`))
+            .find((p) => fs.existsSync(p));
 
-    const songs = songList.reduce((acc, song) => {
-      acc[song.id] = song;
-      return acc;
-    }, {});
-    store.set('songs', songs);
+          return {
+            id: randomUUID(),
+            dir,
+            albumCover: albumCoverPath ? `gh:///${albumCoverPath}` : null,
+            ...(info.song ?? info.Song ?? info),
+          };
+        });
 
-    callback?.(songs);
-  });
+      const songs = songList.reduce((acc, song) => {
+        acc[song.id] = song;
+        return acc;
+      }, {});
+      store.set('songs', songs);
+
+      callback?.(songs);
+    },
+  );
 }

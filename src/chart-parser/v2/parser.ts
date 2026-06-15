@@ -1,7 +1,8 @@
-import { HeaderJSON, MidiJSON, TrackJSON } from '@tonejs/midi';
-import { NoteJSON } from '@tonejs/midi/dist/Note';
-import { Measure, MidiMapping, Modifier, Note, TupletMeta } from './types';
-import { Difficulty } from '../types';
+import { type NoteEvent } from 'scan-chart';
+
+import { Measure, Note, TupletMeta } from './types';
+import { Difficulty, ParsedChart } from '../types';
+import { noteToKey } from '../utils';
 
 /**
  * Clone Hero drum midi -> sheet music model.
@@ -54,11 +55,6 @@ interface Candidate {
   complexity: number;
   dispSum: number;
   onsetCount: number;
-}
-
-interface MarkerInterval {
-  startTick: number;
-  endTick: number;
 }
 
 interface BeatLocation {
@@ -299,27 +295,13 @@ function makeMeter(timeSig: [number, number], ppq: number): Meter {
   };
 }
 
-function intervalsCoverTick(intervals: MarkerInterval[], tick: number) {
-  let low = 0;
-  let high = intervals.length - 1;
-  let found = -1;
-
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2);
-    if (intervals[mid].startTick <= tick) {
-      found = mid;
-      low = mid + 1;
-    } else {
-      high = mid - 1;
-    }
-  }
-
-  return found >= 0 && intervals[found].endTick > tick;
-}
-
 function halvingsPast16th(duration: string): number {
-  if (duration === '32') return 1;
-  if (duration === '64') return 2;
+  if (duration === '32') {
+    return 1;
+  }
+  if (duration === '64') {
+    return 2;
+  }
   return 0;
 }
 
@@ -717,93 +699,8 @@ function mergeMeasureRests(
   return out;
 }
 
-export class MidiParser {
-  mapping: { [key in Difficulty]: MidiMapping } = {
-    expert: {
-      95: 'e/4', // kick
-      96: 'f/4', // kick
-      97: 'c/5', // snare
-      98: 'g/5/x2', // yellow cymbal
-      99: 'f/5/x2', // blue cymbal
-      100: 'a/5/x2', // green cymbal
-    },
-    hard: {
-      84: 'f/4', // kick
-      85: 'c/5', // snare
-      86: 'g/5/x2', // yellow cymbal
-      87: 'f/5/x2', // blue cymbal
-      88: 'a/5/x2', // green cymbal
-    },
-    medium: {
-      72: 'f/4', // kick
-      73: 'c/5', // snare
-      74: 'g/5/x2', // yellow cymbal
-      75: 'f/5/x2', // blue cymbal
-      76: 'a/5/x2', // green cymbal
-    },
-    easy: {
-      60: 'f/4', // kick
-      61: 'c/5', // snare
-      62: 'g/5/x2', // yellow cymbal
-      63: 'f/5/x2', // blue cymbal
-      64: 'a/5/x2', // green cymbal
-    },
-  };
-
-  mappingFiveLane: { [key in Difficulty]: MidiMapping } = {
-    expert: {
-      95: 'e/4', // kick
-      96: 'f/4', // kick
-      97: 'c/5', // snare
-      98: 'g/5/x2', // yellow cymbal
-      99: 'd/5', // blue tom
-      100: 'a/5/x2', // green cymbal
-      101: 'a/4', // green tom
-    },
-    hard: {
-      84: 'f/4', // kick
-      85: 'c/5', // snare
-      86: 'g/5/x2', // yellow cymbal
-      87: 'd/5', // blue tom
-      88: 'a/5/x2', // green cymbal
-      89: 'a/4', // green tom
-    },
-    medium: {
-      72: 'f/4', // kick
-      73: 'c/5', // snare
-      74: 'g/5/x2', // yellow cymbal
-      75: 'd/5', // blue tom
-      76: 'a/5/x2', // green cymbal
-      77: 'a/4', // green tom
-    },
-    easy: {
-      60: 'f/4', // kick
-      61: 'c/5', // snare
-      62: 'g/5/x2', // yellow cymbal
-      63: 'd/5', // blue tom
-      64: 'a/5/x2', // green cymbal
-      65: 'a/4', // green tom
-    },
-  };
-
-  tomModifiers: { [key: number]: Modifier } = {
-    110: {
-      forNotes: [98, 86, 74, 62],
-      key: 'e/5', // yellow tom
-    },
-    111: {
-      forNotes: [99, 87, 75, 63],
-      key: 'd/5', // blue tom
-    },
-    112: {
-      forNotes: [100, 88, 76, 64],
-      key: 'a/4', // green tom
-    },
-  };
-
+export class ChartParser {
   measures: Measure[] = [];
-
-  header: HeaderJSON;
 
   endOfTrackTicks: number;
 
@@ -814,120 +711,63 @@ export class MidiParser {
   private nextTupletId = 0;
 
   constructor(
-    data: MidiJSON,
+    chart: ParsedChart,
     isFiveLane: boolean,
     difficulty: Difficulty = Difficulty.expert,
   ) {
-    const drumPart = data.tracks.find((track) => track.name === 'PART DRUMS');
+    const drumTrack = chart.trackData.find(
+      (t) => t.instrument === 'drums' && t.difficulty === difficulty,
+    );
 
-    if (!drumPart) {
+    if (!drumTrack) {
       throw new Error('no drum part');
     }
 
-    this.header = data.header;
-    this.ppq = data.header.ppq;
+    this.ppq = chart.resolution;
 
-    const lastNoteEnd = drumPart.notes.reduce(
-      (max, note) => Math.max(max, note.ticks + note.durationTicks),
-      0,
-    );
-    this.endOfTrackTicks = Math.max(drumPart.endOfTrackTicks ?? 0, lastNoteEnd);
+    const allTicks = drumTrack.noteEventGroups.flat().map((e) => e.tick);
+    this.endOfTrackTicks = allTicks.length > 0 ? Math.max(...allTicks) + 1 : 0;
 
-    const onsets = this.collectOnsets(drumPart, isFiveLane, difficulty);
-    this.createMeasures();
+    const onsets = this.collectOnsets(drumTrack.noteEventGroups, isFiveLane);
+    this.createMeasures(chart.timeSignatures);
     this.buildMeasures(onsets);
   }
 
   private collectOnsets(
-    trackData: TrackJSON,
+    noteEventGroups: NoteEvent[][],
     isFiveLane: boolean,
-    difficulty: Difficulty,
   ): Onset[] {
-    const mapping = (isFiveLane ? this.mappingFiveLane : this.mapping)[
-      difficulty
-    ];
-
-    const markerForGem = new Map<number, number>();
-    Object.entries(this.tomModifiers).forEach(([markerPitch, modifier]) => {
-      modifier.forNotes.forEach((gem) =>
-        markerForGem.set(gem, Number(markerPitch)),
-      );
-    });
-
-    const markerIntervals = new Map<number, MarkerInterval[]>();
-    trackData.notes.forEach((note) => {
-      if (this.tomModifiers[note.midi]) {
-        const intervals = markerIntervals.get(note.midi) ?? [];
-        intervals.push({
-          startTick: note.ticks,
-          endTick: note.ticks + note.durationTicks,
-        });
-        markerIntervals.set(note.midi, intervals);
-      }
-    });
-    markerIntervals.forEach((intervals) =>
-      intervals.sort((a, b) => a.startTick - b.startTick),
-    );
-
-    const byTick = new Map<number, string[]>();
-
-    trackData.notes.forEach((note) => {
-      if (!mapping[note.midi]) {
-        return;
-      }
-
-      const key = this.gemKey(note, mapping, markerForGem, markerIntervals);
-      const keys = byTick.get(note.ticks) ?? [];
-      keys.push(key);
-      byTick.set(note.ticks, keys);
-    });
-
-    return [...byTick.entries()]
-      .sort((a, b) => a[0] - b[0])
-      .map(([tick, keys]) => ({ tick, keys }));
+    return noteEventGroups
+      .map((group) => {
+        const tick = group[0]?.tick;
+        if (tick === undefined) {
+          return null;
+        }
+        const keys = group
+          .map((e) => noteToKey(e.type, e.flags, isFiveLane))
+          .filter((k): k is string => k !== null);
+        return keys.length > 0 ? { tick, keys } : null;
+      })
+      .filter((o): o is Onset => o !== null);
   }
 
-  private gemKey(
-    note: NoteJSON,
-    mapping: MidiMapping,
-    markerForGem: Map<number, number>,
-    markerIntervals: Map<number, MarkerInterval[]>,
-  ): string {
-    const markerPitch = markerForGem.get(note.midi);
-
-    if (markerPitch !== undefined) {
-      const intervals = markerIntervals.get(markerPitch);
-      if (intervals && intervalsCoverTick(intervals, note.ticks)) {
-        return this.tomModifiers[markerPitch].key;
-      }
-    }
-
-    return mapping[note.midi];
-  }
-
-  private createMeasures() {
-    const timeSignatures =
-      this.header.timeSignatures.length > 0
-        ? this.header.timeSignatures
-        : [
-            {
-              ticks: 0,
-              timeSignature: [4, 4],
-            },
-          ];
+  private createMeasures(timeSignatures: ParsedChart['timeSignatures']) {
+    const sigs =
+      timeSignatures.length > 0
+        ? timeSignatures
+        : [{ tick: 0, numerator: 4, denominator: 4 }];
 
     let startTick = 0;
 
-    timeSignatures.forEach((timeSigData, index) => {
+    sigs.forEach((sigData, index) => {
       const timeSig: [number, number] = [
-        timeSigData.timeSignature[0] ?? 4,
-        timeSigData.timeSignature[1] ?? 4,
+        sigData.numerator,
+        sigData.denominator,
       ];
       const meter = makeMeter(timeSig, this.ppq);
       const measureTicks = meter.beatsPerMeasure * meter.beatTicks;
       const sectionTicks =
-        (timeSignatures[index + 1]?.ticks ?? this.endOfTrackTicks) -
-        timeSigData.ticks;
+        (sigs[index + 1]?.tick ?? this.endOfTrackTicks) - sigData.tick;
       const numberOfMeasures = Math.max(
         0,
         Math.ceil(sectionTicks / measureTicks - 1e-9),
