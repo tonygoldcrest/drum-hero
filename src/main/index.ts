@@ -9,12 +9,14 @@
 import glob from 'glob';
 import path from 'path';
 import fs from 'fs';
+import { pathToFileURL } from 'url';
 import {
   app,
   BrowserWindow,
   shell,
   ipcMain,
   protocol,
+  net,
   powerSaveBlocker,
 } from 'electron';
 import { autoUpdater } from 'electron-updater';
@@ -146,8 +148,8 @@ const createWindow = async () => {
     show: false,
     x: 0,
     y: 0,
-    width: 1024,
-    height: 728,
+    width: 1366,
+    height: 768,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
@@ -197,7 +199,11 @@ protocol.registerSchemesAsPrivileged([
   {
     scheme: 'gh',
     privileges: {
+      standard: true,
+      secure: true,
       supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true,
     },
   },
 ]);
@@ -205,9 +211,11 @@ protocol.registerSchemesAsPrivileged([
 app
   .whenReady()
   .then(() => {
-    protocol.registerFileProtocol('gh', (request, callback) => {
-      const url = decodeURIComponent(request.url.substr(5));
-      callback({ path: url });
+    protocol.handle('gh', (request) => {
+      // URLs are gh://<absolutePath> where <absolutePath> starts with "/".
+      // Strip the scheme and any leading slashes back down to a single one.
+      const filePath = decodeURIComponent(request.url.replace(/^gh:\/+/, '/'));
+      return net.fetch(pathToFileURL(filePath).toString());
     });
 
     createWindow();

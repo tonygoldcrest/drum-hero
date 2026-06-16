@@ -35,7 +35,7 @@ export const Header = styled.div`
   padding: ${themedark.space.lg}px;
   z-index: 10;
   display: flex;
-  flex-flow: column;
+  gap: 10px;
 `;
 
 export const ScanSongsButton = styled(FloatButton)`

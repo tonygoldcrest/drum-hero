@@ -1,4 +1,54 @@
+@import 'tailwindcss';
 @import './fonts.css';
+
+@theme {
+  --color-bg:              #141517;
+  --color-surface:         #1c1d20;
+  --color-surface-raised:  #232428;
+  --color-surface-sunken:  #0e0f11;
+
+  --color-border:          rgba(255,255,255,0.07);
+  --color-border-soft:     rgba(255,255,255,0.04);
+  --color-divider:         rgba(255,255,255,0.05);
+  --color-fill:            rgba(255,255,255,0.04);
+  --color-fill-strong:     rgba(255,255,255,0.10);
+
+  --color-text:            #f2ede1;
+  --color-text-body:       #e6e0d3;
+  --color-text-muted:      #9c9484;
+  --color-text-faint:      #8a8474;
+  --color-text-dim:        #615c50;
+  --color-text-dimmer:     #5f5a4e;
+
+  --color-accent:          #ff5a3c;
+  --color-accent-hover:    #ff6a4d;
+  --color-accent-deep:     #ec4527;
+  --color-accent-text:     #ff7a5f;
+  --color-accent-ink:      #1a160f;
+  --color-accent-soft-bg:  rgba(255,90,60,0.08);
+  --color-accent-soft-border: rgba(255,90,60,0.22);
+
+  --color-paper:           #ece3d0;
+  --color-ink:             #1c1a14;
+  --color-ink-soft:        #4a463c;
+
+  --font-display: 'Newsreader', Georgia, serif;
+  --font-ui:      'Space Grotesk', system-ui, sans-serif;
+
+  --shadow-frame:        0 40px 90px -30px rgba(40,30,10,0.55), 0 0 0 1px rgba(255,255,255,0.04);
+  --shadow-panel:        0 40px 90px -30px rgba(40,30,10,0.55), 0 0 0 1px rgba(255,255,255,0.05);
+  --shadow-accent-button: 0 12px 32px -6px rgba(255,90,60,0.6), inset 0 1px 0 rgba(255,255,255,0.3);
+  --shadow-accent-chip:  0 6px 16px -4px rgba(255,90,60,0.5);
+  --shadow-accent-soft:  0 6px 6px -6px rgba(255,90,60,0.5);
+  --shadow-paper:        inset 0 1px 0 rgba(255,255,255,0.6), 0 18px 40px -20px rgba(0,0,0,0.6);
+  --shadow-float-label:  0 8px 20px rgba(0,0,0,0.4);
+}
+
+:root {
+  --gradient-header:       linear-gradient(180deg, #232428, #191a1d);
+  --gradient-accent:       linear-gradient(145deg, #ff6a4d, #ec4527);
+  --gradient-accent-fade:  linear-gradient(90deg, rgba(255,90,60,0.35), rgba(255,255,255,0.04));
+}
 
 body {
   height: 100vh;
@@ -17,7 +67,8 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #16140f;
+  background: #141517;
+  border: 1px solid #232428;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -31,5 +82,5 @@ body {
 }
 
 ::-webkit-scrollbar-corner {
-  background: #16140f;
+  background: #141517;
 }

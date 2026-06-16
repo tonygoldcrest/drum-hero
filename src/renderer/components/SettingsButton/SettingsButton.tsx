@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef, type RefObject } from 'react';
+import { ReactNode, useRef, type RefObject, useEffect } from 'react';
 import { Switch } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog } from '@fortawesome/free-solid-svg-icons';
@@ -10,6 +10,10 @@ import {
   Row,
   Label,
   SettingSelect,
+  VolumeSliders,
+  MixerDivider,
+  MixerSeparator,
+  MixerTitle,
 } from './styles';
 
 interface Props {
@@ -21,7 +25,7 @@ interface Props {
   onEnableColorsChange: (v: boolean) => void;
   showBarNumbers: boolean;
   onShowBarNumbersChange: (v: boolean) => void;
-  volumeSliders: ReactNode[];
+  volumeSliders?: ReactNode[];
 }
 
 export function SettingsButton({
@@ -39,28 +43,37 @@ export function SettingsButton({
   const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    popoverRef.current?.setAttribute('popover', 'manual');
-  }, []);
+    const el = popoverRef.current;
+
+    if (!el) {
+      return;
+    }
+    el.showPopover();
+  });
 
   const toggle = () => {
-    const el = popoverRef.current as any;
-    if (!el) return;
+    const el = popoverRef.current;
+
+    if (!el) {
+      return;
+    }
+
     if (el.matches(':popover-open')) {
       el.hidePopover();
     } else {
-      el.showPopover({ source: triggerRef.current });
+      el.showPopover();
     }
   };
 
   return (
     <>
       <TriggerButton
-        ref={triggerRef as RefObject<any>}
+        ref={triggerRef as RefObject<HTMLButtonElement>}
         icon={<FontAwesomeIcon icon={faCog} />}
         onClick={toggle}
         size="large"
       />
-      <PopoverPanel ref={popoverRef}>
+      <PopoverPanel ref={popoverRef} popover="manual">
         <Row>
           <Label>Difficulty</Label>
           <SettingSelect
@@ -96,7 +109,15 @@ export function SettingsButton({
             onChange={onShowBarNumbersChange}
           />
         </Row>
-        {volumeSliders}
+        {volumeSliders ? (
+          <>
+            <MixerSeparator>
+              <MixerTitle>Mixer</MixerTitle>
+              <MixerDivider />
+            </MixerSeparator>
+            <VolumeSliders>{volumeSliders}</VolumeSliders>
+          </>
+        ) : null}
       </PopoverPanel>
     </>
   );

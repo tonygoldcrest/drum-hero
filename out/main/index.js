@@ -4,6 +4,7 @@ const path$2 = require("path");
 const require$$3 = require("events");
 const require$$5 = require("assert");
 require("util");
+const url = require("url");
 const electron = require("electron");
 const electronUpdater = require("electron-updater");
 const log = require("electron-log");
@@ -2388,7 +2389,7 @@ async function parseAndSaveSongs(store2, callback) {
         return {
           id: crypto.randomUUID(),
           dir,
-          albumCover: albumCoverPath ? `gh:///${albumCoverPath}` : null,
+          albumCover: albumCoverPath ? `gh://${albumCoverPath}` : null,
           ...info.song ?? info.Song ?? info
         };
       });
@@ -2486,8 +2487,8 @@ const createWindow = async () => {
     show: false,
     x: 0,
     y: 0,
-    width: 1024,
-    height: 728,
+    width: 1366,
+    height: 768,
     icon: getAssetPath("icon.png"),
     webPreferences: {
       preload: path$2.join(__dirname, "../preload/index.js")
@@ -2524,14 +2525,18 @@ electron.protocol.registerSchemesAsPrivileged([
   {
     scheme: "gh",
     privileges: {
-      supportFetchAPI: true
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true
     }
   }
 ]);
 electron.app.whenReady().then(() => {
-  electron.protocol.registerFileProtocol("gh", (request, callback) => {
-    const url = decodeURIComponent(request.url.substr(5));
-    callback({ path: url });
+  electron.protocol.handle("gh", (request) => {
+    const filePath = decodeURIComponent(request.url.replace(/^gh:\/+/, "/"));
+    return electron.net.fetch(url.pathToFileURL(filePath).toString());
   });
   createWindow();
   electron.app.on("activate", () => {

@@ -46,6 +46,8 @@ export const themedark = {
     accentText: '#ff7a5f',
     accentInk: '#1a160f',
     accentGradient: 'linear-gradient(145deg, #ff6a4d, #ec4527)',
+    accentGradientFade:
+      'linear-gradient(90deg, rgba(255, 90, 60, 0.35), rgba(255, 255, 255, 0.04))',
     accentSoftBg: 'rgba(255,90,60,0.08)',
     accentSoftBorder: 'rgba(255,90,60,0.22)',
 

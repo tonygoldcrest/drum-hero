@@ -38,7 +38,7 @@ const STEM_DIRECTION = -1;
 const REST_KEY = 'b/4';
 
 export function renderMusic(
-  elementRef: React.RefObject<HTMLDivElement>,
+  elementRef: React.RefObject<HTMLDivElement | null>,
   song: ChartParser,
   showBarNumbers: boolean = true,
   enableColors: boolean = false,

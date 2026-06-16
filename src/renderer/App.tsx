@@ -38,6 +38,9 @@ export default function App() {
               primaryShadow: themedark.shadow.accentButton,
               colorBgContainer: themedark.color.surfaceRaised,
               colorBorder: themedark.color.border,
+              colorBgContainerDisabled: themedark.control.iconButtonBg,
+              colorPrimaryBgHover: themedark.control.iconButtonActiveBg,
+              colorPrimaryBorder: themedark.control.iconButtonActiveBorder,
             },
             Slider: {
               trackBg: themedark.color.accent,
@@ -47,6 +50,13 @@ export default function App() {
               handleColor: themedark.control.sliderThumb,
               handleActiveColor: themedark.control.sliderThumb,
               colorBgElevated: themedark.control.sliderThumb,
+            },
+            Switch: {
+              colorPrimary: themedark.control.toggleOn,
+              colorPrimaryHover: themedark.control.toggleOn,
+              colorTextQuaternary: themedark.control.toggleOffTrack,
+              colorTextTertiary: themedark.control.toggleOffTrack,
+              handleBg: themedark.control.toggleKnobOn,
             },
           },
         }}

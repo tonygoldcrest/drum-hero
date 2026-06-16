@@ -13,6 +13,7 @@ import {
 import { IpcLoadSongListResponse, SongData } from '../../../types';
 import { SongFilter } from '../../components/SongFilter/SongFilter';
 import { SongList } from '../../components/SongList/SongList';
+import { SettingsButton } from '../../components/SettingsButton/SettingsButton';
 
 export function SelectSongView() {
   const [songList, setSongList] = useState<SongData[]>([]);
@@ -55,6 +56,7 @@ export function SelectSongView() {
           }}
           filteredSongsCount={filteredSongList.length}
         />
+        <SettingsButton />
       </Header>
       <SongListContainer>
         <SongList

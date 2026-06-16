@@ -61,7 +61,7 @@ export async function parseAndSaveSongs(
           return {
             id: randomUUID(),
             dir,
-            albumCover: albumCoverPath ? `gh:///${albumCoverPath}` : null,
+            albumCover: albumCoverPath ? `gh://${albumCoverPath}` : null,
             ...(info.song ?? info.Song ?? info),
           };
         });
