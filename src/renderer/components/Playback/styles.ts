@@ -1,15 +1,15 @@
 import styled from 'styled-components';
 import { Slider } from 'antd';
-import { theme } from '../../theme';
+import themedark from '../../theme';
 
 export const Wrapper = styled.div`
-  background: ${theme.color.foreground};
-  border-radius: ${theme.borderRadius}px;
-  box-shadow: ${theme.boxShadow.soft};
-  margin-bottom: 5px;
-  padding: 0 10px;
   display: flex;
   align-items: center;
+  flex-grow: 1;
+
+  & > * + * {
+    margin-left: 20px;
+  }
 `;
 
 export const PlaybackSlider = styled(Slider)`
@@ -18,5 +18,5 @@ export const PlaybackSlider = styled(Slider)`
 
 export const PlaybackTime = styled.div`
   font-size: 12px;
-  color: ${theme.color.text.tertiary};
+  color: ${themedark.color.textMuted};
 `;

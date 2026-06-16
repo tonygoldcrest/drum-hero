@@ -1,5 +1,4 @@
 import styled from 'styled-components';
-import { theme } from '../../theme';
 
 export const Wrapper = styled.div`
   height: 100%;
@@ -17,9 +16,4 @@ export const VirtualListItem = styled.div`
   left: 0;
   width: 100%;
   display: flex;
-
-  &:hover {
-    box-shadow: ${theme.boxShadow.soft};
-    z-index: 1;
-  }
 `;

@@ -21,7 +21,7 @@
   "main": "./out/main/index.js",
   "scripts": {
     "build": "electron-vite build",
-    "postinstall": "electron-builder install-app-deps",
+    "postinstall": "node scripts/postinstall.js",
     "lint": "cross-env NODE_ENV=development eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "package": "yarn build && electron-builder build --mac --publish never",
     "package:win": "yarn build && electron-builder build -w --x64 --publish never",
@@ -90,6 +90,7 @@
     "@fortawesome/free-regular-svg-icons": "^6.5.1",
     "@fortawesome/free-solid-svg-icons": "^6.5.1",
     "@fortawesome/react-fontawesome": "^0.2.0",
+    "@julusian/midi": "^3.6.1",
     "@tanstack/react-virtual": "^3.0.2",
     "@tonejs/midi": "^2.0.28",
     "antd": "^5.13.3",
@@ -224,5 +225,6 @@
   "engines": {
     "node": ">=14.x",
     "npm": ">=7.x"
-  }
+  },
+  "packageManager": "yarn@4.17.0"
 }

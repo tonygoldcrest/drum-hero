@@ -1,32 +1,38 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Layout, Switch } from 'antd';
+import { Button, Layout } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   FullHeightLayout,
-  Sidebar,
   LayoutContent,
   Title,
   SheetMusicView,
-  SecondaryText,
-  SelectWrapper,
-  StyledSelect,
+  PlayButton,
+  Header,
   Subtitle,
+  SongInfo,
+  SongTitle,
+  SongSecondary,
 } from './styles';
 import { IpcLoadSongResponse, SongData } from '../../../types';
 import { SheetMusic } from '../../components/SheetMusic/SheetMusic';
 import { AudioPlayer } from '../../services/audio-player/player';
 import { Playback } from '../../components/Playback/Playback';
-import { SettingsMenu } from '../../components/SettingsMenu/SettingsMenu';
+import { SettingsButton } from '../../components/SettingsButton/SettingsButton';
 import { AudioVolume } from '../../components/AudioVolume/AudioVolume';
 import { TrackConfig } from '../../services/audio-player/types';
 import { Difficulty } from '../../../chart-parser/types';
 import { PLAYHEAD_STYLES, PlayheadStyle, VolumeControl } from './types';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faArrowLeft,
+  faPause,
+  faPlay,
+} from '@fortawesome/free-solid-svg-icons';
 
 export function SongView() {
   const [fileData, setFileData] = useState<Buffer>();
   const [format, setFormat] = useState<'mid' | 'chart'>('mid');
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [showBarNumbers, setShowBarNumbers] = useState(false);
   const [enableColors, setEnableColors] = useState(true);
   const [difficulty, setDifficulty] = useState<Difficulty>(Difficulty.expert);
@@ -74,7 +80,10 @@ export function SongView() {
           .filter((file) => !file.name.includes('drums'))
           .map((file) => ({ urls: [file.src], name: file.name }));
 
-        setTrackData([{ name: 'drums', urls: drums }, ...other]);
+        setTrackData([
+          ...(drums.length ? [{ name: 'drums', urls: drums }] : []),
+          ...other,
+        ]);
       },
     );
     window.electron.ipcRenderer.sendMessage('load-song', id);
@@ -271,84 +280,61 @@ export function SongView() {
   return (
     <FullHeightLayout>
       <Layout>
-        <Sidebar
-          width={200}
-          collapsedWidth={70}
-          trigger={null}
-          collapsible
-          collapsed={!isSidebarExpanded}
-          onCollapse={(value) => setIsSidebarExpanded(value)}
-        >
-          <SettingsMenu
-            onBackClick={() => {
-              setIsPlaying(false);
-              navigate('/');
-            }}
-            isPlaying={isPlaying}
-            onPlayClick={() => {
-              setIsPlaying(!isPlaying);
-            }}
-            isExpanded={isSidebarExpanded}
-            onExpandClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-            isLoading={audioPlayer === null}
-          >
-            <SelectWrapper>
-              <SecondaryText>Difficulty</SecondaryText>
-              <StyledSelect
-                value={difficulty}
-                options={Object.values(Difficulty).map((diff) => ({
-                  value: diff,
-                  label: <span>{diff}</span>,
-                }))}
-                onChange={(value) => setDifficulty(value as Difficulty)}
-              />
-            </SelectWrapper>
-            <SelectWrapper>
-              <SecondaryText>Playhead Style</SecondaryText>
-              <StyledSelect
-                value={playheadStyle}
-                options={PLAYHEAD_STYLES.map((style) => ({
-                  value: style,
-                  label: <span>{style}</span>,
-                }))}
-                onChange={(value) => setPlayheadStyle(value as PlayheadStyle)}
-              />
-            </SelectWrapper>
-            {...volumeSliders}
-            <>
-              <Switch
-                size="small"
-                checked={enableColors}
-                onChange={() => {
-                  setEnableColors(!enableColors);
-                }}
-              />
-              <SecondaryText>Enable colors</SecondaryText>
-            </>
-            <>
-              <Switch
-                size="small"
-                checked={showBarNumbers}
-                onChange={() => {
-                  setShowBarNumbers(!showBarNumbers);
-                }}
-              />
-              <SecondaryText>Show bar numbers</SecondaryText>
-            </>
-          </SettingsMenu>
-        </Sidebar>
-        <Layout style={{ padding: 10 }}>
-          {audioPlayer && (
+        <Layout>
+          <Header>
+            <Button
+              icon={<FontAwesomeIcon icon={faArrowLeft} />}
+              onClick={() => {
+                setIsPlaying(false);
+                navigate('/');
+              }}
+              size="large"
+            ></Button>
+
+            <PlayButton
+              type="primary"
+              icon={<FontAwesomeIcon icon={isPlaying ? faPause : faPlay} />}
+              onClick={() => {
+                setIsPlaying(!isPlaying);
+              }}
+              shape="circle"
+              size="large"
+            ></PlayButton>
+
+            <SongInfo>
+              <SongTitle>{songData?.name}</SongTitle>
+              <SongSecondary>
+                <div>{songData?.artist}</div>
+                <div>·</div>
+                <div>{difficulty}</div>
+              </SongSecondary>
+            </SongInfo>
+
             <Playback
               currentTime={currentPlayback}
-              duration={audioPlayer.duration}
+              disabled={!audioPlayer}
+              duration={audioPlayer?.duration ?? 0}
               onChange={(value) => {
+                if (!audioPlayer) {
+                  return;
+                }
                 const time = (value / 100) * audioPlayer.duration;
 
                 audioPlayer.start(time);
               }}
             />
-          )}
+            <SettingsButton
+              difficulty={difficulty}
+              onDifficultyChange={setDifficulty}
+              playheadStyle={playheadStyle}
+              onPlayheadStyleChange={setPlayheadStyle}
+              enableColors={enableColors}
+              onEnableColorsChange={setEnableColors}
+              showBarNumbers={showBarNumbers}
+              onShowBarNumbersChange={setShowBarNumbers}
+              volumeSliders={volumeSliders}
+            />
+          </Header>
           <LayoutContent>
             {songData && (
               <SheetMusicView>

@@ -1,12 +1,12 @@
 import { FloatButton } from 'antd';
 import styled from 'styled-components';
-import { theme } from '../../theme';
+import themedark from '../../theme';
 
 export const Wrapper = styled.div`
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: ${theme.color.background};
+  background: ${themedark.color.bg};
 `;
 
 export const SongViewOverlay = styled.div`
@@ -25,31 +25,30 @@ export const SongListContainer = styled.div`
   flex-grow: 1;
   overflow: hidden;
   margin: 0 auto;
-  box-shadow: ${theme.boxShadow.soft};
-  background: ${theme.color.foreground};
+  background: ${themedark.color.bg};
 `;
 
 export const Header = styled.div`
-  background: ${theme.color.primaryDark};
+  background: ${themedark.color.headerGradient};
+  border-bottom: 1px solid ${themedark.color.divider};
 
-  padding: 20px;
+  padding: ${themedark.space.lg}px;
   z-index: 10;
-  box-shadow: ${theme.boxShadow.soft};
   display: flex;
   flex-flow: column;
-`;
-
-export const SongNumber = styled.div`
-  margin-left: auto;
-  color: ${theme.color.foreground};
-  font-size: 12px;
 `;
 
 export const ScanSongsButton = styled(FloatButton)`
   right: 94px;
   width: 60px;
   height: 60px;
-  box-shadow: ${theme.boxShadow.soft};
   font-weight: bold;
   font-size: 20px;
+  box-shadow: ${themedark.shadow.accentButton};
+  border-radius: ${themedark.radius.md}px;
+
+  & .ant-float-btn-body {
+    border-radius: ${themedark.radius.md}px;
+    background-image: ${themedark.color.accentGradient};
+  }
 `;

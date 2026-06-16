@@ -2,38 +2,63 @@ import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 
 import { ConfigProvider } from 'antd';
 import './App.css';
+import { AntdOverrides } from './antdOverrides';
 import { SelectSongView } from './views/SelectSongView/SelectSongView';
 import { SongView } from './views/SongView/SongView';
-import { theme } from './theme';
+import themedark from './theme';
 
 export default function App() {
   return (
-    <ConfigProvider
-      theme={{
-        token: {
-          colorPrimary: theme.color.primaryDark,
-          borderRadius: theme.borderRadius,
-          colorBgContainer: theme.color.foreground,
-          colorText: theme.color.text.primary,
-        },
-        components: {
-          Layout: {
-            bodyBg: theme.color.background,
+    <>
+      <AntdOverrides />
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: themedark.color.accent,
+            borderRadius: themedark.radius.sm,
+            colorBorder: 'transparent',
+            colorBgContainer: themedark.color.surfaceSunken,
+            colorText: themedark.color.text,
+            colorTextPlaceholder: themedark.color.textDimmer,
           },
-          Button: {
-            defaultShadow: theme.boxShadow.soft,
-            primaryShadow: theme.boxShadow.soft,
+          components: {
+            Input: {
+              activeBorderColor: 'transparent',
+              hoverBorderColor: 'transparent',
+              activeShadow: 'transparent',
+              fontSize: 16,
+              paddingBlock: 8,
+              paddingInline: 16,
+            },
+            Layout: {
+              bodyBg: themedark.color.bg,
+            },
+            Button: {
+              defaultShadow: 'none',
+              primaryShadow: themedark.shadow.accentButton,
+              colorBgContainer: themedark.color.surfaceRaised,
+              colorBorder: themedark.color.border,
+            },
+            Slider: {
+              trackBg: themedark.color.accent,
+              trackHoverBg: themedark.color.accentHover,
+              railBg: themedark.control.sliderTrack,
+              railHoverBg: themedark.control.sliderTrack,
+              handleColor: themedark.control.sliderThumb,
+              handleActiveColor: themedark.control.sliderThumb,
+              colorBgElevated: themedark.control.sliderThumb,
+            },
           },
-        },
-      }}
-    >
-      <Router>
-        <Routes>
-          <Route path="/" element={<SelectSongView />}>
-            <Route path=":id" element={<SongView />} />
-          </Route>
-        </Routes>
-      </Router>
-    </ConfigProvider>
+        }}
+      >
+        <Router>
+          <Routes>
+            <Route path="/" element={<SelectSongView />}>
+              <Route path=":id" element={<SongView />} />
+            </Route>
+          </Routes>
+        </Router>
+      </ConfigProvider>
+    </>
   );
 }

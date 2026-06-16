@@ -1,5 +1,5 @@
 import styled, { css } from 'styled-components';
-import { theme } from '../../theme';
+import themedark from '../../theme';
 
 export const Wrapper = styled.div`
   min-width: max-content;
@@ -17,37 +17,52 @@ export const VexflowContainer = styled.div`
 `;
 
 export const MeasureHighlighted = css`
-  box-shadow: ${theme.boxShadow.soft};
-  background: ${theme.color.primaryLightest};
+  background: ${themedark.color.accentSoftBg};
+  border: 2px solid ${themedark.color.accent};
 `;
 
 export const MeasureHighlight = styled.button<{ $highlighted: boolean }>`
   position: absolute;
   z-index: -3;
-  border-radius: ${theme.borderRadius}px;
+  border-radius: ${themedark.radius.md}px;
   border: 0;
   background: transparent;
   cursor: pointer;
   ${(props) => (props.$highlighted ? MeasureHighlighted : '')}
 
   &:hover {
-    background: ${theme.color.background};
-    box-shadow: ${theme.boxShadow.soft};
+    background: ${themedark.color.accentSoftBg};
+    box-shadow: ${themedark.shadow.accentSoft};
+    border: 1px solid ${themedark.color.accentSoftBorder};
     z-index: -1;
   }
 `;
 
-export const CursorLine = styled.div`
+export const Cursor = styled.div`
   position: absolute;
   z-index: 1;
-  width: 7px;
   transform: translateX(-50%);
-  background: rgba(229, 225, 218, 0.5);
-  backdrop-filter: blur(2px);
-  border-radius: 3px;
-  border: 2px solid rgba(45, 52, 54, 1);
   pointer-events: none;
-  box-shadow:
-    rgba(0, 0, 0, 0.16) 0px 3px 6px,
-    rgba(0, 0, 0, 0.23) 0px 3px 6px;
+  box-shadow: ${themedark.shadow.accentButton};
+`;
+
+export const CursorHandle = styled.div`
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: ${themedark.color.accent};
+  transform: translateX(-50%) rotate(45deg);
+  left: 50%;
+  transform-origin: center;
+  border-radius: 3px;
+`;
+
+export const CursorLine = styled.div`
+  position: absolute;
+  width: 4px;
+  background: ${themedark.color.accent};
+  height: 100%;
+  border-radius: 3px;
+  left: 50%;
+  transform: translateX(-50%);
 `;

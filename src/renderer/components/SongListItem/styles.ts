@@ -1,26 +1,36 @@
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { theme } from '../../theme';
+import themedark from '../../theme';
+
+export const Container = styled.div`
+  padding: 5px;
+  width: 100%;
+`;
 
 export const Wrapper = styled(Link)`
   width: 100%;
   display: flex;
-  border-bottom: 1px solid #e5e1da;
+  border: 1px solid ${themedark.color.borderSoft};
   padding: 10px;
   text-decoration: none;
-  color: ${theme.color.text.primary};
-  background: ${theme.color.foreground};
+  background: ${themedark.color.surface};
   align-items: center;
-  transition: box-shadow 0.15s ease-in-out;
+  border-radius: ${themedark.radius.md}px;
+  transition: all 0.1s ease-in-out;
+
+  &:hover {
+    background: ${themedark.color.accentSoftBg};
+    border: 1px solid ${themedark.color.accentSoftBorder};
+  }
 `;
 
 export const Album = styled.img`
-  height: 80px;
+  height: 60px;
   width: auto;
   object-fit: contain;
   aspect-ratio: 1;
-  border-radius: ${theme.borderRadius}px;
-  box-shadow: ${theme.boxShadow.soft};
+  border-radius: ${themedark.radius.md}px;
+  box-shadow: ${themedark.shadow.frame};
 `;
 
 export const MainInfo = styled.div`
@@ -31,48 +41,75 @@ export const Name = styled.div`
   font-size: 18px;
   font-weight: bold;
   margin-bottom: 5px;
+  color: ${themedark.color.textBody};
+  font-family: ${themedark.font.display};
 `;
 
-export const Artist = styled.div``;
+export const Artist = styled.div`
+  color: ${themedark.color.textMuted};
+  font-family: ${themedark.font.ui};
+  font-size: 14px;
+`;
 
-export const AdditionalInfo = styled.div`
-  margin-left: 40px;
+export const RightContainer = styled.div`
   display: flex;
-  flex-flow: column;
-  align-items: flex-end;
-  align-self: center;
   margin-left: auto;
-  margin-right: 10px;
+  align-items: center;
 
   & > * + * {
-    margin-top: 5px;
+    margin-left: 20px;
   }
 `;
 
 export const Info = styled.div`
   display: flex;
-  align-items: baseline;
+  align-items: flex-end;
+  flex-flow: column;
 `;
 
 export const Parameter = styled.div`
-  color: ${theme.color.text.tertiary};
+  color: ${themedark.color.textDim};
   font-size: 12px;
 `;
 
 export const Value = styled.div`
-  margin-left: 5px;
-  color: ${theme.color.text.secondary};
+  color: ${themedark.color.textMuted};
+  font-size: 14px;
+  margin-top: 5px;
 `;
 
-export const Like = styled.button`
-  align-self: start;
+export const Like = styled.button<{ liked: boolean }>`
   background: none;
+  padding: 0;
   border: 0;
-  padding: 5px;
-  border-radius: 50%;
   cursor: pointer;
+  color: ${(props) =>
+    props.liked ? themedark.color.accent : themedark.color.textDim};
 
   &:hover {
-    box-shadow: ${theme.boxShadow.soft};
+    color: ${themedark.color.accentHover} !important;
   }
+`;
+
+export const Difficulty = styled.div`
+  display: flex;
+  align-items: center;
+
+  & > * + * {
+    margin-left: 5px;
+  }
+`;
+
+export const DifficultyBox = styled.div<{ filled: boolean }>`
+  width: 7px;
+  height: 5px;
+  background: ${(props) =>
+    props.filled ? themedark.color.accent : themedark.color.textDimmer};
+  border-radius: ${themedark.radius.xs}px;
+`;
+
+export const DifficultyValue = styled.div`
+  color: ${themedark.color.textMuted};
+  font-size: 13px;
+  margin-left: 10px;
 `;

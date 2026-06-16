@@ -1,11 +1,35 @@
+@import './fonts.css';
+
 body {
   height: 100vh;
   padding: 0;
   margin: 0;
-  background: #fbf9f1;
-  font-family: sans-serif;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
 }
 
 * {
   box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #16140f;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  border: 2px solid #16140f;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 90, 60, 0.5);
+}
+
+::-webkit-scrollbar-corner {
+  background: #16140f;
 }
