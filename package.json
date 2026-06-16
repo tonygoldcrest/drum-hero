@@ -81,7 +81,7 @@
       ]
     },
     "transformIgnorePatterns": [
-      "node_modules/(?!(antd|@ant-design|styled-components|rc-[^/]+|@rc-component|@fortawesome)/)"
+      "node_modules/(?!(antd|@ant-design|rc-[^/]+|@rc-component|@fortawesome)/)"
     ]
   },
   "dependencies": {
@@ -107,7 +107,6 @@
     "react-dom": "^19.0.0",
     "react-router-dom": "^6.16.0",
     "scan-chart": "^8.0.1",
-    "styled-components": "^6.4.2",
     "tailwind-merge": "^3.6.0",
     "use-debounce": "^10.0.0",
     "vexflow": "^4.2.3"

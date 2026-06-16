@@ -1,14 +1,6 @@
 import { createRef, useEffect, useMemo, useRef, useState } from 'react';
 import { parseChartFile } from 'scan-chart';
 
-import {
-  Cursor,
-  CursorHandle,
-  CursorLine,
-  MeasureHighlight,
-  VexflowContainer,
-  Wrapper,
-} from './styles';
 import { ChartParser } from '../../../chart-parser/parser';
 import { renderMusic } from '../../../chart-parser/renderer';
 import { Difficulty, RenderData } from '../../../chart-parser/types';
@@ -24,6 +16,7 @@ import {
   useActiveNoteScale,
   useProgressColoring,
 } from './hooks';
+import { cn } from '../../cn';
 
 export interface SheetMusicProps {
   fileData?: Buffer;
@@ -71,7 +64,6 @@ export function SheetMusic({
     [currentTime, chart],
   );
 
-  // One button ref per measure, rebuilt only when the score re-renders.
   const highlightsRef = useMemo(
     () => renderData.map(() => createRef<HTMLButtonElement>()),
     [renderData],
@@ -193,47 +185,59 @@ export function SheetMusic({
     };
   }, [playheadStyle, chart, currentTime, renderData, highlightedMeasureIndex]);
 
-  const measureHighlights = renderData.map(({ measure, stave }, index) => (
-    <MeasureHighlight
-      key={index}
-      ref={highlightsRef[index]}
-      style={{
-        top: stave.getY(),
-        left: stave.getX() - 5,
-        width: stave.getWidth() + 10,
-        height: stave.getHeight() + 30,
-      }}
-      $highlighted={
-        playheadStyle === 'Measure' && index === highlightedMeasureIndex
-      }
-      onClick={() => {
-        if (!chart) {
-          return;
-        }
+  const measureHighlights = renderData.map(({ measure, stave }, index) => {
+    const highlighted =
+      playheadStyle === 'Measure' && index === highlightedMeasureIndex;
+    return (
+      <button
+        key={index}
+        ref={highlightsRef[index]}
+        style={{
+          top: stave.getY(),
+          left: stave.getX() - 5,
+          width: stave.getWidth() + 10,
+          height: stave.getHeight() + 30,
+        }}
+        className={cn(
+          'absolute z-[-3] rounded-[11px] border-0 bg-transparent cursor-pointer hover:bg-accent-soft-bg hover:shadow-accent-soft hover:border hover:border-accent-soft-border hover:z-[-1]',
+          highlighted && 'bg-accent-soft-bg border-2 border-accent',
+        )}
+        onClick={() => {
+          if (!chart) {
+            return;
+          }
 
-        onSelectMeasure(
-          ticksToSeconds(measure.startTick, chart.resolution, chart.tempos),
-        );
-      }}
-    />
-  ));
+          onSelectMeasure(
+            ticksToSeconds(measure.startTick, chart.resolution, chart.tempos),
+          );
+        }}
+      />
+    );
+  });
 
   return (
-    <Wrapper>
-      <VexflowContainer ref={vexflowContainerRef} />
+    <div className="min-w-max relative z-0">
+      <div
+        ref={vexflowContainerRef}
+        className="min-w-max pointer-events-none **:pointer-events-none"
+      />
       {measureHighlights}
       {cursorPosition && (
-        <Cursor
+        <div
+          className="absolute z-1 -translate-x-1/2 pointer-events-none shadow-accent-button"
           style={{
             left: cursorPosition.left,
             top: cursorPosition.top,
             height: cursorPosition.height,
           }}
         >
-          <CursorHandle />
-          <CursorLine />
-        </Cursor>
+          <div
+            className="absolute w-3 h-3 bg-accent left-1/2 rounded-[3px]"
+            style={{ transform: 'translateX(-50%) rotate(45deg)' }}
+          />
+          <div className="absolute w-1 bg-accent h-full rounded-[3px] left-1/2 -translate-x-1/2" />
+        </div>
       )}
-    </Wrapper>
+    </div>
   );
 }

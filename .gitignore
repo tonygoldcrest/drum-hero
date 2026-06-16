@@ -18,6 +18,8 @@ node_modules
 # OSX
 .DS_Store
 
+out
+
 release/app/dist
 release/build
 test-songs/

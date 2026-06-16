@@ -2,15 +2,14 @@ import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 
 import { ConfigProvider } from 'antd';
 import './App.css';
-import { AntdOverrides } from './antdOverrides';
-import { SelectSongView } from './views/SelectSongView/SelectSongView';
-import { SongView } from './views/SongView/SongView';
+import { SelectSongView } from './views/SelectSongView';
+import { SongView } from './views/SongView';
 import themedark from './theme';
+import { SettingsProvider } from './context/SettingsContext';
 
 export default function App() {
   return (
     <>
-      <AntdOverrides />
       <ConfigProvider
         theme={{
           token: {
@@ -58,16 +57,22 @@ export default function App() {
               colorTextTertiary: themedark.control.toggleOffTrack,
               handleBg: themedark.control.toggleKnobOn,
             },
+            Divider: {
+              colorSplit: themedark.color.divider,
+              marginLG: 0,
+            },
           },
         }}
       >
-        <Router>
-          <Routes>
-            <Route path="/" element={<SelectSongView />}>
-              <Route path=":id" element={<SongView />} />
-            </Route>
-          </Routes>
-        </Router>
+        <SettingsProvider>
+          <Router>
+            <Routes>
+              <Route path="/" element={<SelectSongView />}>
+                <Route path=":id" element={<SongView />} />
+              </Route>
+            </Routes>
+          </Router>
+        </SettingsProvider>
       </ConfigProvider>
     </>
   );

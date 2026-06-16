@@ -1,8 +1,7 @@
 import { Input } from 'antd';
-import { Wrapper, SongCount } from './styles';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
-import themedark from '../../theme';
+import { cn } from '../cn';
 
 export interface SongFilterProps {
   onChange: (value: string) => void;
@@ -18,18 +17,22 @@ export function SongFilter({
   filteredSongsCount,
 }: SongFilterProps) {
   return (
-    <Wrapper className={className}>
+    <div className={cn('grow', className)}>
       <Input
         prefix={
-          <FontAwesomeIcon icon={faSearch} color={themedark.color.textDim} />
+          <FontAwesomeIcon icon={faSearch} color="var(--color-text-dim)" />
         }
         placeholder="Enter song name"
         value={nameFilter}
         onChange={(event) => {
           onChange(event.target.value);
         }}
-        suffix={<SongCount>{filteredSongsCount} results</SongCount>}
+        suffix={
+          <div className="text-text-faint text-[13.5px]">
+            {filteredSongsCount} results
+          </div>
+        }
       />
-    </Wrapper>
+    </div>
   );
 }

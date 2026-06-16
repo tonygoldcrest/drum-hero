@@ -50,6 +50,10 @@
   --gradient-accent-fade:  linear-gradient(90deg, rgba(255,90,60,0.35), rgba(255,255,255,0.04));
 }
 
+.ant-input-prefix {
+  margin-inline-end: 12px !important;
+}
+
 body {
   height: 100vh;
   padding: 0;

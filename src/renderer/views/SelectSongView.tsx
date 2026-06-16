@@ -1,19 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Fuse from 'fuse.js';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFolderTree } from '@fortawesome/free-solid-svg-icons';
-import {
-  Header,
-  ScanSongsButton,
-  SongListContainer,
-  SongViewOverlay,
-  Wrapper,
-} from './styles';
-import { IpcLoadSongListResponse, SongData } from '../../../types';
-import { SongFilter } from '../../components/SongFilter/SongFilter';
-import { SongList } from '../../components/SongList/SongList';
-import { SettingsButton } from '../../components/SettingsButton/SettingsButton';
+import { IpcLoadSongListResponse, SongData } from '../../types';
+import { SongFilter } from '../components/SongFilter';
+import { SongList } from '../components/SongList';
+import { SettingsButton } from '../components/SettingsButton';
 
 export function SelectSongView() {
   const [songList, setSongList] = useState<SongData[]>([]);
@@ -28,6 +19,13 @@ export function SelectSongView() {
       },
     );
   }, []);
+
+  window.electron.ipcRenderer.on<IpcLoadSongListResponse>(
+    'rescan-songs',
+    (arg) => {
+      setSongList(arg);
+    },
+  );
 
   const filteredSongList = useMemo(() => {
     if (!nameFilter) {
@@ -47,8 +45,11 @@ export function SelectSongView() {
   }, [songList, nameFilter]);
 
   return (
-    <Wrapper>
-      <Header>
+    <div className="h-screen flex flex-col bg-bg">
+      <div
+        className="border-b border-divider p-5 z-10 flex gap-2"
+        style={{ background: 'var(--gradient-header)' }}
+      >
         <SongFilter
           nameFilter={nameFilter}
           onChange={(value: string) => {
@@ -57,8 +58,8 @@ export function SelectSongView() {
           filteredSongsCount={filteredSongList.length}
         />
         <SettingsButton />
-      </Header>
-      <SongListContainer>
+      </div>
+      <div className="w-full max-w-250 grow overflow-hidden mx-auto bg-bg">
         <SongList
           songList={filteredSongList}
           scrollKey={nameFilter}
@@ -79,24 +80,10 @@ export function SelectSongView() {
             ]);
           }}
         />
-      </SongListContainer>
-      <SongViewOverlay>
+      </div>
+      <div className="fixed inset-0 pointer-events-none z-100">
         <Outlet />
-      </SongViewOverlay>
-      <ScanSongsButton
-        tooltip="Rescan songs"
-        type="primary"
-        icon={<FontAwesomeIcon icon={faFolderTree} />}
-        onClick={() => {
-          window.electron.ipcRenderer.sendMessage('rescan-songs');
-          window.electron.ipcRenderer.once<IpcLoadSongListResponse>(
-            'rescan-songs',
-            (arg) => {
-              setSongList(arg);
-            },
-          );
-        }}
-      />
-    </Wrapper>
+      </div>
+    </div>
   );
 }

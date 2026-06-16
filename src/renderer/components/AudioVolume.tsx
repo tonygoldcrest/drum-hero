@@ -1,6 +1,5 @@
 import { faS, faVolumeMute } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { FileName } from './styles';
 import { Button, Slider } from 'antd';
 
 export interface AudioVolumeProps {
@@ -24,7 +23,7 @@ export function AudioVolume({
 }: AudioVolumeProps) {
   return (
     <>
-      <FileName>{name}</FileName>
+      <div className="capitalize text-xs text-text">{name}</div>
       <Slider value={volume} onChange={onChange} />
       <Button
         type={isMuted ? 'primary' : 'default'}

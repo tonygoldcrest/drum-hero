@@ -1,42 +1,35 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button, Layout } from 'antd';
+import { Content } from 'antd/es/layout/layout';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  FullHeightLayout,
-  LayoutContent,
-  Title,
-  SheetMusicView,
-  PlayButton,
-  Header,
-  Subtitle,
-  SongInfo,
-  SongTitle,
-  SongSecondary,
-} from './styles';
-import { IpcLoadSongResponse, SongData } from '../../../types';
-import { SheetMusic } from '../../components/SheetMusic/SheetMusic';
-import { AudioPlayer } from '../../services/audio-player/player';
-import { Playback } from '../../components/Playback/Playback';
-import { SettingsButton } from '../../components/SettingsButton/SettingsButton';
-import { AudioVolume } from '../../components/AudioVolume/AudioVolume';
-import { TrackConfig } from '../../services/audio-player/types';
-import { Difficulty } from '../../../chart-parser/types';
-import { PLAYHEAD_STYLES, PlayheadStyle, VolumeControl } from './types';
+import { IpcLoadSongResponse, SongData } from '../../types';
+import { SheetMusic } from '../components/SheetMusic/SheetMusic';
+import { AudioPlayer } from '../services/audio-player/player';
+import { Playback } from '../components/Playback';
+import { SettingsButton } from '../components/SettingsButton';
+import { AudioVolume } from '../components/AudioVolume';
+import { TrackConfig } from '../services/audio-player/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowLeft,
   faPause,
   faPlay,
 } from '@fortawesome/free-solid-svg-icons';
+import { useSettings } from '../context/SettingsContext';
+
+interface VolumeControl {
+  trackName: string;
+  volume: number;
+  previousVolume?: number;
+  isMuted: boolean;
+  isSoloed: boolean;
+}
 
 export function SongView() {
   const [fileData, setFileData] = useState<Buffer>();
   const [format, setFormat] = useState<'mid' | 'chart'>('mid');
-  const [showBarNumbers, setShowBarNumbers] = useState(false);
-  const [enableColors, setEnableColors] = useState(true);
-  const [difficulty, setDifficulty] = useState<Difficulty>(Difficulty.expert);
-  const [playheadStyle, setPlayheadStyle] = useState<PlayheadStyle>('Cursor');
+  const { difficulty, playheadStyle, enableColors, showBarNumbers } = useSettings();
   const [currentPlayback, setCurrentPlayback] = useState(0);
   const [songData, setSongData] = useState<SongData | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -278,10 +271,13 @@ export function SongView() {
   }, [volumeControls, audioPlayer]);
 
   return (
-    <FullHeightLayout>
+    <Layout className="h-full pointer-events-auto">
       <Layout>
         <Layout>
-          <Header>
+          <div
+            className="flex items-center p-5 gap-5"
+            style={{ background: 'var(--gradient-header)' }}
+          >
             <Button
               icon={<FontAwesomeIcon icon={faArrowLeft} />}
               onClick={() => {
@@ -289,9 +285,9 @@ export function SongView() {
                 navigate('/');
               }}
               size="large"
-            ></Button>
+            />
 
-            <PlayButton
+            <Button
               type="primary"
               icon={<FontAwesomeIcon icon={isPlaying ? faPause : faPlay} />}
               onClick={() => {
@@ -299,16 +295,19 @@ export function SongView() {
               }}
               shape="circle"
               size="large"
-            ></PlayButton>
+              style={{ width: 50, height: 50 }}
+            />
 
-            <SongInfo>
-              <SongTitle>{songData?.name}</SongTitle>
-              <SongSecondary>
+            <div>
+              <div className="text-text-body font-ui text-[18px]">
+                {songData?.name}
+              </div>
+              <div className="text-text-faint flex items-center gap-1">
                 <div>{songData?.artist}</div>
                 <div>·</div>
                 <div>{difficulty}</div>
-              </SongSecondary>
-            </SongInfo>
+              </div>
+            </div>
 
             <Playback
               currentTime={currentPlayback}
@@ -323,26 +322,18 @@ export function SongView() {
                 audioPlayer.start(time);
               }}
             />
-            <SettingsButton
-              difficulty={difficulty}
-              onDifficultyChange={setDifficulty}
-              playheadStyle={playheadStyle}
-              onPlayheadStyleChange={setPlayheadStyle}
-              enableColors={enableColors}
-              onEnableColorsChange={setEnableColors}
-              showBarNumbers={showBarNumbers}
-              onShowBarNumbersChange={setShowBarNumbers}
-              volumeSliders={volumeSliders}
-            />
-          </Header>
-          <LayoutContent>
+            <SettingsButton volumeSliders={volumeSliders} />
+          </div>
+          <Content className="p-6 m-0 overflow-auto flex flex-col items-center font-display text-ink">
             {songData && (
-              <SheetMusicView>
-                <Title>{songData.name}</Title>
-                <Subtitle>
+              <div className="flex flex-col items-center min-w-max bg-paper rounded-[11px] p-10">
+                <h1 className="my-0 mx-auto text-4xl text-ink font-semibold">
+                  {songData.name}
+                </h1>
+                <div className="ml-auto text-[15px] italic font-bold flex flex-col items-end text-ink">
                   <div>Music by {songData.artist}</div>
                   <div>Arranged by {songData.charter}</div>
-                </Subtitle>
+                </div>
                 <SheetMusic
                   currentTime={currentPlayback}
                   fileData={fileData}
@@ -361,11 +352,11 @@ export function SongView() {
                     setIsPlaying(true);
                   }}
                 />
-              </SheetMusicView>
+              </div>
             )}
-          </LayoutContent>
+          </Content>
         </Layout>
       </Layout>
-    </FullHeightLayout>
+    </Layout>
   );
 }
