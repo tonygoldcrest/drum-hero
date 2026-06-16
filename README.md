@@ -19,14 +19,14 @@ xattr -r -d com.apple.quarantine /Applications/DrumHero.app
 
 ## Why?
 
-Finding drumless tracks with sheet music is a pain. Clone Hero solves both problems at once: thousands of songs with what is essentially sheet music, and for many of them you can disable the drum audio. The notes aren't always 100% accurate, but they're usually close enough.
+Finding drumless tracks with sheet music is a pain. Clone Hero is a Guitar Hero-style rhythm game with a massive community song library — each song comes with note charts for each instrument and, often, separated audio stems. Drum Hero takes the drum charts from those songs (which are essentially MIDI hit data) and renders them as sheet music you can play along to, while letting you mute the drum stem so you're playing instead of listening.
 
-I made this to help myself move beyond just playing Clone Hero toward something more serious. The next step for me is learning to sightread actual music, and this tool helps a lot with that.
+The charts aren't always 100% accurate, but they're usually close enough. I made this to help myself move beyond just playing Clone Hero toward something more serious — specifically, learning to sightread, and this is how I'm doing it.
 
 ## Workflow
 
 ### 1. Select your Clone Hero Library directory
-If you don't have one, download songs from sources you can find online.
+If you don't have one, download songs from [Enchor](https://www.enchor.us/) — filter by Any Instrument > Drums, then download in zip format and unpack.
 
 ### 2. Search for a song you want to play
 <img width="2606" height="1550" alt="image" src="https://github.com/user-attachments/assets/0823e543-0bbb-4491-b66e-28632d29a2b0" />
@@ -37,11 +37,12 @@ If you don't have one, download songs from sources you can find online.
 ### 3. Press play and jam along
 <img width="1541" height="939" alt="image" src="https://github.com/user-attachments/assets/60512f29-2b0c-433f-9a25-459af5bff090" />
 
-* If the song has stems, use the volume controls and solo/mute to disable the drum track.
-* The currently playing measure is highlighted.
+* If the song has stems, use the mixer to adjust levels (e.g. mute drums to make the song drumless).
+* Three playhead modes are available in Settings: Cursor (follows playback and highlights current notes), Measure (highlights just the current measure), and None.
+* Notes that have already played are dimmed.
 * Click a measure to skip to it.
 * You can switch difficulty in the side menu if expert is too fast.
-* Notes are highlighted with Clone Hero colors by default, but you can turn that off in the side menu.
+* Notes are highlighted with Clone Hero colors by default, but you can turn that off in the Settings.
 
 ## Roadmap
 
