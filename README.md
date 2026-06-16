@@ -29,13 +29,13 @@ I made this to help myself move beyond just playing Clone Hero toward something 
 If you don't have one, download songs from sources you can find online.
 
 ### 2. Search for a song you want to play
-<img width="768" alt="image" src="https://github.com/peancored/drum-hero/assets/5630034/b2b1cd66-9fda-4a38-855e-52b0646b013c">
+<img width="2606" height="1550" alt="image" src="https://github.com/user-attachments/assets/0823e543-0bbb-4491-b66e-28632d29a2b0" />
 
 * If you picked the wrong Clone Hero directory, press the green floating button to browse again.
 * You can favorite a song by pressing the like button so it always appears at the top.
 
 ### 3. Press play and jam along
-<img width="768" alt="image" src="https://github.com/peancored/drum-hero/assets/5630034/468d9511-0014-4b43-b029-3ec583be269f">
+<img width="1541" height="939" alt="image" src="https://github.com/user-attachments/assets/60512f29-2b0c-433f-9a25-459af5bff090" />
 
 * If the song has stems, use the volume controls and solo/mute to disable the drum track.
 * The currently playing measure is highlighted.
