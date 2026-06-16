@@ -25,6 +25,7 @@ release/build
 test-songs/
 .erb/dll
 sample_tracks
+.vscode
 
 .idea
 npm-debug.log.*
