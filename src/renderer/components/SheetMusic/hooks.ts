@@ -57,6 +57,7 @@ export function useProgressColoring(
   activeNote: ActiveNoteInfo | null,
   playheadStyle: PlayheadStyle,
   renderData: RenderData[],
+  enabled: boolean,
 ) {
   const decolorizedElsRef = useRef<Set<SVGElement>>(new Set());
   const prevKeyRef = useRef<string | null>(null);
@@ -81,7 +82,7 @@ export function useProgressColoring(
       decolorizedElsRef.current.clear();
     };
 
-    if (!activeNote || playheadStyle === 'None') {
+    if (!activeNote || playheadStyle === 'None' || !enabled) {
       clearAll();
       prevKeyRef.current = null;
       prevPosRef.current = null;
@@ -132,7 +133,7 @@ export function useProgressColoring(
 
     prevKeyRef.current = activeNote.key;
     prevPosRef.current = { measureIdx, noteIdx };
-  }, [activeNote, playheadStyle, renderData]);
+  }, [activeNote, playheadStyle, renderData, enabled]);
 
   useEffect(() => {
     decolorizedElsRef.current.forEach((el) => {

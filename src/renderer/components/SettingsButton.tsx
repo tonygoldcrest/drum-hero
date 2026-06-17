@@ -1,10 +1,12 @@
 import {
   ReactNode,
+  useEffect,
   useRef,
   type RefObject,
   type CSSProperties,
   useState,
 } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Button, Divider, Switch } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog, faFolder } from '@fortawesome/free-solid-svg-icons';
@@ -27,11 +29,19 @@ export function SettingsButton({ volumeSliders }: Props) {
     setEnableColors,
     showBarNumbers,
     setShowBarNumbers,
+    progressColoring,
+    setProgressColoring,
     currentPath,
   } = useSettings();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    popoverRef.current?.hidePopover();
+    setIsPopoverOpen(false);
+  }, [pathname]);
 
   const toggle = () => {
     const el = popoverRef.current;
@@ -141,6 +151,17 @@ export function SettingsButton({ volumeSliders }: Props) {
             size="small"
             checked={showBarNumbers}
             onChange={setShowBarNumbers}
+          />
+        </div>
+        <Divider />
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-sm text-text-muted whitespace-nowrap">
+            Fade played notes
+          </div>
+          <Switch
+            size="small"
+            checked={progressColoring}
+            onChange={setProgressColoring}
           />
         </div>
         {volumeSliders ? (

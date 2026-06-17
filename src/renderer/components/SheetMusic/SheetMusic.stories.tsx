@@ -19,6 +19,7 @@ function Sheet({ measures }: { measures: MeasureSpec[] }) {
         format="mid"
         showBarNumbers={false}
         enableColors
+        progressColoring={false}
         currentTime={0}
         onSelectMeasure={() => {}}
         difficulty={Difficulty.expert}

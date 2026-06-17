@@ -29,8 +29,13 @@ interface VolumeControl {
 export function SongView() {
   const [fileData, setFileData] = useState<Buffer>();
   const [format, setFormat] = useState<'mid' | 'chart'>('mid');
-  const { difficulty, playheadStyle, enableColors, showBarNumbers } =
-    useSettings();
+  const {
+    difficulty,
+    playheadStyle,
+    enableColors,
+    showBarNumbers,
+    progressColoring,
+  } = useSettings();
   const [currentPlayback, setCurrentPlayback] = useState(0);
   const [songData, setSongData] = useState<SongData | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -343,6 +348,7 @@ export function SongView() {
                   playheadStyle={playheadStyle}
                   showBarNumbers={showBarNumbers}
                   enableColors={enableColors}
+                  progressColoring={progressColoring}
                   isFiveLane={songData.five_lane_drums === 'True'}
                   onSelectMeasure={(time) => {
                     if (!audioPlayer) {

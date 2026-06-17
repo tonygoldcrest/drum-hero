@@ -4,7 +4,6 @@ import { parseChartFile } from 'scan-chart';
 import { ChartParser } from '../../../chart-parser/parser';
 import { renderMusic } from '../../../chart-parser/renderer';
 import { Difficulty, RenderData } from '../../../chart-parser/types';
-import { PlayheadStyle } from '../../views/SongView/types';
 import {
   getCursorX,
   getNoteSvg,
@@ -17,12 +16,14 @@ import {
   useProgressColoring,
 } from './hooks';
 import { cn } from '../../cn';
+import { PlayheadStyle } from '../../types';
 
 export interface SheetMusicProps {
   fileData?: Buffer;
   format?: 'mid' | 'chart';
   showBarNumbers: boolean;
   enableColors: boolean;
+  progressColoring: boolean;
   currentTime: number;
   onSelectMeasure: (time: number) => void;
   difficulty: Difficulty;
@@ -35,6 +36,7 @@ export function SheetMusic({
   format = 'mid',
   showBarNumbers,
   enableColors,
+  progressColoring,
   currentTime,
   onSelectMeasure,
   difficulty,
@@ -162,7 +164,12 @@ export function SheetMusic({
   }, [playheadStyle, currentTick, renderData, highlightedMeasureIndex]);
 
   useActiveNoteScale(activeNoteInfo, renderData);
-  useProgressColoring(activeNoteInfo, playheadStyle, renderData);
+  useProgressColoring(
+    activeNoteInfo,
+    playheadStyle,
+    renderData,
+    progressColoring,
+  );
 
   const cursorPosition = useMemo(() => {
     if (playheadStyle !== 'Cursor' || !chart || highlightedMeasureIndex < 0) {

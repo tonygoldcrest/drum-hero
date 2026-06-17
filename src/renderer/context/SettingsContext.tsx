@@ -17,6 +17,8 @@ interface SettingsContextValue {
   setEnableColors: (v: boolean) => void;
   showBarNumbers: boolean;
   setShowBarNumbers: (v: boolean) => void;
+  progressColoring: boolean;
+  setProgressColoring: (v: boolean) => void;
   currentPath: string | null;
   setCurrentPath: (p: string | null) => void;
 }
@@ -59,6 +61,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     'settings.showBarNumbers',
     false,
   );
+  const [progressColoring, setProgressColoring] = usePersisted(
+    'settings.progressColoring',
+    true,
+  );
   const [currentPath, setCurrentPath] = useState<string | null>(null);
 
   return (
@@ -72,6 +78,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setEnableColors,
         showBarNumbers,
         setShowBarNumbers,
+        progressColoring,
+        setProgressColoring,
         currentPath,
         setCurrentPath,
       }}
