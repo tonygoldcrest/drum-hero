@@ -15,6 +15,11 @@ export function resolveHtmlPath(_htmlFileName: string) {
   return `file://${path.resolve(__dirname, '../renderer/index.html')}`;
 }
 
+export function isUnderDirectory(songDir: string, rootDir: string): boolean {
+  const relative = path.relative(rootDir, songDir);
+  return !relative.startsWith('..') && !path.isAbsolute(relative);
+}
+
 export async function parseAndSaveSongs(
   store: ElectronStore,
   callback?: (songs: StorageSchema['songs']) => void,
@@ -29,50 +34,71 @@ export async function parseAndSaveSongs(
     return;
   }
 
-  store.delete('songs');
+  const selectedPath = result.filePaths[0];
+  store.set('lastOpenedPath', selectedPath);
 
-  glob(
-    `${result.filePaths[0]}/**/{notes.mid,notes.chart}`,
-    {},
-    (err, files) => {
-      const supportedImageExtensions = ['png', 'jpg', 'jpeg'];
+  const existingSongs = (store.get('songs') as StorageSchema['songs']) ?? {};
 
-      // De-duplicate directories; prefer .mid over .chart when both exist
-      const dirToFile = new Map<string, string>();
-      for (const file of files) {
-        const dir = path.dirname(file);
-        if (!dirToFile.has(dir) || path.extname(file) === '.mid') {
-          dirToFile.set(dir, file);
-        }
+  const existingByDir = new Map<string, StorageSchema['songs'][string]>();
+
+  for (const song of Object.values(existingSongs)) {
+    if (isUnderDirectory(song.dir, selectedPath)) {
+      existingByDir.set(song.dir, song);
+    }
+  }
+
+  const otherSongs = Object.fromEntries(
+    Object.entries(existingSongs).filter(
+      ([, s]) => !isUnderDirectory(s.dir, selectedPath),
+    ),
+  );
+
+  glob(`${selectedPath}/**/{notes.mid,notes.chart}`, {}, (err, files) => {
+    const supportedImageExtensions = ['png', 'jpg', 'jpeg'];
+
+    const dirToFile = new Map<string, string>();
+
+    for (const file of files) {
+      const dir = path.dirname(file);
+      if (!dirToFile.has(dir) || path.extname(file) === '.mid') {
+        dirToFile.set(dir, file);
       }
+    }
 
-      const songList = [...dirToFile.keys()]
-        .map((dir) => path.join(dir, 'song.ini'))
-        .filter((file) => fs.existsSync(file))
-        .map((file) => ({
-          info: ini.parse(fs.readFileSync(file, 'utf-8')),
-          dir: path.dirname(file),
-        }))
-        .map(({ info, dir }) => {
-          const albumCoverPath = supportedImageExtensions
-            .map((ext) => path.join(dir, `album.${ext}`))
-            .find((p) => fs.existsSync(p));
+    const songList = [...dirToFile.keys()]
+      .map((dir) => path.join(dir, 'song.ini'))
+      .filter((file) => fs.existsSync(file))
+      .map((file) => ({
+        info: ini.parse(fs.readFileSync(file, 'utf-8')),
+        dir: path.dirname(file),
+      }))
+      .map(({ info, dir }) => {
+        const albumCoverPath = supportedImageExtensions
+          .map((ext) => path.join(dir, `album.${ext}`))
+          .find((p) => fs.existsSync(p));
 
-          return {
-            id: randomUUID(),
-            dir,
-            albumCover: albumCoverPath ? `gh://${albumCoverPath}` : null,
-            ...(info.song ?? info.Song ?? info),
-          };
-        });
+        const existing = existingByDir.get(dir);
 
-      const songs = songList.reduce((acc, song) => {
+        return {
+          id: existing?.id ?? randomUUID(),
+          dir,
+          albumCover: albumCoverPath ? `gh://${albumCoverPath}` : null,
+          ...(info.song ?? info.Song ?? info),
+          // Preserve user data from existing entry
+          ...(existing?.liked !== undefined ? { liked: existing.liked } : {}),
+        };
+      });
+
+    const rescannedSongs = songList.reduce(
+      (acc, song) => {
         acc[song.id] = song;
         return acc;
-      }, {});
-      store.set('songs', songs);
+      },
+      {} as StorageSchema['songs'],
+    );
 
-      callback?.(songs);
-    },
-  );
+    store.set('songs', { ...otherSongs, ...rescannedSongs });
+
+    callback?.(rescannedSongs);
+  });
 }

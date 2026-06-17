@@ -23,7 +23,7 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import Store from 'electron-store';
 import MenuBuilder from './menu';
-import { parseAndSaveSongs, resolveHtmlPath } from './util';
+import { isUnderDirectory, parseAndSaveSongs, resolveHtmlPath } from './util';
 import { StorageSchema } from '../types';
 
 class AppUpdater {
@@ -72,15 +72,29 @@ ipcMain.on('load-song', async (event, id) => {
 });
 
 ipcMain.on('load-song-list', async (event) => {
-  event.reply(
-    'load-song-list',
-    Object.values(store.get('songs') as StorageSchema['songs']),
-  );
+  const lastOpenedPath = store.get('lastOpenedPath') as string | undefined;
+
+  if (!lastOpenedPath || !fs.existsSync(lastOpenedPath)) {
+    event.reply('load-song-list', { songs: [], lastOpenedPath: null });
+    return;
+  }
+
+  const allSongs = store.get('songs') as StorageSchema['songs'] | undefined;
+  const songs = allSongs
+    ? Object.values(allSongs).filter((s) =>
+        isUnderDirectory(s.dir, lastOpenedPath),
+      )
+    : [];
+  event.reply('load-song-list', { songs, lastOpenedPath });
 });
 
 ipcMain.on('rescan-songs', async (event) => {
   await parseAndSaveSongs(store, (songs) => {
-    event.reply('rescan-songs', Object.values(songs));
+    const lastOpenedPath = store.get('lastOpenedPath') as string;
+    event.reply('rescan-songs', {
+      songs: Object.values(songs),
+      lastOpenedPath,
+    });
   });
 });
 
@@ -113,29 +127,7 @@ if (isDebug) {
   // require('electron-debug')();
 }
 
-const installExtensions = async () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const installer = require('electron-devtools-installer');
-  const forceDownload = !!process.env.UPGRADE_EXTENSIONS;
-  const extensions = ['REACT_DEVELOPER_TOOLS'];
-
-  return installer
-    .default(
-      extensions.map((name) => installer[name]),
-      forceDownload,
-    )
-    .catch(console.log);
-};
-
 const createWindow = async () => {
-  if (isDebug) {
-    await installExtensions();
-  }
-
-  if (!store.get('songs')) {
-    await parseAndSaveSongs(store);
-  }
-
   const RESOURCES_PATH = app.isPackaged
     ? path.join(process.resourcesPath, 'assets')
     : path.join(__dirname, '../../assets');

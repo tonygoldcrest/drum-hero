@@ -17,6 +17,8 @@ interface SettingsContextValue {
   setEnableColors: (v: boolean) => void;
   showBarNumbers: boolean;
   setShowBarNumbers: (v: boolean) => void;
+  currentPath: string | null;
+  setCurrentPath: (p: string | null) => void;
 }
 
 function load<T>(key: string, fallback: T): T {
@@ -57,6 +59,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     'settings.showBarNumbers',
     false,
   );
+  const [currentPath, setCurrentPath] = useState<string | null>(null);
 
   return (
     <SettingsContext.Provider
@@ -69,6 +72,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setEnableColors,
         showBarNumbers,
         setShowBarNumbers,
+        currentPath,
+        setCurrentPath,
       }}
     >
       {children}

@@ -29,7 +29,8 @@ interface VolumeControl {
 export function SongView() {
   const [fileData, setFileData] = useState<Buffer>();
   const [format, setFormat] = useState<'mid' | 'chart'>('mid');
-  const { difficulty, playheadStyle, enableColors, showBarNumbers } = useSettings();
+  const { difficulty, playheadStyle, enableColors, showBarNumbers } =
+    useSettings();
   const [currentPlayback, setCurrentPlayback] = useState(0);
   const [songData, setSongData] = useState<SongData | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);

@@ -64,7 +64,10 @@ export interface IpcLoadSongResponse {
   audio: AudioData[];
 }
 
-export type IpcLoadSongListResponse = SongData[];
+export interface IpcLoadSongListResponse {
+  songs: SongData[];
+  lastOpenedPath: string | null;
+}
 
 export interface StorageSchema {
   songs: {

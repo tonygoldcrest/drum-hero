@@ -2,7 +2,6 @@ import {
   ReactNode,
   useRef,
   type RefObject,
-  useEffect,
   type CSSProperties,
   useState,
 } from 'react';
@@ -28,6 +27,7 @@ export function SettingsButton({ volumeSliders }: Props) {
     setEnableColors,
     showBarNumbers,
     setShowBarNumbers,
+    currentPath,
   } = useSettings();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -81,8 +81,9 @@ export function SettingsButton({ volumeSliders }: Props) {
           onClick={() => {
             window.electron.ipcRenderer.sendMessage('rescan-songs');
           }}
+          title={currentPath ?? undefined}
         >
-          Select folder
+          {currentPath ? currentPath.split('/').pop() : 'Select folder'}
         </Button>
         <div className="flex flex-col gap-3">
           <div className="text-sm text-text-muted whitespace-nowrap">

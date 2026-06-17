@@ -5,25 +5,35 @@ import { IpcLoadSongListResponse, SongData } from '../../types';
 import { SongFilter } from '../components/SongFilter';
 import { SongList } from '../components/SongList';
 import { SettingsButton } from '../components/SettingsButton';
+import { useSettings } from '../context/SettingsContext';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faArrowRight,
+  faCog,
+  faFolder,
+} from '@fortawesome/free-solid-svg-icons';
 
 export function SelectSongView() {
   const [songList, setSongList] = useState<SongData[]>([]);
   const [nameFilter, setNameFilter] = useState('');
+  const { setCurrentPath } = useSettings();
 
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage('load-song-list');
     window.electron.ipcRenderer.once<IpcLoadSongListResponse>(
       'load-song-list',
-      (arg) => {
-        setSongList(arg);
+      ({ songs, lastOpenedPath }) => {
+        setSongList(songs);
+        setCurrentPath(lastOpenedPath);
       },
     );
-  }, []);
+  }, [setCurrentPath]);
 
   window.electron.ipcRenderer.on<IpcLoadSongListResponse>(
     'rescan-songs',
-    (arg) => {
-      setSongList(arg);
+    ({ songs, lastOpenedPath }) => {
+      setSongList(songs);
+      setCurrentPath(lastOpenedPath);
     },
   );
 
@@ -59,27 +69,44 @@ export function SelectSongView() {
         />
         <SettingsButton />
       </div>
-      <div className="w-full max-w-250 grow overflow-hidden mx-auto bg-bg">
-        <SongList
-          songList={filteredSongList}
-          scrollKey={nameFilter}
-          onLikeChange={(id, liked) => {
-            const song = songList.find((s) => s.id === id);
+      <div className="w-full max-w-250 grow overflow-hidden mx-auto bg-bg flex flex-col">
+        {songList.length > 0 ? (
+          <SongList
+            songList={filteredSongList}
+            scrollKey={nameFilter}
+            onLikeChange={(id, liked) => {
+              const song = songList.find((s) => s.id === id);
 
-            if (!song) {
-              return;
-            }
-            window.electron.ipcRenderer.sendMessage('like-song', id, liked);
+              if (!song) {
+                return;
+              }
+              window.electron.ipcRenderer.sendMessage('like-song', id, liked);
 
-            setSongList([
-              ...songList.filter((s) => s.id !== id),
-              {
-                ...song,
-                liked,
-              },
-            ]);
-          }}
-        />
+              setSongList([
+                ...songList.filter((s) => s.id !== id),
+                {
+                  ...song,
+                  liked,
+                },
+              ]);
+            }}
+          />
+        ) : (
+          <div className="m-auto text-text-faint flex items-center gap-1 flex-col">
+            <div>No songs found.</div>
+            <div className="flex items-center gap-2">
+              <div>Select a different folder</div>
+              <div className="border-2 border-border py-1 px-2 rounded-md">
+                <FontAwesomeIcon icon={faCog} />
+              </div>
+              <FontAwesomeIcon icon={faArrowRight} />
+              <div className="flex items-center border-2 border-border py-1 px-2 rounded-md gap-1">
+                <FontAwesomeIcon icon={faFolder} />
+                <div>Select folder</div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <div className="fixed inset-0 pointer-events-none z-100">
         <Outlet />
