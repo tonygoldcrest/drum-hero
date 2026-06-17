@@ -1,4 +1,4 @@
-# <img width="64" height="64" alt="DrumHero Logo Github" src="https://github.com/user-attachments/assets/6b9c94a4-46e6-482d-9508-ddf3a48f0131" /> Drum Hero
+# <img width="64" height="64" alt="DrumHero Logo Github" src="https://github.com/user-attachments/assets/6c4eb448-d413-465d-8e14-1ed1b1d6e102" /> Drum Hero
 
 Play your favourite Clone Hero tracks on drums, assisted by sheet music.
 
