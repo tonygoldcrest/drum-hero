@@ -26,10 +26,14 @@ The charts aren't always 100% accurate, but they're usually close enough. I made
 ## Workflow
 
 ### 1. Select your Clone Hero Library directory
+<img width="1478" height="880" alt="image" src="https://github.com/user-attachments/assets/6d5529a5-1b78-4519-9f54-1f6fb9dc5979" />
+
 If you don't have one, you can download songs directly from within the app (see step 2), or grab them manually from [Enchor](https://www.enchor.us/), filter by Any Instrument > Drums, then download in zip format and unpack.
 
 ### 2. Search for a song you want to play
-<img width="2606" height="1550" alt="image" src="https://github.com/user-attachments/assets/0823e543-0bbb-4491-b66e-28632d29a2b0" />
+
+<img width="1478" height="880" alt="image" src="https://github.com/user-attachments/assets/884d0730-ca84-42cc-a35b-5622793b35ae" />
+<img width="1478" height="880" alt="image" src="https://github.com/user-attachments/assets/c5913505-0354-45d3-a0fd-292d2ca07fe1" />
 
 * If you picked the wrong Clone Hero directory, press the green floating button to browse again.
 * You can favorite a song by pressing the like button so it always appears at the top.
