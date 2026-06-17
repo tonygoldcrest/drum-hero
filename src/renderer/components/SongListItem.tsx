@@ -56,27 +56,32 @@ export function SongListItem({
     }
 
     if (!downloading && !downloaded) {
-      return (
+      const button = (
+        <Button
+          icon={<FontAwesomeIcon icon={faDownload} />}
+          disabled={downloadingDisabled}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDownload(id);
+          }}
+        />
+      );
+      return downloadingDisabled ? (
         <Tooltip
           title="To enable download, select library folder"
           placement="left"
         >
-          <Button
-            icon={<FontAwesomeIcon icon={faDownload} />}
-            disabled={downloadingDisabled}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onDownload(id);
-            }}
-          />
+          {button}
         </Tooltip>
+      ) : (
+        button
       );
     }
 
     return (
       <FontAwesomeIcon
-        className={cn(downloading ? 'text-text-dim' : 'text-accent')}
+        className={cn(downloading ? 'text-text-dim' : 'text-accent', 'px-1.5')}
         size="xl"
         icon={downloading ? faSpinner : faCheck}
         spin={downloading}
