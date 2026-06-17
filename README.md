@@ -33,11 +33,12 @@ If you don't have one, you can download songs directly from within the app (see 
 ### 2. Search for a song you want to play
 
 <img width="1478" height="880" alt="image" src="https://github.com/user-attachments/assets/884d0730-ca84-42cc-a35b-5622793b35ae" />
-<img width="1478" height="880" alt="image" src="https://github.com/user-attachments/assets/c5913505-0354-45d3-a0fd-292d2ca07fe1" />
 
 * If you picked the wrong Clone Hero directory, press the green floating button to browse again.
-* You can favorite a song by pressing the like button so it always appears at the top.
-* Press the globe icon to switch to online search and download songs directly from [Enchor](https://www.enchor.us/). You must have a library folder selected first, downloaded songs are saved there.
+* You can favorite a song by pressing the like button.
+
+<img width="1478" height="880" alt="image" src="https://github.com/user-attachments/assets/c5913505-0354-45d3-a0fd-292d2ca07fe1" />
+Press the globe icon to switch to online search and download songs directly from [Enchor](https://www.enchor.us/). You must have a library folder selected first, downloaded songs are saved there.
 
 ### 3. Press play and jam along
 <img width="1541" height="939" alt="image" src="https://github.com/user-attachments/assets/60512f29-2b0c-433f-9a25-459af5bff090" />
