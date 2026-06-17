@@ -39,7 +39,12 @@ const createWindow = async () => {
     y: 0,
     width: 1366,
     height: 768,
-    icon: getAssetPath('icon.png'),
+    icon:
+      process.platform === 'win32'
+        ? getAssetPath('icon.ico')
+        : process.platform === 'linux'
+        ? getAssetPath('icons', '512x512.png')
+        : getAssetPath('icon.png'),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
     },
