@@ -11,7 +11,7 @@ import { times } from 'es-toolkit/compat';
 import appIcon from '../../../assets/icon.png';
 import { SongData } from '../../types';
 import { cn } from '../cn';
-import { Button } from 'antd';
+import { Button, Tooltip } from 'antd';
 import { useMemo } from 'react';
 import { Mode } from './SongFilter';
 
@@ -22,6 +22,7 @@ export interface SongListItemProps {
   downloading?: boolean;
   downloaded?: boolean;
   mode: Mode;
+  downloadingDisabled: boolean;
 }
 
 export function SongListItem({
@@ -31,6 +32,7 @@ export function SongListItem({
   downloading,
   downloaded,
   mode,
+  downloadingDisabled,
 }: SongListItemProps) {
   const navigate = useNavigate();
 
@@ -55,14 +57,20 @@ export function SongListItem({
 
     if (!downloading && !downloaded) {
       return (
-        <Button
-          icon={<FontAwesomeIcon icon={faDownload} />}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onDownload(id);
-          }}
-        />
+        <Tooltip
+          title="To enable download, select library folder"
+          placement="left"
+        >
+          <Button
+            icon={<FontAwesomeIcon icon={faDownload} />}
+            disabled={downloadingDisabled}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDownload(id);
+            }}
+          />
+        </Tooltip>
       );
     }
 

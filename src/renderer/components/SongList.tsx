@@ -14,6 +14,7 @@ export interface SongListProps {
   downloadedIds?: Set<string>;
   scrollKey?: string;
   mode: Mode;
+  downloadingDisabled: boolean;
 }
 
 export function SongList({
@@ -25,6 +26,7 @@ export function SongList({
   downloadedIds,
   scrollKey,
   mode,
+  downloadingDisabled,
 }: SongListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -69,6 +71,7 @@ export function SongList({
                 downloading={downloadingIds?.has(songData.id)}
                 downloaded={downloadedIds?.has(songData.id)}
                 mode={mode}
+                downloadingDisabled={downloadingDisabled}
               />
             </div>
           );

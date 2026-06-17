@@ -31,7 +31,7 @@ export function SelectSongView() {
     nameFilter,
   );
 
-  const { setCurrentPath } = useSettings();
+  const { setCurrentPath, currentPath } = useSettings();
 
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage('load-song-list');
@@ -112,6 +112,7 @@ export function SelectSongView() {
               songList={filteredSongList}
               scrollKey={nameFilter}
               downloadingIds={downloadingIds}
+              downloadingDisabled={currentPath === null}
               mode={mode}
               downloadedIds={
                 mode === 'online'

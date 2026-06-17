@@ -13,6 +13,7 @@ export default function App() {
       <ConfigProvider
         theme={{
           token: {
+            colorBgBase: themedark.color.bg,
             colorPrimary: themedark.color.accent,
             borderRadius: themedark.radius.sm,
             colorBorder: 'transparent',
@@ -34,6 +35,8 @@ export default function App() {
             },
             Button: {
               defaultShadow: 'none',
+              colorBorderDisabled: themedark.color.surfaceRaised,
+              colorTextDisabled: themedark.color.textFaint,
               primaryShadow: themedark.shadow.accentButton,
               colorBgContainer: themedark.color.surfaceRaised,
               colorBorder: themedark.color.border,
@@ -60,6 +63,10 @@ export default function App() {
             Divider: {
               colorSplit: themedark.color.divider,
               marginLG: 0,
+            },
+            Tooltip: {
+              colorBgSpotlight: themedark.color.surfaceSunken,
+              colorTextLightSolid: themedark.color.textMuted,
             },
           },
         }}
