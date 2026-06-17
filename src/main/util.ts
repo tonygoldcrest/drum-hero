@@ -25,7 +25,7 @@ export async function parseAndSaveSongs(
   callback?: (songs: StorageSchema['songs']) => void,
 ) {
   const result = await dialog.showOpenDialog({
-    properties: ['openDirectory'],
+    properties: ['openDirectory', 'createDirectory'],
     title: 'Choose your Clone Hero library',
     message: 'Choose your Clone Hero library',
   });

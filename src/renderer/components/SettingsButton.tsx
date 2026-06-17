@@ -14,6 +14,7 @@ import { Difficulty } from '../../chart-parser/types';
 import { PLAYHEAD_STYLES } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import { cn } from '../cn';
+import { usePopoverOutsideClick } from '../hooks/usePopoverOutsideClick';
 
 interface Props {
   volumeSliders?: ReactNode[];
@@ -42,6 +43,11 @@ export function SettingsButton({ volumeSliders }: Props) {
     popoverRef.current?.hidePopover();
     setIsPopoverOpen(false);
   }, [pathname]);
+
+  usePopoverOutsideClick(isPopoverOpen, popoverRef, triggerRef, () => {
+    popoverRef.current?.hidePopover();
+    setIsPopoverOpen(false);
+  });
 
   const toggle = () => {
     const el = popoverRef.current;

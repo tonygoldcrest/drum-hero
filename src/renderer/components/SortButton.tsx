@@ -15,6 +15,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
 import { cn } from '../cn';
+import { usePopoverOutsideClick } from '../hooks/usePopoverOutsideClick';
 
 export type SortKey = 'name' | 'favorite' | 'lastAdded' | 'difficulty';
 export type SortDirection = 'asc' | 'desc';
@@ -41,6 +42,11 @@ export function SortButton({ sort, onSortChange }: Props) {
     popoverRef.current?.hidePopover();
     setIsPopoverOpen(false);
   }, [pathname]);
+
+  usePopoverOutsideClick(isPopoverOpen, popoverRef, triggerRef, () => {
+    popoverRef.current?.hidePopover();
+    setIsPopoverOpen(false);
+  });
 
   const toggle = () => {
     const el = popoverRef.current;
