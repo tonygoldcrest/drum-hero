@@ -10,20 +10,26 @@ import { useLocation } from 'react-router-dom';
 import { Button, Divider, Switch } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog, faFolder } from '@fortawesome/free-solid-svg-icons';
-import { Difficulty } from '../../chart-parser/types';
 import { PLAYHEAD_STYLES } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import { cn } from '../cn';
 import { usePopoverOutsideClick } from '../hooks/usePopoverOutsideClick';
+import { Difficulty } from 'scan-chart';
 
 interface Props {
   volumeSliders?: ReactNode[];
+  difficulties?: Difficulty[];
+  difficulty?: Difficulty;
+  onChangeDifficulty?: (difficulty: Difficulty) => void;
 }
 
-export function SettingsButton({ volumeSliders }: Props) {
+export function SettingsButton({
+  difficulty,
+  onChangeDifficulty,
+  volumeSliders,
+  difficulties,
+}: Props) {
   const {
-    difficulty,
-    setDifficulty,
     playheadStyle,
     setPlayheadStyle,
     enableColors,
@@ -101,24 +107,28 @@ export function SettingsButton({ volumeSliders }: Props) {
         >
           {currentPath ? currentPath.split('/').pop() : 'Select folder'}
         </Button>
-        <div className="flex flex-col gap-3">
-          <div className="text-sm text-text-muted whitespace-nowrap">
-            Difficulty
-          </div>
-          <div className="flex gap-2">
-            {Object.values(Difficulty).map((d) => (
-              <Button
-                key={d}
-                className="grow"
-                type={difficulty === d ? 'primary' : 'default'}
-                onClick={() => setDifficulty(d)}
-              >
-                {d}
-              </Button>
-            ))}
-          </div>
-        </div>
-        <Divider />
+        {difficulties && difficulties.length > 0 ? (
+          <>
+            <div className="flex flex-col gap-3">
+              <div className="text-sm text-text-muted whitespace-nowrap">
+                Difficulty
+              </div>
+              <div className="flex gap-2">
+                {difficulties.map((d) => (
+                  <Button
+                    key={d}
+                    className="grow"
+                    type={difficulty === d ? 'primary' : 'default'}
+                    onClick={() => onChangeDifficulty?.(d)}
+                  >
+                    {d}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <Divider />
+          </>
+        ) : null}
         <div className="flex flex-col gap-3">
           <div className="text-sm text-text-muted whitespace-nowrap">
             Playhead style

@@ -9,21 +9,24 @@ import {
   Hit,
   MeasureSpec,
 } from './drumMidiFixture';
-import { Difficulty } from '../../../chart-parser/types';
+import { parseChartFile } from 'scan-chart';
+import { ChartParser } from '../../../chart-parser/parser';
 
 function Sheet({ measures }: { measures: MeasureSpec[] }) {
+  const fileData = buildDrumMidi(measures) as unknown as Buffer;
+  const chart = parseChartFile(new Uint8Array(fileData), 'mid');
+  const parsedMidi = new ChartParser(chart, false, 'expert');
+
   return (
     <div style={{ padding: 24, background: '#fff', overflow: 'auto' }}>
       <SheetMusic
-        fileData={buildDrumMidi(measures) as unknown as Buffer}
-        format="mid"
+        chart={chart}
+        parsedMidi={parsedMidi}
         showBarNumbers={false}
         enableColors
         progressColoring={false}
         currentTime={0}
         onSelectMeasure={() => {}}
-        difficulty={Difficulty.expert}
-        isFiveLane={false}
         playheadStyle="None"
       />
     </div>

@@ -36,13 +36,6 @@ export interface RenderData {
   renderedNotes: RenderedNote[];
 }
 
-export enum Difficulty {
-  easy = 'easy',
-  medium = 'medium',
-  hard = 'hard',
-  expert = 'expert',
-}
-
 export type ParsedChart = ReturnType<typeof parseChartFile>;
 
 export interface RenderedNote {

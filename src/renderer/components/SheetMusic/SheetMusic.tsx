@@ -1,62 +1,45 @@
 import { createRef, useEffect, useMemo, useRef, useState } from 'react';
-import { parseChartFile } from 'scan-chart';
 
 import { ChartParser } from '../../../chart-parser/parser';
 import { renderMusic } from '../../../chart-parser/renderer';
-import { Difficulty, RenderData } from '../../../chart-parser/types';
+import { ParsedChart, RenderData } from '../../../chart-parser/types';
 import {
   getCursorX,
   getNoteSvg,
   secondsToTicks,
   ticksToSeconds,
 } from './utils';
-import {
-  ActiveNoteInfo,
-  useActiveNoteScale,
-  useProgressColoring,
-} from './hooks';
 import { cn } from '../../cn';
 import { PlayheadStyle } from '../../types';
+import { ActiveNoteInfo } from '../../hooks/types';
+import { useActiveNoteScale } from '../../hooks/useActiveNoteScale';
+import { useProgressColoring } from '../../hooks/useProgressColoring';
 
 export interface SheetMusicProps {
-  fileData?: Buffer;
-  format?: 'mid' | 'chart';
+  chart: ParsedChart;
+  parsedMidi: ChartParser;
   showBarNumbers: boolean;
   enableColors: boolean;
   progressColoring: boolean;
   currentTime: number;
   onSelectMeasure: (time: number) => void;
-  difficulty: Difficulty;
-  isFiveLane: boolean;
   playheadStyle: PlayheadStyle;
 }
 
 export function SheetMusic({
-  fileData,
-  format = 'mid',
+  chart,
+  parsedMidi,
   showBarNumbers,
   enableColors,
   progressColoring,
   currentTime,
   onSelectMeasure,
-  difficulty,
   playheadStyle,
-  isFiveLane,
 }: SheetMusicProps) {
   const vexflowContainerRef = useRef<HTMLDivElement>(null);
   const [renderData, setRenderData] = useState<RenderData[]>([]);
   const [highlightedMeasureIndex, setHighlightedMeasureIndex] =
     useState<number>(-1);
-
-  const chart = useMemo(
-    () => (fileData ? parseChartFile(new Uint8Array(fileData), format) : null),
-    [fileData, format],
-  );
-
-  const parsedMidi = useMemo(
-    () => (chart ? new ChartParser(chart, isFiveLane, difficulty) : null),
-    [chart, isFiveLane, difficulty],
-  );
 
   const currentTick = useMemo(
     () =>

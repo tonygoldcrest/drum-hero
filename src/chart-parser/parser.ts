@@ -1,6 +1,6 @@
-import { type NoteEvent } from 'scan-chart';
+import { Difficulty, type NoteEvent } from 'scan-chart';
 
-import { Difficulty, ParsedChart, Measure, Note, TupletMeta } from './types';
+import { ParsedChart, Measure, Note, TupletMeta } from './types';
 import { noteToKey } from './utils';
 
 /**
@@ -712,7 +712,7 @@ export class ChartParser {
   constructor(
     chart: ParsedChart,
     isFiveLane: boolean,
-    difficulty: Difficulty = Difficulty.expert,
+    difficulty: Difficulty = 'expert',
   ) {
     const drumTrack = chart.trackData.find(
       (t) => t.instrument === 'drums' && t.difficulty === difficulty,

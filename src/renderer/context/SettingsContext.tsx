@@ -5,12 +5,9 @@ import {
   ReactNode,
   useEffect,
 } from 'react';
-import { Difficulty } from '../../chart-parser/types';
 import { PlayheadStyle, PLAYHEAD_STYLES } from '../types';
 
 interface SettingsContextValue {
-  difficulty: Difficulty;
-  setDifficulty: (d: Difficulty) => void;
   playheadStyle: PlayheadStyle;
   setPlayheadStyle: (s: PlayheadStyle) => void;
   enableColors: boolean;
@@ -45,10 +42,6 @@ function usePersisted<T>(key: string, fallback: T) {
 const SettingsContext = createContext<SettingsContextValue | null>(null);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [difficulty, setDifficulty] = usePersisted<Difficulty>(
-    'settings.difficulty',
-    Difficulty.expert,
-  );
   const [playheadStyle, setPlayheadStyle] = usePersisted<PlayheadStyle>(
     'settings.playheadStyle',
     PLAYHEAD_STYLES[0],
@@ -70,8 +63,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   return (
     <SettingsContext.Provider
       value={{
-        difficulty,
-        setDifficulty,
         playheadStyle,
         setPlayheadStyle,
         enableColors,

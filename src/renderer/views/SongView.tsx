@@ -1,15 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { Button, Layout } from 'antd';
 import { Content } from 'antd/es/layout/layout';
 import { useNavigate, useParams } from 'react-router-dom';
-import { IpcLoadSongResponse, SongData } from '../../types';
 import { SheetMusic } from '../components/SheetMusic/SheetMusic';
-import { AudioPlayer } from '../services/audio-player/player';
 import { Playback } from '../components/Playback';
 import { SettingsButton } from '../components/SettingsButton';
-import { AudioVolume } from '../components/AudioVolume';
-import { TrackConfig } from '../services/audio-player/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowLeft,
@@ -17,35 +13,26 @@ import {
   faPlay,
 } from '@fortawesome/free-solid-svg-icons';
 import { useSettings } from '../context/SettingsContext';
-
-interface VolumeControl {
-  trackName: string;
-  volume: number;
-  previousVolume?: number;
-  isMuted: boolean;
-  isSoloed: boolean;
-}
+import { Difficulty, parseChartFile } from 'scan-chart';
+import { ChartParser } from '../../chart-parser/parser';
+import { last } from 'es-toolkit';
+import { useSongLoader } from '../hooks/useSongLoader';
+import { useAudioPlayer } from '../hooks/useAudioPlayer';
+import { useVolumeControls } from '../hooks/useVolumeControls';
 
 export function SongView() {
-  const [fileData, setFileData] = useState<Buffer>();
-  const [format, setFormat] = useState<'mid' | 'chart'>('mid');
-  const {
-    difficulty,
-    playheadStyle,
-    enableColors,
-    showBarNumbers,
-    progressColoring,
-  } = useSettings();
-  const [currentPlayback, setCurrentPlayback] = useState(0);
-  const [songData, setSongData] = useState<SongData | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [audioPlayer, setAudioPlayer] = useState<AudioPlayer | null>(null);
-  const [trackData, setTrackData] = useState<TrackConfig[]>([]);
-  const [volumeControls, setVolumeControls] = useState<VolumeControl[]>([]);
+  const { playheadStyle, enableColors, showBarNumbers, progressColoring } =
+    useSettings();
+  const [difficulty, setDifficulty] = useState<Difficulty>('expert');
   const [isDev, setIsDev] = useState(true);
 
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const { fileData, format, songData, trackData } = useSongLoader(id);
+  const { audioPlayer, isPlaying, setIsPlaying, currentPlayback } =
+    useAudioPlayer(trackData, isDev);
+  const { volumeSliders } = useVolumeControls(trackData, audioPlayer);
 
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage('prevent-sleep');
@@ -63,218 +50,46 @@ export function SongView() {
     });
   }, []);
 
-  const loadSong = useCallback(() => {
-    window.electron.ipcRenderer.once<IpcLoadSongResponse>(
-      'load-song',
-      ({ data, fileData: fd, format: fmt, audio }) => {
-        setFileData(fd);
-        setFormat(fmt);
-        setSongData(data);
-
-        const drums = audio
-          .filter((file) => file.name.includes('drums'))
-          .map((file) => file.src);
-
-        const other = audio
-          .filter((file) => !file.name.includes('drums'))
-          .map((file) => ({ urls: [file.src], name: file.name }));
-
-        setTrackData([
-          ...(drums.length ? [{ name: 'drums', urls: drums }] : []),
-          ...other,
-        ]);
-      },
-    );
-    window.electron.ipcRenderer.sendMessage('load-song', id);
-  }, [id]);
-
-  useEffect(() => {
-    if (trackData.length === 0) {
-      return;
-    }
-    const player = new AudioPlayer(trackData, () => setIsPlaying(false));
-
-    setVolumeControls(
-      trackData.map(({ name }) => ({
-        trackName: name,
-        volume: 100,
-        isMuted: false,
-        isSoloed: false,
-      })),
-    );
-
-    player.ready
-      .then(() => {
-        return setAudioPlayer(player);
-      })
-      .catch(() => {});
-  }, [trackData]);
-
-  useEffect(() => {
-    loadSong();
-  }, [loadSong]);
-
-  useEffect(() => {
-    if (audioPlayer === null) {
-      return undefined;
+  const chart = useMemo(() => {
+    if (!fileData) {
+      return null;
     }
 
-    const playbackEventListener = () => {
-      setCurrentPlayback(audioPlayer.currentTime);
-    };
+    return parseChartFile(new Uint8Array(fileData), format);
+  }, [fileData, format]);
 
-    const audioPolling = setInterval(playbackEventListener, 20);
-
-    return () => {
-      clearInterval(audioPolling);
-
-      if (isDev) {
-        audioPlayer.stop();
-      } else {
-        audioPlayer.destroy();
-      }
-    };
-  }, [audioPlayer, isDev]);
-
-  useEffect(() => {
-    if (volumeControls.length === 0 || !audioPlayer) {
-      return;
-    }
-
-    volumeControls.forEach((control) => {
-      const audioTrack = audioPlayer.audioTracks.find(
-        (track) => track.name === control.trackName,
-      );
-
-      if (!audioTrack) {
-        return;
-      }
-
-      audioTrack.setVolume(control.volume / 100);
-    });
-  }, [volumeControls, audioPlayer]);
-
-  useEffect(() => {
-    if (audioPlayer === null) {
-      return;
-    }
-
-    if (isPlaying && !audioPlayer.isInitialised) {
-      audioPlayer.start();
-    } else if (isPlaying) {
-      audioPlayer.resume();
-    } else if (!isPlaying && audioPlayer.isInitialised) {
-      audioPlayer.pause();
-    }
-  }, [audioPlayer, isPlaying]);
-
-  const volumeSliders = useMemo(() => {
-    if (volumeControls.length === 0 || !audioPlayer) {
+  const difficulties = useMemo(() => {
+    if (!chart) {
       return [];
     }
 
-    return volumeControls
-      .sort((a, b) => a.trackName.localeCompare(b.trackName))
-      .map((control) => {
-        return (
-          <AudioVolume
-            key={control.trackName}
-            name={control.trackName}
-            volume={control.volume}
-            isMuted={control.isMuted}
-            isSoloed={control.isSoloed}
-            onMuteClick={() => {
-              if (control.isMuted) {
-                setVolumeControls([
-                  ...volumeControls.filter((c) => c !== control),
-                  {
-                    ...control,
-                    volume: control.previousVolume ?? 100,
-                    previousVolume: undefined,
-                    isMuted: false,
-                  },
-                ]);
-              } else {
-                setVolumeControls([
-                  ...volumeControls.filter((c) => c !== control),
-                  {
-                    ...control,
-                    volume: 0,
-                    previousVolume: control.volume,
-                    isMuted: true,
-                  },
-                ]);
-              }
-            }}
-            onSoloClick={() => {
-              const otherControls = volumeControls.filter((c) => c !== control);
+    const trackDifficulties = chart.trackData
+      .filter((t) => t.instrument === 'drums')
+      .map((t) => t.difficulty);
+    const allDifficulties: Difficulty[] = ['easy', 'medium', 'hard', 'expert'];
 
-              if (otherControls.filter((c) => c.isSoloed).length > 0) {
-                if (control.isSoloed) {
-                  setVolumeControls([
-                    ...otherControls,
-                    {
-                      ...control,
-                      isSoloed: false,
-                      isMuted: true,
-                      volume: 0,
-                      previousVolume: control.volume,
-                    },
-                  ]);
-                } else {
-                  setVolumeControls([
-                    ...otherControls,
-                    {
-                      ...control,
-                      isSoloed: true,
-                      isMuted: false,
-                      volume: control.previousVolume ?? 100,
-                      previousVolume: undefined,
-                    },
-                  ]);
-                }
+    return allDifficulties.filter((d) => trackDifficulties.includes(d));
+  }, [chart]);
 
-                return;
-              }
+  const activeDifficulty: Difficulty = difficulties.includes(difficulty)
+    ? difficulty
+    : last(difficulties) ?? 'expert';
 
-              if (control.isSoloed) {
-                setVolumeControls([
-                  ...otherControls.map((c) => ({
-                    ...c,
-                    isMuted: false,
-                    previousVolume: undefined,
-                    volume: c.previousVolume ?? 100,
-                  })),
-                  {
-                    ...control,
-                    isSoloed: false,
-                  },
-                ]);
-              } else {
-                setVolumeControls([
-                  ...otherControls.map((c) => ({
-                    ...c,
-                    isMuted: true,
-                    previousVolume: c.volume,
-                    volume: 0,
-                  })),
-                  {
-                    ...control,
-                    isSoloed: true,
-                  },
-                ]);
-              }
-            }}
-            onChange={(value) =>
-              setVolumeControls([
-                ...volumeControls.filter((c) => c !== control),
-                { ...control, volume: value },
-              ])
-            }
-          />
-        );
-      });
-  }, [volumeControls, audioPlayer]);
+  const parsedMidi = useMemo(() => {
+    if (!songData || !chart) {
+      return null;
+    }
+
+    try {
+      return new ChartParser(
+        chart,
+        songData.five_lane_drums === 'True',
+        activeDifficulty,
+      );
+    } catch {
+      return null;
+    }
+  }, [chart, songData, activeDifficulty]);
 
   return (
     <Layout className="h-full pointer-events-auto">
@@ -311,7 +126,7 @@ export function SongView() {
               <div className="text-text-faint flex items-center gap-1">
                 <div>{songData?.artist}</div>
                 <div>·</div>
-                <div>{difficulty}</div>
+                <div>{activeDifficulty}</div>
               </div>
             </div>
 
@@ -328,10 +143,15 @@ export function SongView() {
                 audioPlayer.start(time);
               }}
             />
-            <SettingsButton volumeSliders={volumeSliders} />
+            <SettingsButton
+              volumeSliders={volumeSliders}
+              difficulties={difficulties}
+              onChangeDifficulty={setDifficulty}
+              difficulty={activeDifficulty}
+            />
           </div>
           <Content className="p-6 m-0 overflow-auto flex flex-col items-center font-display text-ink">
-            {songData && (
+            {songData && chart && parsedMidi && (
               <div className="flex flex-col items-center min-w-max bg-paper rounded-[11px] p-10">
                 <h1 className="my-0 mx-auto text-4xl text-ink font-semibold">
                   {songData.name}
@@ -341,15 +161,13 @@ export function SongView() {
                   <div>Arranged by {songData.charter}</div>
                 </div>
                 <SheetMusic
+                  chart={chart}
+                  parsedMidi={parsedMidi}
                   currentTime={currentPlayback}
-                  fileData={fileData}
-                  format={format}
-                  difficulty={difficulty}
                   playheadStyle={playheadStyle}
                   showBarNumbers={showBarNumbers}
                   enableColors={enableColors}
                   progressColoring={progressColoring}
-                  isFiveLane={songData.five_lane_drums === 'True'}
                   onSelectMeasure={(time) => {
                     if (!audioPlayer) {
                       return;
