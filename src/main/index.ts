@@ -9,11 +9,13 @@
 import path from 'path';
 import { pathToFileURL } from 'url';
 import { app, BrowserWindow, shell, protocol, net } from 'electron';
+
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import { AppUpdater } from './AppUpdater';
 import { setupIpc } from './ipc';
 
+app.commandLine.appendSwitch('enable-features', 'CanvasDrawElement');
 let mainWindow: BrowserWindow | null = null;
 
 if (process.env.NODE_ENV === 'production') {

@@ -18,6 +18,44 @@ import {
 import { cn } from '../../cn';
 import { PlayheadStyle } from '../../types';
 
+const VS = `#version 300 es
+in vec2 a_pos;
+out vec2 v_uv;
+void main() {
+  v_uv = vec2(a_pos.x * 0.5 + 0.5, 0.5 - a_pos.y * 0.5);
+  gl_Position = vec4(a_pos, 0.0, 1.0);
+}`;
+
+const FS = `#version 300 es
+precision mediump float;
+in vec2 v_uv;
+uniform sampler2D u_tex;
+uniform vec2 u_cursor;
+uniform vec2 u_res;
+uniform float u_radius;
+out vec4 color;
+void main() {
+  vec2 uv = v_uv;
+  if (u_radius > 0.0) {
+    vec2 d = uv * u_res - u_cursor;
+    float dist = length(d);
+    if (dist < u_radius && dist > 0.0) {
+      float t = (1.0 - dist / u_radius) * (1.0 - dist / u_radius);
+      uv -= (d / u_res) * t * 0.25;
+    }
+  }
+  color = texture(u_tex, uv);
+}`;
+
+interface GLState {
+  gl: WebGL2RenderingContext;
+  program: WebGLProgram;
+  texture: WebGLTexture;
+  uCursor: WebGLUniformLocation;
+  uRes: WebGLUniformLocation;
+  uRadius: WebGLUniformLocation;
+}
+
 export interface SheetMusicProps {
   fileData?: Buffer;
   format?: 'mid' | 'chart';
@@ -44,6 +82,8 @@ export function SheetMusic({
   isFiveLane,
 }: SheetMusicProps) {
   const vexflowContainerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const glRef = useRef<GLState | null>(null);
   const [renderData, setRenderData] = useState<RenderData[]>([]);
   const [highlightedMeasureIndex, setHighlightedMeasureIndex] =
     useState<number>(-1);
@@ -163,7 +203,7 @@ export function SheetMusic({
     };
   }, [playheadStyle, currentTick, renderData, highlightedMeasureIndex]);
 
-  useActiveNoteScale(activeNoteInfo, renderData);
+  // useActiveNoteScale(activeNoteInfo, renderData);
   useProgressColoring(
     activeNoteInfo,
     playheadStyle,
@@ -191,6 +231,125 @@ export function SheetMusic({
       height: stave.getHeight() + 30,
     };
   }, [playheadStyle, chart, currentTime, renderData, highlightedMeasureIndex]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return;
+    }
+
+    const gl = canvas.getContext('webgl2', { premultipliedAlpha: false });
+    if (!gl) {
+      return;
+    }
+
+    const compile = (type: number, src: string) => {
+      const s = gl.createShader(type)!;
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      return s;
+    };
+    const program = gl.createProgram()!;
+    gl.attachShader(program, compile(gl.VERTEX_SHADER, VS));
+    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(program);
+    gl.useProgram(program);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+      gl.STATIC_DRAW,
+    );
+    const posLoc = gl.getAttribLocation(program, 'a_pos');
+    gl.enableVertexAttribArray(posLoc);
+    gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+    const texture = gl.createTexture()!;
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+    glRef.current = {
+      gl,
+      program,
+      texture,
+      uCursor: gl.getUniformLocation(program, 'u_cursor')!,
+      uRes: gl.getUniformLocation(program, 'u_res')!,
+      uRadius: gl.getUniformLocation(program, 'u_radius')!,
+    };
+
+    return () => {
+      gl.deleteProgram(program);
+      gl.deleteTexture(texture);
+      glRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const div = vexflowContainerRef.current;
+    if (!canvas || !div) {
+      return;
+    }
+
+    const rafId = requestAnimationFrame(() => {
+      const state = glRef.current;
+      if (!state) {
+        return;
+      }
+      const { gl, program, texture, uCursor, uRes, uRadius } = state;
+
+      const dpr = window.devicePixelRatio || 1;
+      const svg = div.querySelector('svg');
+      if (svg) {
+        const w = parseInt(svg.getAttribute('width') ?? '0');
+        const h = parseInt(svg.getAttribute('height') ?? '0');
+        if (w && h) {
+          const pw = Math.round(w * dpr);
+          const ph = Math.round(h * dpr);
+          if (canvas.width !== pw || canvas.height !== ph) {
+            canvas.width = pw;
+            canvas.height = ph;
+            canvas.style.width = `${w}px`;
+            canvas.style.height = `${h}px`;
+            gl.viewport(0, 0, pw, ph);
+          }
+        }
+      }
+
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (gl as any).texElementImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        div,
+      );
+
+      gl.useProgram(program);
+      gl.uniform2f(uRes, canvas.width, canvas.height);
+
+      if (cursorPosition) {
+        gl.uniform2f(
+          uCursor,
+          cursorPosition.left * dpr,
+          (cursorPosition.top + cursorPosition.height / 2) * dpr,
+        );
+        gl.uniform1f(uRadius, 70 * dpr);
+      } else {
+        gl.uniform1f(uRadius, 0.0);
+      }
+
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    });
+
+    return () => cancelAnimationFrame(rafId);
+  }, [renderData, cursorPosition]);
 
   const measureHighlights = renderData.map(({ measure, stave }, index) => {
     const highlighted =
@@ -224,10 +383,16 @@ export function SheetMusic({
 
   return (
     <div className="min-w-max relative z-0">
-      <div
-        ref={vexflowContainerRef}
-        className="min-w-max pointer-events-none **:pointer-events-none"
-      />
+      <canvas
+        ref={canvasRef}
+        className="min-w-max pointer-events-none"
+        {...({ layoutsubtree: 'true' } as Record<string, unknown>)}
+      >
+        <div
+          ref={vexflowContainerRef}
+          className="min-w-max pointer-events-none **:pointer-events-none"
+        />
+      </canvas>
       {measureHighlights}
       {cursorPosition && (
         <div
