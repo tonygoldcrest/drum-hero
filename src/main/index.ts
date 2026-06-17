@@ -18,6 +18,7 @@ import {
   protocol,
   net,
   powerSaveBlocker,
+  Notification,
 } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
@@ -26,11 +27,27 @@ import MenuBuilder from './menu';
 import { isUnderDirectory, parseAndSaveSongs, resolveHtmlPath } from './util';
 import { StorageSchema } from '../types';
 
+const RELEASES_URL =
+  'https://github.com/tonygoldcrest/drum-hero/releases/latest';
+
 class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
     autoUpdater.logger = log;
-    autoUpdater.checkForUpdatesAndNotify();
+    autoUpdater.autoDownload = false;
+
+    autoUpdater.on('update-available', (info) => {
+      const notification = new Notification({
+        title: 'DrumHero Update Available',
+        body: `Version ${info.version} is available. Click to download.`,
+      });
+      notification.on('click', () => shell.openExternal(RELEASES_URL));
+      notification.show();
+    });
+
+    autoUpdater
+      .checkForUpdates()
+      .catch((err) => log.warn('Update check failed:', err));
   }
 }
 

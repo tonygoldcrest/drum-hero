@@ -222,8 +222,8 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "peancored",
-      "repo": "peancored"
+      "owner": "tonygoldcrest",
+      "repo": "drum-hero"
     }
   },
   "engines": {
