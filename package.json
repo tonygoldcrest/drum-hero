@@ -86,6 +86,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "^6.2.5",
+    "@eliwhite/parse-sng": "^4.0.3-eliwhite.0",
     "@fortawesome/fontawesome-svg-core": "^6.5.1",
     "@fortawesome/free-regular-svg-icons": "^6.5.1",
     "@fortawesome/free-solid-svg-icons": "^6.5.1",

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { RenderData, RenderedNote } from '../../../chart-parser/types';
-import { PlayheadStyle } from '../../views/SongView/types';
 import { getNoteSvg } from './utils';
+import { PlayheadStyle } from '../../types';
 
 export interface ActiveNoteInfo {
   key: string;

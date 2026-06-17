@@ -9,7 +9,8 @@ export type Channels =
   | 'like-song'
   | 'prevent-sleep'
   | 'resume-sleep'
-  | 'check-dev';
+  | 'check-dev'
+  | 'download-song';
 
 const electronHandler = {
   ipcRenderer: {

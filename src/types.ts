@@ -50,6 +50,7 @@ export interface SongData {
   video_start_time: string;
   year: string;
   liked?: boolean;
+  updatedAt?: string;
 }
 
 export interface AudioData {
@@ -67,6 +68,7 @@ export interface IpcLoadSongResponse {
 export interface IpcLoadSongListResponse {
   songs: SongData[];
   lastOpenedPath: string | null;
+  downloadedEncoreMd5s: string[];
 }
 
 export interface StorageSchema {

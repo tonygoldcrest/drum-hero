@@ -1,26 +1,96 @@
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHeart as faHeartSolid } from '@fortawesome/free-solid-svg-icons';
+import {
+  faHeart as faHeartSolid,
+  faDownload,
+  faSpinner,
+  faCheck,
+} from '@fortawesome/free-solid-svg-icons';
 import { faHeart } from '@fortawesome/free-regular-svg-icons';
 import { times } from 'es-toolkit/compat';
 import appIcon from '../../../assets/icon.png';
 import { SongData } from '../../types';
 import { cn } from '../cn';
+import { Button } from 'antd';
+import { useMemo } from 'react';
+import { Mode } from './SongFilter';
 
 export interface SongListItemProps {
   songData: SongData;
   onLikeChange: (id: string, liked: boolean) => void;
+  onDownload: (id: string) => void;
+  downloading?: boolean;
+  downloaded?: boolean;
+  mode: Mode;
 }
 
 export function SongListItem({
   songData: { albumCover, id, name, artist, charter, diff_drums, liked },
   onLikeChange,
+  onDownload,
+  downloading,
+  downloaded,
+  mode,
 }: SongListItemProps) {
+  const navigate = useNavigate();
+
+  const indicator = useMemo(() => {
+    if (mode === 'local') {
+      return (
+        <button
+          className={cn(
+            'bg-transparent p-0 border-0 cursor-pointer hover:text-accent-hover',
+            liked ? 'text-accent' : 'text-text-dim',
+          )}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onLikeChange(id, !liked);
+          }}
+        >
+          <FontAwesomeIcon size="xl" icon={liked ? faHeartSolid : faHeart} />
+        </button>
+      );
+    }
+
+    if (!downloading && !downloaded) {
+      return (
+        <Button
+          icon={<FontAwesomeIcon icon={faDownload} />}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDownload(id);
+          }}
+        />
+      );
+    }
+
+    return (
+      <FontAwesomeIcon
+        className={cn(downloading ? 'text-text-dim' : 'text-accent')}
+        size="xl"
+        icon={downloading ? faSpinner : faCheck}
+        spin={downloading}
+      />
+    );
+  }, [downloading, downloaded, onDownload, id, liked, onLikeChange, mode]);
+
   return (
-    <div className="p-1 w-full">
-      <Link
-        to={{ pathname: `/${id}` }}
-        className="w-full flex border border-border-soft p-[10px] no-underline bg-surface items-center rounded-[11px] transition-all duration-100 ease-in-out hover:bg-accent-soft-bg hover:border-accent-soft-border"
+    <div className="w-full">
+      <div
+        onClick={() => {
+          if (mode === 'local') {
+            navigate(`/${id}`);
+          }
+        }}
+        className={cn(
+          'w-full flex border border-border-soft p-2 no-underline bg-surface items-center rounded-[11px] transition-all duration-100 ease-in-out cursor-default',
+          {
+            'hover:bg-accent-soft-bg hover:border-accent-soft-border cursor-pointer':
+              mode === 'local',
+          },
+        )}
       >
         <img
           src={albumCover ?? appIcon}
@@ -64,21 +134,9 @@ export function SongListItem({
             </div>
           )}
 
-          <button
-            className={cn(
-              'bg-transparent p-0 border-0 cursor-pointer hover:!text-accent-hover',
-              liked ? 'text-accent' : 'text-text-dim',
-            )}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onLikeChange(id, !liked);
-            }}
-          >
-            <FontAwesomeIcon size="xl" icon={liked ? faHeartSolid : faHeart} />
-          </button>
+          {indicator}
         </div>
-      </Link>
+      </div>
     </div>
   );
 }

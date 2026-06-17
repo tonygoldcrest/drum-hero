@@ -3,19 +3,28 @@ import { useEffect, useRef } from 'react';
 import { SongData } from '../../types';
 import { cn } from '../cn';
 import { SongListItem } from './SongListItem';
+import { Mode } from './SongFilter';
 
 export interface SongListProps {
   songList: SongData[];
   className?: string;
   onLikeChange: (id: string, liked: boolean) => void;
+  onDownload: (id: string) => void;
+  downloadingIds?: Set<string>;
+  downloadedIds?: Set<string>;
   scrollKey?: string;
+  mode: Mode;
 }
 
 export function SongList({
   songList,
   className,
   onLikeChange,
+  onDownload,
+  downloadingIds,
+  downloadedIds,
   scrollKey,
+  mode,
 }: SongListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -26,7 +35,7 @@ export function SongList({
   const rowVirtualizer = useVirtualizer({
     count: songList.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 100,
+    estimateSize: () => 85,
   });
 
   return (
@@ -45,14 +54,22 @@ export function SongList({
               ref={rowVirtualizer.measureElement}
               key={songData.id}
               data-index={virtualItem.index}
-              className="absolute top-0 left-0 w-full flex"
+              className="absolute top-0 left-0 w-full flex items-center"
               style={{
                 transform: `translateY(${
                   virtualItem.start - rowVirtualizer.options.scrollMargin
                 }px)`,
+                height: `${virtualItem.size}px`,
               }}
             >
-              <SongListItem songData={songData} onLikeChange={onLikeChange} />
+              <SongListItem
+                songData={songData}
+                onLikeChange={onLikeChange}
+                onDownload={onDownload}
+                downloading={downloadingIds?.has(songData.id)}
+                downloaded={downloadedIds?.has(songData.id)}
+                mode={mode}
+              />
             </div>
           );
         })}

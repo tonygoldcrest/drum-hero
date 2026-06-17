@@ -69,7 +69,11 @@ export async function parseAndSaveSongs(
       .map((dir) => path.join(dir, 'song.ini'))
       .filter((file) => fs.existsSync(file))
       .map((file) => ({
-        info: ini.parse(fs.readFileSync(file, 'utf-8')),
+        info: ini.parse(
+          fs
+            .readFileSync(file, 'utf-8')
+            .replace(/<color=[^>]*>(.*?)<\/color>/g, '$1'),
+        ),
         dir: path.dirname(file),
       }))
       .map(({ info, dir }) => {

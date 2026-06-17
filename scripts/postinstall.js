@@ -9,7 +9,9 @@ if (os.platform() === 'darwin') {
     const flags = `-isysroot ${sdk} -I${sdk}/usr/include/c++/v1`;
     env.CXXFLAGS = flags;
     env.CPPFLAGS = flags;
-  } catch (_) {}
+  } catch (e) {
+    console.log(e);
+  }
 }
 
 execSync('electron-builder install-app-deps', { stdio: 'inherit', env });
