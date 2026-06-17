@@ -167,6 +167,10 @@ export function SettingsButton({ volumeSliders }: Props) {
         {volumeSliders ? (
           <>
             <div className="flex items-center gap-3">
+              <div
+                className="grow h-px"
+                style={{ background: 'var(--gradient-accent-fade-reverse)' }}
+              />
               <div className="text-accent-text uppercase font-semibold text-[13px]">
                 Mixer
               </div>
