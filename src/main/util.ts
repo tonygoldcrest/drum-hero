@@ -4,9 +4,9 @@ import { dialog } from 'electron';
 import { glob } from 'glob';
 import fs from 'fs';
 import ini from 'ini';
-import ElectronStore from 'electron-store';
 import { randomUUID } from 'crypto';
 import { StorageSchema } from '../types';
+import { appState } from './AppState';
 
 export function resolveHtmlPath(_htmlFileName: string) {
   if (process.env.NODE_ENV === 'development') {
@@ -21,7 +21,6 @@ export function isUnderDirectory(songDir: string, rootDir: string): boolean {
 }
 
 export async function parseAndSaveSongs(
-  store: ElectronStore,
   callback?: (songs: StorageSchema['songs']) => void,
 ) {
   const result = await dialog.showOpenDialog({
@@ -35,9 +34,10 @@ export async function parseAndSaveSongs(
   }
 
   const selectedPath = result.filePaths[0];
-  store.set('lastOpenedPath', selectedPath);
+  appState.store.set('lastOpenedPath', selectedPath);
 
-  const existingSongs = (store.get('songs') as StorageSchema['songs']) ?? {};
+  const existingSongs =
+    (appState.store.get('songs') as StorageSchema['songs']) ?? {};
 
   const existingByDir = new Map<string, StorageSchema['songs'][string]>();
 
@@ -101,7 +101,7 @@ export async function parseAndSaveSongs(
       {} as StorageSchema['songs'],
     );
 
-    store.set('songs', { ...otherSongs, ...rescannedSongs });
+    appState.store.set('songs', { ...otherSongs, ...rescannedSongs });
 
     callback?.(rescannedSongs);
   });
