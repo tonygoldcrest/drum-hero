@@ -7,7 +7,9 @@ export function usePopoverOutsideClick(
   onClose: () => void,
 ) {
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
 
     const handleMouseDown = (e: MouseEvent) => {
       const target = e.target as Node;

@@ -87,7 +87,16 @@ export function SongListItem({
         spin={downloading}
       />
     );
-  }, [downloading, downloaded, onDownload, id, liked, onLikeChange, mode]);
+  }, [
+    downloading,
+    downloaded,
+    onDownload,
+    id,
+    liked,
+    onLikeChange,
+    mode,
+    downloadingDisabled,
+  ]);
 
   return (
     <div className="w-full">

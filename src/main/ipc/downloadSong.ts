@@ -57,14 +57,11 @@ export async function downloadSong(
           const reader = fileStream.getReader();
           const chunks: Uint8Array[] = [];
 
-          while (true) {
-            const { done, value } = await reader.read();
+          let result = await reader.read();
 
-            if (done) {
-              break;
-            }
-
-            chunks.push(value);
+          while (!result.done) {
+            chunks.push(result.value);
+            result = await reader.read();
           }
 
           const totalLen = chunks.reduce((sum, c) => sum + c.length, 0);

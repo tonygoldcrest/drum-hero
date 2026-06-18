@@ -23,9 +23,7 @@ export function useAudioPlayer(
     }
     const player = new AudioPlayer(trackData, () => setIsPlaying(false));
 
-    player.ready
-      .then(() => setAudioPlayer(player))
-      .catch(() => {});
+    player.ready.then(() => setAudioPlayer(player)).catch(() => {});
   }, [trackData]);
 
   useEffect(() => {
