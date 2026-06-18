@@ -18,20 +18,21 @@ import {
 } from 'vexflow';
 import { ChartParser } from './parser';
 import { Measure, RenderData } from './types';
+import themedark from '../renderer/theme';
 
 const STAVE_WIDTH = 600;
 const STAVE_PER_ROW = 2;
 
 const NOTE_COLOR_MAP: { [key: string]: string } = {
-  'e/4': '#ff793f', // orange
-  'f/4': '#ff793f', // orange
-  'c/5': '#e74c3c', // red
-  'g/5/x2': '#ffb142', // yellow
-  'f/5/x2': '#2980b9', // blue
-  'a/5/x2': '#27ae60', // green
-  'e/5': '#ffb142', // yellow
-  'd/5': '#2980b9', // blue
-  'a/4': '#27ae60', // green
+  'e/4': themedark.color.orange,
+  'f/4': themedark.color.orange,
+  'c/5': themedark.color.red,
+  'g/5/x2': themedark.color.yellow,
+  'f/5/x2': themedark.color.blue,
+  'a/5/x2': themedark.color.green,
+  'e/5': themedark.color.yellow,
+  'd/5': themedark.color.blue,
+  'a/4': themedark.color.green,
 };
 
 const STEM_DIRECTION = -1;
@@ -50,6 +51,8 @@ export function renderMusic(
   const renderer = new Renderer(elementRef.current, Renderer.Backends.SVG);
 
   const context = renderer.getContext();
+  context.setFillStyle(themedark.color.ink);
+  context.setStrokeStyle(themedark.color.ink);
   const lineHeight = showBarNumbers ? 180 : 130;
 
   renderer.resize(
@@ -182,7 +185,13 @@ function renderMeasure(
     });
   }
 
-  stave.setContext(context).draw();
+  stave
+    .setStyle({
+      fillStyle: themedark.color.textMuted,
+      strokeStyle: themedark.color.textMuted,
+    })
+    .setContext(context)
+    .draw();
 
   const { voice, beams, tuplets, staveNotes } = buildVoice(
     measure,
