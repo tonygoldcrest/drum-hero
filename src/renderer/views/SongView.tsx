@@ -33,6 +33,7 @@ export function SongView() {
   const { audioPlayer, isPlaying, setIsPlaying, currentPlayback } =
     useAudioPlayer(trackData, isDev);
   const { volumeSliders } = useVolumeControls(trackData, audioPlayer);
+  const audioLoading = trackData.length > 0 && !audioPlayer;
 
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage('prevent-sleep');
@@ -111,6 +112,7 @@ export function SongView() {
             <Button
               type="primary"
               icon={<FontAwesomeIcon icon={isPlaying ? faPause : faPlay} />}
+              loading={audioLoading}
               onClick={() => {
                 setIsPlaying(!isPlaying);
               }}
