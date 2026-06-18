@@ -4,19 +4,6 @@ Play your favourite Clone Hero tracks on drums, assisted by sheet music.
 
 [DOWNLOAD](https://github.com/peancored/drum-hero/releases)
 
-## Mac Users
-
-If you see this pop up, you need to remove the executable from quarantine. The app isn't signed, which would require paying for an Apple developer account.
-
-<img width="180" alt="image" src="https://github.com/peancored/drum-hero/assets/5630034/6f454fb1-55e7-482a-abad-bce6c41b161e">
-
-Open a terminal and run:
-
-```
-# Change the path if necessary
-xattr -r -d com.apple.quarantine /Applications/DrumHero.app
-```
-
 ## Why?
 
 Finding drumless tracks with sheet music is a pain. Clone Hero is a Guitar Hero-style rhythm game with a massive community song library. Each song comes with note charts for each instrument and, often, separated audio stems. Drum Hero takes the drum charts from those songs (which are essentially MIDI hit data) and renders them as sheet music you can play along to, while letting you mute the drum stem so you're playing instead of listening.
