@@ -47,6 +47,9 @@
     ]
   },
   "jest": {
+    "roots": [
+      "<rootDir>/src"
+    ],
     "moduleDirectories": [
       "node_modules",
       "src"
@@ -81,7 +84,7 @@
       ]
     },
     "transformIgnorePatterns": [
-      "node_modules/(?!(antd|@ant-design|rc-[^/]+|@rc-component|@fortawesome)/)"
+      "node_modules/(?!(antd|@ant-design|rc-[^/]+|@rc-component|@fortawesome|@babel/runtime)/)"
     ]
   },
   "dependencies": {
