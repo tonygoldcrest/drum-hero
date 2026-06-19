@@ -4,6 +4,8 @@ Play your favourite Clone Hero tracks on drums, assisted by sheet music.
 
 [DOWNLOAD](https://github.com/peancored/drum-hero/releases)
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/tonygoldcrest)
+
 ## Why?
 
 Finding drumless tracks with sheet music is a pain. Clone Hero is a Guitar Hero-style rhythm game with a massive community song library. Each song comes with note charts for each instrument and, often, separated audio stems. Drum Hero takes the drum charts from those songs (which are essentially MIDI hit data) and renders them as sheet music you can play along to, while letting you mute the drum stem so you're playing instead of listening.
