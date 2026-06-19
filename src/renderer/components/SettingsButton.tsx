@@ -7,20 +7,26 @@ import {
   useState,
 } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Button, Divider, Switch } from 'antd';
+import { Button, Divider, Progress, Switch } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCog, faFolder } from '@fortawesome/free-solid-svg-icons';
+import { faCog, faDownload, faFolder } from '@fortawesome/free-solid-svg-icons';
 import { PLAYHEAD_STYLES } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import { cn } from '../cn';
 import { usePopoverOutsideClick } from '../hooks/usePopoverOutsideClick';
 import { Difficulty } from 'scan-chart';
+import { StemToolsStatus } from '../../types';
 
 interface Props {
   volumeSliders?: ReactNode[];
   difficulties?: Difficulty[];
   difficulty?: Difficulty;
   onChangeDifficulty?: (difficulty: Difficulty) => void;
+  page: 'song-list' | 'song-view';
+  stemToolsStatus?: StemToolsStatus;
+  stemToolsLoading?: boolean;
+  downloadPercent?: number;
+  onDownloadStemTools?: () => void;
 }
 
 export function SettingsButton({
@@ -28,6 +34,11 @@ export function SettingsButton({
   onChangeDifficulty,
   volumeSliders,
   difficulties,
+  page,
+  stemToolsStatus,
+  stemToolsLoading,
+  downloadPercent,
+  onDownloadStemTools,
 }: Props) {
   const {
     playheadStyle,
@@ -98,16 +109,33 @@ export function SettingsButton({
           } as CSSProperties
         }
       >
-        <Button
-          icon={<FontAwesomeIcon icon={faFolder} />}
-          onClick={() => {
-            window.electron.ipcRenderer.sendMessage('rescan-songs');
-          }}
-          title={currentPath ?? undefined}
-        >
-          {currentPath ? currentPath.split('/').pop() : 'Select folder'}
-        </Button>
-        {difficulties && difficulties.length > 0 ? (
+        {page === 'song-list' && (
+          <>
+            <Button
+              icon={<FontAwesomeIcon icon={faFolder} />}
+              onClick={() => {
+                window.electron.ipcRenderer.sendMessage('rescan-songs');
+              }}
+              title={currentPath ?? undefined}
+            >
+              {currentPath ? currentPath.split('/').pop() : 'Select folder'}
+            </Button>
+            {stemToolsStatus === 'download' && (
+              <Button
+                icon={<FontAwesomeIcon icon={faDownload} />}
+                loading={stemToolsLoading}
+                onClick={onDownloadStemTools}
+              >
+                Get stem splitter (~130 MB)
+              </Button>
+            )}
+            {downloadPercent !== undefined && (
+              <Progress percent={downloadPercent} />
+            )}
+          </>
+        )}
+
+        {page === 'song-view' && difficulties && difficulties.length > 0 ? (
           <>
             <div className="flex flex-col gap-3">
               <div className="text-sm text-text-muted whitespace-nowrap">
@@ -129,6 +157,7 @@ export function SettingsButton({
             <Divider />
           </>
         ) : null}
+
         <div className="flex flex-col gap-3">
           <div className="text-sm text-text-muted whitespace-nowrap">
             Playhead style
@@ -147,7 +176,9 @@ export function SettingsButton({
             ))}
           </div>
         </div>
+
         <Divider />
+
         <div className="flex items-center justify-between gap-3">
           <div className="text-sm text-text-muted whitespace-nowrap">
             Enable colors

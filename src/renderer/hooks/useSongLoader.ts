@@ -18,16 +18,16 @@ export function useSongLoader(id: string | undefined): SongLoaderResult {
   const loadSong = useCallback(() => {
     window.electron.ipcRenderer.once<IpcLoadSongResponse>(
       'load-song',
-      ({ data, fileData: fd, format: fmt, audio }: IpcLoadSongResponse) => {
+      ({ data, fileData: fd }) => {
         setFileData(fd);
-        setFormat(fmt);
+        setFormat(data.format);
         setSongData(data);
 
-        const drums = audio
+        const drums = data.audio
           .filter((file: AudioData) => file.name.includes('drums'))
           .map((file: AudioData) => file.src);
 
-        const other = audio
+        const other = data.audio
           .filter((file: AudioData) => !file.name.includes('drums'))
           .map((file: AudioData) => ({ urls: [file.src], name: file.name }));
 

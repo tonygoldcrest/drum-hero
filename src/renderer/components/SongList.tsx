@@ -1,6 +1,6 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useEffect, useRef } from 'react';
-import { SongData } from '../../types';
+import { SongData, StemToolsStatus } from '../../types';
 import { cn } from '../cn';
 import { SongListItem } from './SongListItem';
 import { Mode } from './SongFilter';
@@ -10,11 +10,14 @@ export interface SongListProps {
   className?: string;
   onLikeChange: (id: string, liked: boolean) => void;
   onDownload: (id: string) => void;
+  onSplit: (id: string) => void;
   downloadingIds?: Set<string>;
+  splittingIds: Set<string>;
   downloadedIds?: Set<string>;
   scrollKey?: string;
   mode: Mode;
   downloadingDisabled: boolean;
+  stemToolsStatus: StemToolsStatus;
 }
 
 export function SongList({
@@ -27,6 +30,9 @@ export function SongList({
   scrollKey,
   mode,
   downloadingDisabled,
+  splittingIds,
+  onSplit,
+  stemToolsStatus,
 }: SongListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -68,10 +74,13 @@ export function SongList({
                 songData={songData}
                 onLikeChange={onLikeChange}
                 onDownload={onDownload}
+                onSplit={onSplit}
                 downloading={downloadingIds?.has(songData.id)}
                 downloaded={downloadedIds?.has(songData.id)}
+                splitting={splittingIds.has(songData.id)}
                 mode={mode}
                 downloadingDisabled={downloadingDisabled}
+                stemToolsStatus={stemToolsStatus}
               />
             </div>
           );

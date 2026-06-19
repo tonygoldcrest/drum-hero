@@ -10,7 +10,11 @@ export type Channels =
   | 'prevent-sleep'
   | 'resume-sleep'
   | 'check-dev'
-  | 'download-song';
+  | 'download-song'
+  | 'check-stem-tools'
+  | 'download-stem-tools'
+  | 'split-song'
+  | 'cancel-split';
 
 const electronHandler = {
   ipcRenderer: {

@@ -17,6 +17,9 @@ import { AppUpdater } from './AppUpdater';
 import { loadSong } from './ipc/loadSong';
 import { loadSongList } from './ipc/loadSongList';
 import { downloadSong } from './ipc/downloadSong';
+import { checkStemTools } from './ipc/checkStemTools';
+import { downloadStemTools } from './ipc/downloadStemTools';
+import { splitSong, cancelSplit } from './ipc/splitSong';
 
 class AppState {
   private static instance: AppState;
@@ -84,6 +87,10 @@ class AppState {
     ipcMain.on('load-song', loadSong);
     ipcMain.on('load-song-list', loadSongList);
     ipcMain.on('download-song', downloadSong);
+    ipcMain.on('check-stem-tools', checkStemTools);
+    ipcMain.on('download-stem-tools', downloadStemTools);
+    ipcMain.on('split-song', splitSong);
+    ipcMain.on('cancel-split', cancelSplit);
 
     ipcMain.on('rescan-songs', async (event) => {
       await parseAndSaveSongs((songs) => {

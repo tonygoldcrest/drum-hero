@@ -1,24 +1,34 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Spin } from 'antd';
+import { App, Spin } from 'antd';
 import { useOnlineSearch } from '../hooks/useOnlineSearch';
 import { Outlet } from 'react-router-dom';
 import Fuse from 'fuse.js';
-import { IpcLoadSongListResponse, SongData } from '../../types';
+import {
+  IpcLoadSongListResponse,
+  IpcSplitSongResponse,
+  SongData,
+} from '../../types';
 import { Mode, SongFilter } from '../components/SongFilter';
 import { SongList } from '../components/SongList';
 import { SettingsButton } from '../components/SettingsButton';
 import { SortButton, type SortState } from '../components/SortButton';
 import { useSettings } from '../context/SettingsContext';
+import { useStemTools } from '../hooks/useStemTools';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowRight,
   faCog,
   faFolder,
 } from '@fortawesome/free-solid-svg-icons';
+import { SongSplitProgress } from '../components/SongSplitProgress';
 
-export function SelectSongView() {
+export function SongListView() {
   const [songList, setSongList] = useState<SongData[]>([]);
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
+  const [splittingIds, setSplittingIds] = useState<Set<string>>(new Set());
+  const [splitProgress, setSplitProgress] = useState<Map<string, number>>(
+    new Map(),
+  );
   const [nameFilter, setNameFilter] = useState('');
   const [mode, setMode] = useState<Mode>('local');
   const [sort, setSort] = useState<SortState>({
@@ -26,12 +36,16 @@ export function SelectSongView() {
     direction: 'asc',
   });
 
+  const { notification } = App.useApp();
+
   const { results: onlineResults, loading: onlineLoading } = useOnlineSearch(
     mode === 'online',
     nameFilter,
   );
 
   const { setCurrentPath, currentPath } = useSettings();
+  const { stemToolsStatus, stemToolsLoading, downloadPercent, download } =
+    useStemTools();
 
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage('load-song-list');
@@ -44,13 +58,53 @@ export function SelectSongView() {
     );
   }, [setCurrentPath]);
 
-  window.electron.ipcRenderer.on<IpcLoadSongListResponse>(
-    'rescan-songs',
-    ({ songs, lastOpenedPath }) => {
-      setSongList(songs);
-      setCurrentPath(lastOpenedPath);
-    },
-  );
+  useEffect(() => {
+    return window.electron.ipcRenderer.on<IpcLoadSongListResponse>(
+      'rescan-songs',
+      ({ songs, lastOpenedPath }) => {
+        setSongList(songs);
+        setCurrentPath(lastOpenedPath);
+      },
+    );
+  }, [setCurrentPath]);
+
+  useEffect(() => {
+    return window.electron.ipcRenderer.on<IpcSplitSongResponse>(
+      'split-song',
+      ({ id, progress, success, song, error }) => {
+        if (progress !== undefined) {
+          setSplitProgress((prev) => new Map(prev).set(id, progress));
+          return;
+        }
+
+        setSplittingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+
+        setSplitProgress((prev) => {
+          const next = new Map(prev);
+          next.delete(id);
+          return next;
+        });
+
+        if (success && song) {
+          setSongList((prev) => prev.map((s) => (s.id === id ? song : s)));
+          notification.success({
+            title: `"${song.name}" split successfully`,
+            placement: 'bottomRight',
+          });
+        } else {
+          notification.error({
+            message: 'Split failed',
+            description: error,
+            placement: 'bottomRight',
+          });
+        }
+      },
+    );
+  }, [notification]);
 
   const filteredSongList = useMemo(() => {
     if (mode === 'online') {
@@ -89,21 +143,54 @@ export function SelectSongView() {
   return (
     <div className="h-screen flex flex-col bg-bg">
       <div
-        className="border-b border-divider p-5 z-10 flex gap-2 items-center"
+        className="border-b border-divider p-4 z-10 flex flex-col gap-4"
         style={{ background: 'var(--gradient-header)' }}
       >
-        <SongFilter
-          nameFilter={nameFilter}
-          onChangeFilter={(value: string) => {
-            setNameFilter(value);
-          }}
-          filteredSongsCount={filteredSongList.length}
-          mode={mode}
-          onChangeMode={setMode}
-        />
-        {mode !== 'online' && <SortButton sort={sort} onSortChange={setSort} />}
-        <SettingsButton />
+        <div className="flex gap-2 items-center">
+          <SongFilter
+            nameFilter={nameFilter}
+            onChangeFilter={(value: string) => {
+              setNameFilter(value);
+            }}
+            filteredSongsCount={filteredSongList.length}
+            mode={mode}
+            onChangeMode={setMode}
+          />
+          {mode !== 'online' && (
+            <SortButton sort={sort} onSortChange={setSort} />
+          )}
+          <SettingsButton
+            page="song-list"
+            stemToolsStatus={stemToolsStatus}
+            stemToolsLoading={stemToolsLoading}
+            downloadPercent={downloadPercent}
+            onDownloadStemTools={download}
+          />
+        </div>
+        {splittingIds.size > 0 && (
+          <div className="flex gap-3 flex-wrap items-center">
+            <div className="text-text-muted">Splitting queue:</div>
+
+            {[...splittingIds].map((id) => {
+              const songData = songList.find((s) => s.id === id);
+              if (!songData) {
+                return null;
+              }
+              return (
+                <SongSplitProgress
+                  key={id}
+                  songData={songData}
+                  progress={splitProgress.get(id) ?? 0}
+                  onCancel={() =>
+                    window.electron.ipcRenderer.sendMessage('cancel-split', id)
+                  }
+                />
+              );
+            })}
+          </div>
+        )}
       </div>
+
       <div className="relative grow overflow-hidden w-full flex">
         <div className="relative w-full max-w-250 grow overflow-hidden mx-auto bg-bg flex flex-col">
           {filteredSongList.length > 0 ||
@@ -114,11 +201,25 @@ export function SelectSongView() {
               downloadingIds={downloadingIds}
               downloadingDisabled={currentPath === null}
               mode={mode}
+              stemToolsStatus={stemToolsStatus}
               downloadedIds={
                 mode === 'online'
                   ? new Set(songList.map((s) => s.id))
                   : undefined
               }
+              splittingIds={splittingIds}
+              onSplit={(id) => {
+                setSplittingIds((prev) => new Set(prev).add(id));
+
+                window.electron.ipcRenderer.sendMessage('split-song', id);
+
+                notification.info({
+                  message: `Splitting "${songList.find((s) => s.id === id)
+                    ?.name}"`,
+                  description: "You will be notified when it's done",
+                  placement: 'bottomRight',
+                });
+              }}
               onDownload={(id) => {
                 const song = onlineResults.find((s) => s.id === id);
 
@@ -174,13 +275,17 @@ export function SelectSongView() {
           ) : (
             <div className="m-auto text-text-faint flex items-center gap-1 flex-col">
               <div>No songs found.</div>
+
               {mode !== 'online' && (
                 <div className="flex items-center gap-2">
                   <div>Select a different folder</div>
+
                   <div className="border-2 border-border py-1 px-2 rounded-md">
                     <FontAwesomeIcon icon={faCog} />
                   </div>
+
                   <FontAwesomeIcon icon={faArrowRight} />
+
                   <div className="flex items-center border-2 border-border py-1 px-2 rounded-md gap-1">
                     <FontAwesomeIcon icon={faFolder} />
                     <div>Select folder</div>

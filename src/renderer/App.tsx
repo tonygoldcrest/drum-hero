@@ -1,8 +1,8 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 
-import { ConfigProvider } from 'antd';
+import { App as AntdApp, ConfigProvider } from 'antd';
 import './App.css';
-import { SelectSongView } from './views/SelectSongView';
+import { SongListView } from './views/SongListView';
 import { SongView } from './views/SongView';
 import themedark from './theme';
 import { SettingsProvider } from './context/SettingsContext';
@@ -68,18 +68,34 @@ export default function App() {
               colorBgSpotlight: themedark.color.surfaceSunken,
               colorTextLightSolid: themedark.color.textMuted,
             },
+            Progress: {
+              colorText: themedark.color.textMuted,
+              defaultColor: themedark.control.sliderFill,
+              colorSuccess: themedark.color.accent,
+            },
+            Notification: {
+              colorError: themedark.color.accent,
+              colorIcon: themedark.color.textMuted,
+              colorIconHover: themedark.color.text,
+              colorText: themedark.color.textFaint,
+              colorTextHeading: themedark.color.text,
+              colorInfo: themedark.color.blue,
+              colorSuccess: themedark.color.green,
+            },
           },
         }}
       >
-        <SettingsProvider>
-          <Router>
-            <Routes>
-              <Route path="/" element={<SelectSongView />}>
-                <Route path=":id" element={<SongView />} />
-              </Route>
-            </Routes>
-          </Router>
-        </SettingsProvider>
+        <AntdApp>
+          <SettingsProvider>
+            <Router>
+              <Routes>
+                <Route path="/" element={<SongListView />}>
+                  <Route path=":id" element={<SongView />} />
+                </Route>
+              </Routes>
+            </Router>
+          </SettingsProvider>
+        </AntdApp>
       </ConfigProvider>
     </>
   );

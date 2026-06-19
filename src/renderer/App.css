@@ -49,6 +49,7 @@
   --gradient-accent:       linear-gradient(145deg, #ff6a4d, #ec4527);
   --gradient-accent-fade:  linear-gradient(90deg, rgba(255,90,60,0.35), rgba(255,255,255,0.04));
   --gradient-accent-fade-reverse:  linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,90,60,0.35));
+  --gradient-slider-fill: linear-gradient(90deg, #ec4527, #ff5a3c);
 }
 
 .ant-input-prefix {

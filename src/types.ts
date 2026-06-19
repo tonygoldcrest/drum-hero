@@ -51,6 +51,8 @@ export interface SongData {
   year: string;
   liked?: boolean;
   updatedAt?: string;
+  format: 'mid' | 'chart';
+  audio: AudioData[];
 }
 
 export interface AudioData {
@@ -58,11 +60,25 @@ export interface AudioData {
   name: string;
 }
 
+export type StemToolsStatus = 'ready' | 'download' | 'unsupported';
+
+export interface IpcDownloadStemToolsResponse {
+  progress?: number;
+  success?: boolean;
+  error?: string;
+}
+
+export interface IpcSplitSongResponse {
+  id: string;
+  progress?: number;
+  success?: boolean;
+  song?: SongData;
+  error?: string;
+}
+
 export interface IpcLoadSongResponse {
   data: SongData;
   fileData: Buffer;
-  format: 'mid' | 'chart';
-  audio: AudioData[];
 }
 
 export interface IpcLoadSongListResponse {

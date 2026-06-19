@@ -97,7 +97,7 @@ export function SongView() {
       <Layout>
         <Layout>
           <div
-            className="flex items-center p-5 gap-5"
+            className="flex items-center p-4 gap-5"
             style={{ background: 'var(--gradient-header)' }}
           >
             <Button
@@ -146,12 +146,14 @@ export function SongView() {
               }}
             />
             <SettingsButton
+              page="song-view"
               volumeSliders={volumeSliders}
               difficulties={difficulties}
               onChangeDifficulty={setDifficulty}
               difficulty={activeDifficulty}
             />
           </div>
+
           <Content className="p-6 m-0 overflow-auto flex flex-col items-center font-display text-ink">
             {songData && chart && parsedMidi && (
               <div className="flex flex-col items-center min-w-max bg-paper rounded-[11px] p-10">

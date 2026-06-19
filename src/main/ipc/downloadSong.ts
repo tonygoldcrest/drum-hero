@@ -1,8 +1,8 @@
 import { SngStream } from '@eliwhite/parse-sng';
-import ini from 'ini';
 import path from 'path';
 import fs from 'fs';
 import { appState } from '../AppState';
+import { buildSongFromDir } from '../util';
 
 type Props = {
   url: string;
@@ -93,22 +93,10 @@ export async function downloadSong(
       fs.writeFileSync(path.join(outputDir, file.name), file.data);
     }
 
-    const songIniFile = files.find((f) => f.name === 'song.ini');
-    const info = songIniFile
-      ? ini.parse(songIniFile.data.toString('utf-8'))
-      : {};
-
-    const supportedImageExtensions = ['png', 'jpg', 'jpeg'];
-    const albumCoverPath = supportedImageExtensions
-      .map((ext) => path.join(outputDir, `album.${ext}`))
-      .find((p) => fs.existsSync(p));
-
-    const songData = {
-      id: md5,
-      dir: outputDir,
-      albumCover: albumCoverPath ? `gh://${albumCoverPath}` : null,
-      ...(info.song ?? info.Song ?? info),
-    };
+    const songData = buildSongFromDir(outputDir, { id: md5 });
+    if (!songData) {
+      throw new Error('Failed to parse downloaded song');
+    }
 
     appState.store.set(`songs.${md5}`, songData);
     event.reply('download-song', {

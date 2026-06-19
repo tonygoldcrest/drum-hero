@@ -9,49 +9,66 @@ import {
 import { faHeart } from '@fortawesome/free-regular-svg-icons';
 import { times } from 'es-toolkit/compat';
 import appIcon from '../../../assets/icon.png';
-import { SongData } from '../../types';
+import { SongData, StemToolsStatus } from '../../types';
 import { cn } from '../cn';
 import { Button, Tooltip } from 'antd';
 import { useMemo } from 'react';
 import { Mode } from './SongFilter';
+import { SongMenu } from './SongMenu';
 
 export interface SongListItemProps {
   songData: SongData;
   onLikeChange: (id: string, liked: boolean) => void;
   onDownload: (id: string) => void;
+  onSplit: (id: string) => void;
   downloading?: boolean;
+  splitting: boolean;
   downloaded?: boolean;
   mode: Mode;
   downloadingDisabled: boolean;
+  stemToolsStatus: StemToolsStatus;
 }
 
 export function SongListItem({
-  songData: { albumCover, id, name, artist, charter, diff_drums, liked },
+  songData: { albumCover, id, name, artist, charter, diff_drums, liked, audio },
   onLikeChange,
   onDownload,
   downloading,
   downloaded,
+  splitting,
+  onSplit,
   mode,
   downloadingDisabled,
+  stemToolsStatus,
 }: SongListItemProps) {
   const navigate = useNavigate();
 
   const indicator = useMemo(() => {
     if (mode === 'local') {
       return (
-        <button
-          className={cn(
-            'bg-transparent p-0 border-0 cursor-pointer hover:text-accent-hover',
-            liked ? 'text-accent' : 'text-text-dim',
-          )}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onLikeChange(id, !liked);
-          }}
-        >
-          <FontAwesomeIcon size="xl" icon={liked ? faHeartSolid : faHeart} />
-        </button>
+        <div className="flex flex-col gap-2 items-center h-full">
+          <SongMenu
+            id={id}
+            stemToolsStatus={stemToolsStatus}
+            canSplit={(audio?.length ?? 0) === 1}
+            splitting={splitting}
+            onSplit={() => onSplit(id)}
+          />
+
+          <button
+            className={cn(
+              'bg-transparent p-0 border-0 cursor-pointer hover:text-accent-hover mt-auto',
+              liked ? 'text-accent' : 'text-text-dim',
+            )}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onLikeChange(id, !liked);
+            }}
+          >
+            <FontAwesomeIcon size="xl" icon={liked ? faHeartSolid : faHeart} />
+          </button>
+        </div>
       );
     }
 
@@ -96,6 +113,10 @@ export function SongListItem({
     onLikeChange,
     mode,
     downloadingDisabled,
+    audio?.length,
+    stemToolsStatus,
+    onSplit,
+    splitting,
   ]);
 
   return (
@@ -107,26 +128,28 @@ export function SongListItem({
           }
         }}
         className={cn(
-          'w-full flex border border-border-soft p-2 no-underline bg-surface items-center rounded-[11px] transition-all duration-100 ease-in-out cursor-default',
+          'w-full flex border border-border-soft p-2 no-underline bg-surface rounded-[11px] transition-all duration-100 ease-in-out cursor-default',
           {
             'hover:bg-accent-soft-bg hover:border-accent-soft-border cursor-pointer':
               mode === 'local',
           },
         )}
       >
-        <img
-          src={albumCover ?? appIcon}
-          onError={(e) => {
-            e.currentTarget.src = appIcon;
-          }}
-          className="h-15 w-auto object-contain aspect-square rounded-[11px] shadow-frame"
-        />
+        <div className="flex items-center">
+          <img
+            src={albumCover ?? appIcon}
+            onError={(e) => {
+              e.currentTarget.src = appIcon;
+            }}
+            className="h-15 w-auto object-contain aspect-square rounded-[11px] shadow-frame"
+          />
 
-        <div className="ml-2">
-          <div className="text-[18px] font-bold mb-1 text-text-body font-display">
-            {name}
+          <div className="ml-2">
+            <div className="text-[18px] font-bold mb-1 text-text-body font-display">
+              {name}
+            </div>
+            <div className="text-text-muted font-ui text-sm">{artist}</div>
           </div>
-          <div className="text-text-muted font-ui text-sm">{artist}</div>
         </div>
 
         <div className="flex ml-auto items-center gap-5">
