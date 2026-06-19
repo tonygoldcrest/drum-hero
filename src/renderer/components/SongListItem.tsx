@@ -30,7 +30,17 @@ export interface SongListItemProps {
 }
 
 export function SongListItem({
-  songData: { albumCover, id, name, artist, charter, diff_drums, liked, audio },
+  songData: {
+    albumCover,
+    id,
+    dir,
+    name,
+    artist,
+    charter,
+    diff_drums,
+    liked,
+    audio,
+  },
   onLikeChange,
   onDownload,
   downloading,
@@ -49,6 +59,7 @@ export function SongListItem({
         <div className="flex flex-col gap-2 items-center h-full">
           <SongMenu
             id={id}
+            dir={dir}
             stemToolsStatus={stemToolsStatus}
             canSplit={(audio?.length ?? 0) === 1}
             splitting={splitting}

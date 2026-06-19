@@ -11,6 +11,7 @@ import { StemToolsStatus } from '../../types';
 
 interface Props {
   id: string;
+  dir: string;
   stemToolsStatus: StemToolsStatus;
   canSplit: boolean;
   splitting: boolean;
@@ -19,6 +20,7 @@ interface Props {
 
 export function SongMenu({
   id,
+  dir,
   stemToolsStatus,
   canSplit,
   splitting,
@@ -92,6 +94,7 @@ export function SongMenu({
           className="flex items-center gap-3 px-4 py-2.5 text-text-muted hover:text-text cursor-pointer bg-transparent border-0 whitespace-nowrap w-full text-left"
           onClick={(e) => {
             e.stopPropagation();
+            window.electron.ipcRenderer.sendMessage('open-song-directory', dir);
             close();
           }}
         >

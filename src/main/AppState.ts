@@ -91,6 +91,9 @@ class AppState {
     ipcMain.on('download-stem-tools', downloadStemTools);
     ipcMain.on('split-song', splitSong);
     ipcMain.on('cancel-split', cancelSplit);
+    ipcMain.on('open-song-directory', (_event, dir: string) => {
+      shell.openPath(dir);
+    });
 
     ipcMain.on('rescan-songs', async (event) => {
       await parseAndSaveSongs((songs) => {

@@ -14,7 +14,8 @@ export type Channels =
   | 'check-stem-tools'
   | 'download-stem-tools'
   | 'split-song'
-  | 'cancel-split';
+  | 'cancel-split'
+  | 'open-song-directory';
 
 const electronHandler = {
   ipcRenderer: {
