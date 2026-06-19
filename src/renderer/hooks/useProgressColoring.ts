@@ -25,7 +25,6 @@ export function useProgressColoring(
       (el as SVGGraphicsElement).style.filter = 'grayscale(1) opacity(0.4)';
       decolorizedElsRef.current.add(el);
     };
-
     const clearAll = () => {
       decolorizedElsRef.current.forEach((el) => {
         (el as SVGGraphicsElement).style.filter = '';
@@ -37,6 +36,7 @@ export function useProgressColoring(
       clearAll();
       prevKeyRef.current = null;
       prevPosRef.current = null;
+
       return;
     }
 
@@ -49,6 +49,7 @@ export function useProgressColoring(
 
     if (isBackward) {
       clearAll();
+
       for (let m = 0; m < measureIdx; m++) {
         renderData[m]?.renderedNotes.forEach(({ note }) =>
           getNoteSvg(note).forEach(grey),
@@ -68,14 +69,17 @@ export function useProgressColoring(
         }
       } else {
         const prevMeasureNotes = renderData[fromMeasure]?.renderedNotes ?? [];
+
         for (let i = fromNote; i < prevMeasureNotes.length; i++) {
           getNoteSvg(prevMeasureNotes[i].note).forEach(grey);
         }
+
         for (let m = fromMeasure + 1; m < measureIdx; m++) {
           renderData[m]?.renderedNotes.forEach(({ note }) =>
             getNoteSvg(note).forEach(grey),
           );
         }
+
         for (let i = 0; i < noteIdx; i++) {
           getNoteSvg(curRenderedNotes[i].note).forEach(grey);
         }
@@ -85,7 +89,6 @@ export function useProgressColoring(
     prevKeyRef.current = activeNote.key;
     prevPosRef.current = { measureIdx, noteIdx };
   }, [activeNote, playheadStyle, renderData, enabled]);
-
   useEffect(() => {
     decolorizedElsRef.current.forEach((el) => {
       (el as SVGGraphicsElement).style.filter = '';

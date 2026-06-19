@@ -1,5 +1,4 @@
 import { createRef, useEffect, useMemo, useRef, useState } from 'react';
-
 import { ChartParser } from '../../../chart-parser/parser';
 import { renderMusic } from '../../../chart-parser/renderer';
 import { ParsedChart, RenderData } from '../../../chart-parser/types';
@@ -40,7 +39,6 @@ export function SheetMusic({
   const [renderData, setRenderData] = useState<RenderData[]>([]);
   const [highlightedMeasureIndex, setHighlightedMeasureIndex] =
     useState<number>(-1);
-
   const currentTick = useMemo(
     () =>
       chart
@@ -48,7 +46,6 @@ export function SheetMusic({
         : null,
     [currentTime, chart],
   );
-
   const highlightsRef = useMemo(
     () => renderData.map(() => createRef<HTMLButtonElement>()),
     [renderData],
@@ -74,7 +71,6 @@ export function SheetMusic({
       ),
     );
   }, [parsedMidi, showBarNumbers, enableColors]);
-
   useEffect(() => {
     if (currentTick === null) {
       return;
@@ -89,7 +85,6 @@ export function SheetMusic({
       setHighlightedMeasureIndex(index);
     }
   }, [currentTick, renderData]);
-
   useEffect(() => {
     if (playheadStyle === 'None' || highlightedMeasureIndex < 0) {
       return;
@@ -117,8 +112,8 @@ export function SheetMusic({
     }
 
     const { renderedNotes } = measureData;
-
     let noteIdx = -1;
+
     for (let i = 0; i < renderedNotes.length; i++) {
       if (renderedNotes[i].tick <= currentTick) {
         noteIdx = i;
@@ -174,10 +169,10 @@ export function SheetMusic({
       height: stave.getHeight() + 30,
     };
   }, [playheadStyle, chart, currentTime, renderData, highlightedMeasureIndex]);
-
   const measureHighlights = renderData.map(({ measure, stave }, index) => {
     const highlighted =
       playheadStyle === 'Measure' && index === highlightedMeasureIndex;
+
     return (
       <button
         key={index}

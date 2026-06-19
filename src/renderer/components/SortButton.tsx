@@ -18,6 +18,7 @@ import { cn } from '../cn';
 import { usePopoverOutsideClick } from '../hooks/usePopoverOutsideClick';
 
 export type SortKey = 'name' | 'favorite' | 'lastAdded' | 'difficulty';
+
 export type SortDirection = 'asc' | 'desc';
 
 export interface SortState {
@@ -42,7 +43,6 @@ export function SortButton({ sort, onSortChange }: Props) {
     popoverRef.current?.hidePopover();
     setIsPopoverOpen(false);
   }, [pathname]);
-
   usePopoverOutsideClick(isPopoverOpen, popoverRef, triggerRef, () => {
     popoverRef.current?.hidePopover();
     setIsPopoverOpen(false);
@@ -63,15 +63,16 @@ export function SortButton({ sort, onSortChange }: Props) {
       setIsPopoverOpen(true);
     }
   };
-
   const handleClick = (key: SortKey) => {
     if (key === 'favorite') {
       onSortChange({
         key: sort.key === 'favorite' ? null : 'favorite',
         direction: 'asc',
       });
+
       return;
     }
+
     if (sort.key === key) {
       onSortChange({
         key,
@@ -81,7 +82,6 @@ export function SortButton({ sort, onSortChange }: Props) {
       onSortChange({ key, direction: 'asc' });
     }
   };
-
   const dirIcon = (key: SortKey) => {
     if (!DIRECTIONAL_KEYS.includes(key)) {
       return null;
@@ -93,7 +93,6 @@ export function SortButton({ sort, onSortChange }: Props) {
 
     return faArrowUp;
   };
-
   const options: { key: SortKey; label: string }[] = [
     { key: 'name', label: 'Name' },
     { key: 'favorite', label: 'Favorite' },
@@ -128,6 +127,7 @@ export function SortButton({ sort, onSortChange }: Props) {
       >
         {options.map(({ key, label }) => {
           const icon = key === 'favorite' ? faHeart : dirIcon(key)!;
+
           return (
             <Button
               key={key}

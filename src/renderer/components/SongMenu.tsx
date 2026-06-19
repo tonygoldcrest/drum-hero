@@ -54,7 +54,6 @@ export function SongMenu({
       setIsOpen(true);
     }
   };
-
   const close = () => {
     popoverRef.current?.hidePopover();
     setIsOpen(false);

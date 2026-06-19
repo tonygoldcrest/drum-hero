@@ -1,5 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { SongData, StemToolsStatus } from '../../types';
 import { cn } from '../cn';
 import { SongListItem } from './SongListItem';
@@ -11,6 +11,7 @@ export interface SongListProps {
   onLikeChange: (id: string, liked: boolean) => void;
   onDownload: (id: string) => void;
   onSplit: (id: string) => void;
+  onLoadMore?: () => void;
   downloadingIds?: Set<string>;
   splittingIds: Set<string>;
   downloadedIds?: Set<string>;
@@ -19,6 +20,8 @@ export interface SongListProps {
   downloadingDisabled: boolean;
   stemToolsStatus: StemToolsStatus;
 }
+
+const LOAD_MORE_THRESHOLD = 2;
 
 export function SongList({
   songList,
@@ -32,6 +35,7 @@ export function SongList({
   downloadingDisabled,
   splittingIds,
   onSplit,
+  onLoadMore,
   stemToolsStatus,
 }: SongListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
@@ -45,6 +49,19 @@ export function SongList({
     getScrollElement: () => parentRef.current,
     estimateSize: () => 85,
   });
+  const virtualItems = rowVirtualizer.getVirtualItems();
+  const lastVirtualIndex = virtualItems[virtualItems.length - 1]?.index;
+  const stableLoadMore = useCallback(() => onLoadMore?.(), [onLoadMore]);
+
+  useEffect(() => {
+    if (lastVirtualIndex === undefined || !onLoadMore) {
+      return;
+    }
+
+    if (lastVirtualIndex >= songList.length - LOAD_MORE_THRESHOLD) {
+      stableLoadMore();
+    }
+  }, [lastVirtualIndex, songList.length, stableLoadMore, onLoadMore]);
 
   return (
     <div ref={parentRef} className={cn('h-full overflow-y-auto', className)}>

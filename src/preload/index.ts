@@ -15,7 +15,8 @@ export type Channels =
   | 'download-stem-tools'
   | 'split-song'
   | 'cancel-split'
-  | 'open-song-directory';
+  | 'open-song-directory'
+  | 'midi-device-list';
 
 const electronHandler = {
   ipcRenderer: {
@@ -24,6 +25,7 @@ const electronHandler = {
     },
     on<T>(channel: Channels, func: (args: T) => void) {
       const subscription = (_event: IpcRendererEvent, args: T) => func(args);
+
       ipcRenderer.on(channel, subscription);
 
       return () => {

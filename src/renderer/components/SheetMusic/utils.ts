@@ -51,7 +51,6 @@ export function getCursorX(
   measureData: RenderData,
 ) {
   const { measure, stave, renderedNotes } = measureData;
-
   const currentTick = secondsToTicks(
     currentTime,
     chart.resolution,

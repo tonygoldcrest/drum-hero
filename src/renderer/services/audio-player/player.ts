@@ -20,14 +20,12 @@ export class AudioPlayer {
 
   constructor(trackConfigs: TrackConfig[], onEnded: () => void) {
     this.context = new AudioContext();
-
     this.ready = this.createTracks(trackConfigs);
-
     this.onEnded = onEnded;
-
     this.ready
       .then((tracks) => {
         this.duration = Math.max(...tracks.map((track) => track.duration));
+
         return this.duration;
       })
       .catch(() => {});
@@ -39,15 +37,12 @@ export class AudioPlayer {
         const dataBuffers = await Promise.all(
           urls.map((url) => fetch(url).then((res) => res.arrayBuffer())),
         );
-
         const audioBuffers = await Promise.all(
           dataBuffers.map((buf) => this.context.decodeAudioData(buf)),
         );
-
         const audioTrack = new AudioTrack(audioBuffers, name, this.context);
 
         audioTrack.endedListener = this.trackEndedListener;
-
         this.audioTracks.push(audioTrack);
 
         return audioTrack;
@@ -59,9 +54,11 @@ export class AudioPlayer {
     if (this.isInitialised) {
       this.stop();
     }
+
     this.offset = offset;
 
     const time = this.context.currentTime;
+
     this.startedAt = time;
     this.audioTracks.forEach((track) => track.start(time, offset));
     this.isInitialised = true;
@@ -92,9 +89,7 @@ export class AudioPlayer {
   destroy() {
     this.audioTracks.forEach((track) => track.destroy());
     this.audioTracks = [];
-
     this.onEnded = null;
-
     this.context.close();
   }
 

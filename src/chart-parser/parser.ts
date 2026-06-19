@@ -1,5 +1,4 @@
 import { Difficulty, type NoteEvent } from 'scan-chart';
-
 import { ParsedChart, Measure, Note, TupletMeta } from './types';
 import { noteToKey } from './utils';
 
@@ -62,7 +61,6 @@ interface BeatLocation {
 }
 
 const REST_KEY = 'b/4';
-
 // Whole-span subdivisions offered in a simple (non-compound) meter, keyed by the
 // number of slots. `notatedDivisor` is the binary value the written notes are
 // drawn from; the remaining scaling is carried by the tuplet ratio.
@@ -77,7 +75,6 @@ const SIMPLE_DIVISORS: { [slots: number]: NotationInfo } = {
   8: { notatedDivisor: 8, tuplet: null },
   16: { notatedDivisor: 16, tuplet: null },
 };
-
 // Whole-span subdivisions in a compound (dotted-beat) meter. Dividing a dotted
 // value by these yields plain/dotted durations, so no tuplets are needed.
 const COMPOUND_DIVISORS: { [slots: number]: NotationInfo } = {
@@ -88,7 +85,6 @@ const COMPOUND_DIVISORS: { [slots: number]: NotationInfo } = {
   6: { notatedDivisor: 6, tuplet: null },
   12: { notatedDivisor: 12, tuplet: null },
 };
-
 // Cost-function weights — the "look and feel" knobs. A candidate's cost is
 // `complexity + LAMBDA · meanDistortion`. Complexity sums filler rests wedged
 // between hits, sub-16th note values, distinct durations, and raw symbol count;
@@ -103,7 +99,6 @@ const W_VAR = 1.0;
 const W_EVT = 0.5;
 const W_SPLIT = 0.5;
 const LAMBDA = 15;
-
 const BASE_DURATIONS: Array<[number, string]> = [
   [1, 'w'],
   [1 / 2, 'h'],
@@ -113,11 +108,9 @@ const BASE_DURATIONS: Array<[number, string]> = [
   [1 / 32, '32'],
   [1 / 64, '64'],
 ];
-
 // Note/rest value sizes (in grid slots) we are willing to merge into a single
 // written duration, largest first.
 const CHUNK_SIZES = [16, 12, 8, 6, 4, 3, 2, 1];
-
 const KEY_LETTERS = ['c', 'd', 'e', 'f', 'g', 'a', 'b'];
 
 function approxEqual(a: number, b: number) {
@@ -175,10 +168,11 @@ function chunkSpan(
     if (candidate > remaining || position % chunkAlignment(candidate)) {
       return false;
     }
+
     const named = namedDuration(candidate * slotFraction);
+
     return named !== null && (allowDotted || named.dots === 0);
   };
-
   const chunks: number[] = [];
   let position = startSlot;
   let remaining = span;
@@ -201,6 +195,7 @@ function chunkSpan(
 
 function keyPitch(key: string) {
   const [letter, octave] = key.split('/');
+
   return Number(octave) * 7 + KEY_LETTERS.indexOf(letter);
 }
 
@@ -229,10 +224,11 @@ function resolveNearCoincidence(
       finestDivisions - 1,
       Math.max(0, Math.round((tick - beatStart) / spacing)),
     );
-
   const clusters: Onset[][] = [];
+
   onsets.forEach((onset) => {
     const last = clusters[clusters.length - 1];
+
     if (last && slotOf(last[0].tick) === slotOf(onset.tick)) {
       last.push(onset);
     } else {
@@ -251,18 +247,20 @@ function resolveCluster(cluster: Onset[]): Onset {
   const occurrences = cluster.flatMap((onset) =>
     onset.keys.map((key) => ({ tick: onset.tick, key })),
   );
-
   // For each drum, its latest occurrence is the main hit; earlier repeats of the
   // same drum become grace notes.
   const lastTickByKey = new Map<string, number>();
+
   occurrences.forEach(({ tick, key }) => {
     lastTickByKey.set(key, Math.max(lastTickByKey.get(key) ?? -Infinity, tick));
   });
 
   const graceByTick = new Map<number, Set<string>>();
+
   occurrences.forEach(({ tick, key }) => {
     if (tick < (lastTickByKey.get(key) as number)) {
       const keys = graceByTick.get(tick) ?? new Set<string>();
+
       keys.add(key);
       graceByTick.set(tick, keys);
     }
@@ -298,9 +296,11 @@ function halvingsPast16th(duration: string): number {
   if (duration === '32') {
     return 1;
   }
+
   if (duration === '64') {
     return 2;
   }
+
   return 0;
 }
 
@@ -320,6 +320,7 @@ function complexityOf(events: Note[]): number {
     ) {
       filler += 1;
     }
+
     fine += halvingsPast16th(event.duration);
     values.add(`${event.duration}.${event.dots}`);
   });
@@ -336,11 +337,13 @@ function candidateCost(candidate: Candidate, beatTicks: number): number {
   const distortion = candidate.onsetCount
     ? candidate.dispSum / candidate.onsetCount / beatTicks
     : 0;
+
   return candidate.complexity + LAMBDA * distortion;
 }
 
 function restFill(startTick: number, fraction: number): Candidate {
   const named = namedDuration(fraction) ?? { duration: 'q', dots: 0 };
+
   return {
     events: [
       {
@@ -374,6 +377,7 @@ function buildGrid(
   nextId: () => number,
 ): Candidate | null {
   const slotFraction = fraction / info.notatedDivisor;
+
   if (!namedDuration(slotFraction)) {
     return null;
   }
@@ -384,14 +388,15 @@ function buildGrid(
       divisions - 1,
       Math.max(0, Math.round((tick - startTick) / spacing)),
     );
-
   const slots = onsets.map((onset) => slotOf(onset.tick));
+
   if (new Set(slots).size !== slots.length) {
     return null;
   }
 
   const occupants = new Map<number, Onset>();
   let dispSum = 0;
+
   slots.forEach((slot, index) => {
     occupants.set(slot, onsets[index]);
     dispSum += Math.abs(startTick + slot * spacing - onsets[index].tick);
@@ -408,8 +413,10 @@ function buildGrid(
     chunkSpan(boundary, next - boundary, slotFraction, true).forEach(
       (size, chunkIndex) => {
         const named = namedDuration(size * slotFraction);
+
         if (named) {
           const isRest = !onset || chunkIndex > 0;
+
           events.push({
             notes: isRest ? [REST_KEY] : sortKeys(onset.keys),
             duration: named.duration,
@@ -419,14 +426,17 @@ function buildGrid(
             graceNotes: isRest ? undefined : onset.graceNotes,
           });
         }
+
         slot += size;
       },
     );
   });
 
   const tuplets: TupletMeta[] = [];
+
   if (info.tuplet && events.length > 1) {
     const id = nextId();
+
     events.forEach((event) => {
       event.tupletId = id;
     });
@@ -471,16 +481,20 @@ function notateSpan(
 
   Object.keys(divisors).forEach((key) => {
     const divisions = Number(key);
+
     if (durationTicks / divisions < minSpacing - 1e-9) {
       return;
     }
+
     const info = divisors[divisions];
+
     // Only use a quintuplet/septuplet when the onsets actually fill it; a prime
     // tuplet held loosely (e.g. 6 even notes forced into a 7:4) is a misfit that
     // should decompose or use a binary grid instead.
     if (info.tuplet && divisions >= 5 && onsets.length < divisions) {
       return;
     }
+
     const candidate = buildGrid(
       onsets,
       startTick,
@@ -490,6 +504,7 @@ function notateSpan(
       info,
       nextId,
     );
+
     if (candidate) {
       candidates.push(candidate);
     }
@@ -528,6 +543,7 @@ function notateSpan(
       nextId,
     );
     const events = [...leftC.events, ...rightC.events];
+
     candidates.push({
       events,
       tuplets: [...leftC.tuplets, ...rightC.tuplets],
@@ -541,6 +557,7 @@ function notateSpan(
     // Unreachable in practice: the resolver guarantees the finest grid separates
     // every onset. Fall back to it regardless of the spacing floor.
     const finest = Math.max(...Object.keys(divisors).map(Number));
+
     return (
       buildGrid(
         onsets,
@@ -583,10 +600,12 @@ function restValues(ppq: number): RestValue[] {
     [whole / 64, '64'],
   ];
   const values: RestValue[] = [];
+
   bases.forEach(([ticks, duration]) => {
     values.push({ ticks, duration, dots: 0, align: ticks });
     values.push({ ticks: ticks * 1.5, duration, dots: 1, align: ticks * 2 });
   });
+
   return values.sort((a, b) => b.ticks - a.ticks);
 }
 
@@ -612,6 +631,7 @@ function fillRestSpan(
 
   while (pos < spanEnd - 1e-6 && safety < 128) {
     safety += 1;
+
     const start = pos;
     const remaining = spanEnd - start;
     const offset = start - measureStart;
@@ -620,10 +640,13 @@ function fillRestSpan(
         if (value.ticks > remaining + 1e-6) {
           return false;
         }
+
         const m = offset % value.align;
+
         if (m > 1e-6 && value.align - m > 1e-6) {
           return false;
         }
+
         if (
           guardMid &&
           start < mid - 1e-6 &&
@@ -632,6 +655,7 @@ function fillRestSpan(
         ) {
           return false;
         }
+
         return true;
       }) ?? values[values.length - 1];
 
@@ -667,8 +691,10 @@ function mergeMeasureRests(
 
   while (i < notes.length) {
     const note = notes[i];
+
     if (note.isRest && note.tupletId === undefined) {
       let j = i;
+
       while (
         j < notes.length &&
         notes[j].isRest &&
@@ -676,8 +702,10 @@ function mergeMeasureRests(
       ) {
         j += 1;
       }
+
       const spanEnd =
         j < notes.length ? notes[j].tick : measureStart + measureTicks;
+
       out.push(
         ...fillRestSpan(
           note.tick,
@@ -725,9 +753,11 @@ export class ChartParser {
     this.ppq = chart.resolution;
 
     const allTicks = drumTrack.noteEventGroups.flat().map((e) => e.tick);
+
     this.endOfTrackTicks = allTicks.length > 0 ? Math.max(...allTicks) + 1 : 0;
 
     const onsets = this.collectOnsets(drumTrack.noteEventGroups, isFiveLane);
+
     this.createMeasures(chart.timeSignatures);
     this.buildMeasures(onsets);
   }
@@ -739,12 +769,15 @@ export class ChartParser {
     return noteEventGroups
       .map((group) => {
         const tick = group[0]?.tick;
+
         if (tick === undefined) {
           return null;
         }
+
         const keys = group
           .map((e) => noteToKey(e.type, e.flags, isFiveLane))
           .filter((k): k is string => k !== null);
+
         return keys.length > 0 ? { tick, keys } : null;
       })
       .filter((o): o is Onset => o !== null);
@@ -755,7 +788,6 @@ export class ChartParser {
       timeSignatures.length > 0
         ? timeSignatures
         : [{ tick: 0, numerator: 4, denominator: 4 }];
-
     let startTick = 0;
 
     sigs.forEach((sigData, index) => {
@@ -784,7 +816,6 @@ export class ChartParser {
           tuplets: [],
         });
         this.meters.push(meter);
-
         startTick += measureTicks;
       }
     });
@@ -812,6 +843,7 @@ export class ChartParser {
           },
         ];
         measure.tuplets = [];
+
         return;
       }
 
@@ -820,6 +852,7 @@ export class ChartParser {
         meter,
         beatOnsets,
       );
+
       measure.notes = mergeMeasureRests(
         notes,
         measure.startTick,
@@ -845,6 +878,7 @@ export class ChartParser {
 
     onsets.forEach((onset) => {
       const { measureIndex, beatIndex } = this.findBeat(onset.tick);
+
       buckets[measureIndex][beatIndex].push(onset);
     });
 
@@ -858,6 +892,7 @@ export class ChartParser {
 
     while (low <= high) {
       const mid = Math.floor((low + high) / 2);
+
       if (this.measures[mid].startTick <= tick) {
         measureIndex = mid;
         low = mid + 1;
@@ -872,8 +907,8 @@ export class ChartParser {
       meter.beatsPerMeasure - 1,
       Math.max(0, Math.floor((tick - measure.startTick) / meter.beatTicks)),
     );
-
     const beatEnd = measure.startTick + (beatIndex + 1) * meter.beatTicks;
+
     if (beatEnd - tick <= meter.beatTicks / 32) {
       if (beatIndex + 1 < meter.beatsPerMeasure) {
         beatIndex += 1;
@@ -897,7 +932,9 @@ export class ChartParser {
     const minSpacing = meter.beatTicks / finest;
     const nextId = () => {
       const id = this.nextTupletId;
+
       this.nextTupletId += 1;
+
       return id;
     };
     let beatIndex = 0;
@@ -905,6 +942,7 @@ export class ChartParser {
     while (beatIndex < meter.beatsPerMeasure) {
       if (beatOnsets[beatIndex].length === 0) {
         let run = 1;
+
         while (
           beatIndex + run < meter.beatsPerMeasure &&
           beatOnsets[beatIndex + run].length === 0
@@ -916,9 +954,11 @@ export class ChartParser {
         // allows. Dotted rests read poorly in simple meters but are the norm
         // in compound ones.
         let slot = beatIndex;
+
         chunkSpan(beatIndex, run, meter.beatFraction, meter.isCompound).forEach(
           (size) => {
             const named = namedDuration(size * meter.beatFraction);
+
             if (named) {
               notes.push({
                 notes: [REST_KEY],
@@ -928,10 +968,10 @@ export class ChartParser {
                 tick: Math.round(measure.startTick + slot * meter.beatTicks),
               });
             }
+
             slot += size;
           },
         );
-
         beatIndex += run;
       } else {
         const beatStart = measure.startTick + beatIndex * meter.beatTicks;
@@ -952,6 +992,7 @@ export class ChartParser {
           !meter.isCompound,
           nextId,
         );
+
         notes.push(...candidate.events);
         tuplets.push(...candidate.tuplets);
         beatIndex += 1;

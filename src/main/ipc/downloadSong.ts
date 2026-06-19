@@ -20,20 +20,23 @@ export async function downloadSong(
     const lastOpenedPath = appState.store.get('lastOpenedPath') as
       | string
       | undefined;
+
     if (!lastOpenedPath) {
       event.reply('download-song', {
         success: false,
         error: 'No folder selected',
       });
+
       return;
     }
 
     const response = await fetch(url);
+
     if (!response.ok) {
       throw new Error(`Download failed: ${response.status}`);
     }
-    const arrayBuffer = await response.arrayBuffer();
 
+    const arrayBuffer = await response.arrayBuffer();
     const uint8 = new Uint8Array(arrayBuffer);
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
@@ -41,7 +44,6 @@ export async function downloadSong(
         controller.close();
       },
     });
-
     const sngStream = new SngStream(stream, { generateSongIni: true });
     const files: { name: string; data: Buffer }[] = [];
 
@@ -56,7 +58,6 @@ export async function downloadSong(
         ) => {
           const reader = fileStream.getReader();
           const chunks: Uint8Array[] = [];
-
           let result = await reader.read();
 
           while (!result.done) {
@@ -67,11 +68,14 @@ export async function downloadSong(
           const totalLen = chunks.reduce((sum, c) => sum + c.length, 0);
           const merged = Buffer.alloc(totalLen);
           let offset = 0;
+
           for (const chunk of chunks) {
             merged.set(chunk, offset);
             offset += chunk.length;
           }
+
           files.push({ name: fileName, data: merged });
+
           if (nextFile) {
             nextFile();
           } else {
@@ -87,6 +91,7 @@ export async function downloadSong(
       '',
     );
     const outputDir = path.join(lastOpenedPath, folderName);
+
     fs.mkdirSync(outputDir, { recursive: true });
 
     for (const file of files) {
@@ -94,6 +99,7 @@ export async function downloadSong(
     }
 
     const songData = buildSongFromDir(outputDir, { id: md5 });
+
     if (!songData) {
       throw new Error('Failed to parse downloaded song');
     }

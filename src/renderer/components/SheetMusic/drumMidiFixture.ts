@@ -50,6 +50,7 @@ function measureTicksFor([numerator, denominator]: [number, number]): number {
 export function buildDrumMidi(measures: MeasureSpec[]): Uint8Array {
   const midi = new Midi();
   const track = midi.addTrack();
+
   track.name = 'PART DRUMS';
 
   let absStart = 0;
@@ -57,6 +58,7 @@ export function buildDrumMidi(measures: MeasureSpec[]): Uint8Array {
 
   measures.forEach((measure, index) => {
     const sig = measure.timeSig ?? prevSig;
+
     if (index === 0 || sig[0] !== prevSig[0] || sig[1] !== prevSig[1]) {
       midi.header.timeSignatures.push({
         ticks: absStart,
@@ -72,11 +74,9 @@ export function buildDrumMidi(measures: MeasureSpec[]): Uint8Array {
         velocity: 0.8,
       });
     });
-
     absStart += measureTicksFor(sig);
     prevSig = sig;
   });
-
   track.addNote({
     midi: 1,
     ticks: Math.max(0, absStart - 1),

@@ -24,8 +24,8 @@ export default class MenuBuilder {
       process.platform === 'darwin'
         ? this.buildDarwinTemplate()
         : this.buildDefaultTemplate();
-
     const menu = Menu.buildFromTemplate(template);
+
     Menu.setApplicationMenu(menu);
 
     return menu;
@@ -43,6 +43,11 @@ export default class MenuBuilder {
           },
         },
       ]).popup({ window: this.mainWindow });
+    });
+    this.mainWindow.webContents.on('before-input-event', (_, input) => {
+      if (input.meta && input.shift && input.key.toLowerCase() === 'i') {
+        this.mainWindow.webContents.toggleDevTools();
+      }
     });
   }
 

@@ -1,144 +1,45 @@
-import { useEffect, useMemo, useState } from 'react';
-import { App, Spin } from 'antd';
-import { useOnlineSearch } from '../hooks/useOnlineSearch';
+import { Spin } from 'antd';
 import { Outlet } from 'react-router-dom';
-import Fuse from 'fuse.js';
-import {
-  IpcLoadSongListResponse,
-  IpcSplitSongResponse,
-  SongData,
-} from '../../types';
-import { Mode, SongFilter } from '../components/SongFilter';
+import { SongFilter } from '../components/SongFilter';
 import { SongList } from '../components/SongList';
 import { SettingsButton } from '../components/SettingsButton';
-import { SortButton, type SortState } from '../components/SortButton';
+import { SortButton } from '../components/SortButton';
+import { SplittingQueue } from '../components/SplittingQueue';
+import { EmptySongState } from '../components/EmptySongState';
 import { useSettings } from '../context/SettingsContext';
 import { useStemTools } from '../hooks/useStemTools';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faArrowRight,
-  faCog,
-  faFolder,
-} from '@fortawesome/free-solid-svg-icons';
-import { SongSplitProgress } from '../components/SongSplitProgress';
+import { useSongList } from '../hooks/useSongList';
+import { useDownload } from '../hooks/useDownload';
+import { useSongFilter } from '../hooks/useSongFilter';
 
 export function SongListView() {
-  const [songList, setSongList] = useState<SongData[]>([]);
-  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
-  const [splittingIds, setSplittingIds] = useState<Set<string>>(new Set());
-  const [splitProgress, setSplitProgress] = useState<Map<string, number>>(
-    new Map(),
-  );
-  const [nameFilter, setNameFilter] = useState('');
-  const [mode, setMode] = useState<Mode>('local');
-  const [sort, setSort] = useState<SortState>({
-    key: 'favorite',
-    direction: 'asc',
-  });
-
-  const { notification } = App.useApp();
-
-  const { results: onlineResults, loading: onlineLoading } = useOnlineSearch(
-    mode === 'online',
-    nameFilter,
-  );
-
-  const { setCurrentPath, currentPath } = useSettings();
+  const { currentPath } = useSettings();
   const { stemToolsStatus, stemToolsLoading, downloadPercent, download } =
     useStemTools();
-
-  useEffect(() => {
-    window.electron.ipcRenderer.sendMessage('load-song-list');
-    window.electron.ipcRenderer.once<IpcLoadSongListResponse>(
-      'load-song-list',
-      ({ songs, lastOpenedPath }) => {
-        setSongList(songs);
-        setCurrentPath(lastOpenedPath);
-      },
-    );
-  }, [setCurrentPath]);
-
-  useEffect(() => {
-    return window.electron.ipcRenderer.on<IpcLoadSongListResponse>(
-      'rescan-songs',
-      ({ songs, lastOpenedPath }) => {
-        setSongList(songs);
-        setCurrentPath(lastOpenedPath);
-      },
-    );
-  }, [setCurrentPath]);
-
-  useEffect(() => {
-    return window.electron.ipcRenderer.on<IpcSplitSongResponse>(
-      'split-song',
-      ({ id, progress, success, song, error }) => {
-        if (progress !== undefined) {
-          setSplitProgress((prev) => new Map(prev).set(id, progress));
-          return;
-        }
-
-        setSplittingIds((prev) => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
-
-        setSplitProgress((prev) => {
-          const next = new Map(prev);
-          next.delete(id);
-          return next;
-        });
-
-        if (success && song) {
-          setSongList((prev) => prev.map((s) => (s.id === id ? song : s)));
-          notification.success({
-            title: `"${song.name}" split successfully`,
-            placement: 'bottomRight',
-          });
-        } else {
-          notification.error({
-            message: 'Split failed',
-            description: error,
-            placement: 'bottomRight',
-          });
-        }
-      },
-    );
-  }, [notification]);
-
-  const filteredSongList = useMemo(() => {
-    if (mode === 'online') {
-      return onlineResults;
-    }
-
-    if (nameFilter) {
-      const fuse = new Fuse(songList, { keys: ['name', 'artist', 'charter'] });
-      return fuse.search(nameFilter).map((result) => result.item);
-    }
-
-    return [...songList].sort((a, b) => {
-      switch (sort.key) {
-        case 'name': {
-          const cmp = a.name.localeCompare(b.name);
-          return sort.direction === 'asc' ? cmp : -cmp;
-        }
-        case 'favorite':
-          return +(b.liked ?? 0) - +(a.liked ?? 0);
-        case 'lastAdded': {
-          const at = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-          const bt = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-          return sort.direction === 'asc' ? at - bt : bt - at;
-        }
-        case 'difficulty': {
-          const ad = parseInt(a.diff_drums ?? '-1');
-          const bd = parseInt(b.diff_drums ?? '-1');
-          return sort.direction === 'asc' ? ad - bd : bd - ad;
-        }
-        default:
-          return a.name.localeCompare(b.name);
-      }
-    });
-  }, [songList, nameFilter, mode, onlineResults, sort]);
+  const {
+    songList,
+    splittingIds,
+    splitProgress,
+    handleSplit,
+    handleLikeChange,
+    addSong,
+  } = useSongList();
+  const {
+    nameFilter,
+    setNameFilter,
+    mode,
+    setMode,
+    sort,
+    setSort,
+    filteredSongList,
+    onlineResults,
+    onlineLoading,
+    loadMore,
+  } = useSongFilter(songList);
+  const { downloadingIds, handleDownload } = useDownload(
+    onlineResults,
+    addSong,
+  );
 
   return (
     <div className="h-screen flex flex-col bg-bg">
@@ -149,9 +50,7 @@ export function SongListView() {
         <div className="flex gap-2 items-center">
           <SongFilter
             nameFilter={nameFilter}
-            onChangeFilter={(value: string) => {
-              setNameFilter(value);
-            }}
+            onChangeFilter={setNameFilter}
             filteredSongsCount={filteredSongList.length}
             mode={mode}
             onChangeMode={setMode}
@@ -167,28 +66,11 @@ export function SongListView() {
             onDownloadStemTools={download}
           />
         </div>
-        {splittingIds.size > 0 && (
-          <div className="flex gap-3 flex-wrap items-center">
-            <div className="text-text-muted">Splitting queue:</div>
-
-            {[...splittingIds].map((id) => {
-              const songData = songList.find((s) => s.id === id);
-              if (!songData) {
-                return null;
-              }
-              return (
-                <SongSplitProgress
-                  key={id}
-                  songData={songData}
-                  progress={splitProgress.get(id) ?? 0}
-                  onCancel={() =>
-                    window.electron.ipcRenderer.sendMessage('cancel-split', id)
-                  }
-                />
-              );
-            })}
-          </div>
-        )}
+        <SplittingQueue
+          splittingIds={splittingIds}
+          splitProgress={splitProgress}
+          songList={songList}
+        />
       </div>
 
       <div className="relative grow overflow-hidden w-full flex">
@@ -208,91 +90,13 @@ export function SongListView() {
                   : undefined
               }
               splittingIds={splittingIds}
-              onSplit={(id) => {
-                setSplittingIds((prev) => new Set(prev).add(id));
-
-                window.electron.ipcRenderer.sendMessage('split-song', id);
-
-                notification.info({
-                  message: `Splitting "${songList.find((s) => s.id === id)
-                    ?.name}"`,
-                  description: "You will be notified when it's done",
-                  placement: 'bottomRight',
-                });
-              }}
-              onDownload={(id) => {
-                const song = onlineResults.find((s) => s.id === id);
-
-                if (!song || downloadingIds.has(id)) {
-                  return;
-                }
-
-                setDownloadingIds((prev) => new Set(prev).add(id));
-
-                window.electron.ipcRenderer.sendMessage('download-song', {
-                  url: song.dir,
-                  md5: song.id,
-                  name: song.name,
-                  artist: song.artist,
-                  charter: song.charter,
-                });
-
-                window.electron.ipcRenderer.once<{
-                  success: boolean;
-                  song?: SongData;
-                  error?: string;
-                }>('download-song', ({ success, song: newSong, error }) => {
-                  setDownloadingIds((prev) => {
-                    const next = new Set(prev);
-                    next.delete(id);
-                    return next;
-                  });
-
-                  if (success && newSong) {
-                    setSongList((prev) => [...prev, newSong]);
-                  } else {
-                    console.error('Download failed:', error);
-                  }
-                });
-              }}
-              onLikeChange={(id, liked) => {
-                const song = songList.find((s) => s.id === id);
-
-                if (!song) {
-                  return;
-                }
-                window.electron.ipcRenderer.sendMessage('like-song', id, liked);
-
-                setSongList([
-                  ...songList.filter((s) => s.id !== id),
-                  {
-                    ...song,
-                    liked,
-                  },
-                ]);
-              }}
+              onSplit={handleSplit}
+              onDownload={handleDownload}
+              onLikeChange={handleLikeChange}
+              onLoadMore={mode === 'online' ? loadMore : undefined}
             />
           ) : (
-            <div className="m-auto text-text-faint flex items-center gap-1 flex-col">
-              <div>No songs found.</div>
-
-              {mode !== 'online' && (
-                <div className="flex items-center gap-2">
-                  <div>Select a different folder</div>
-
-                  <div className="border-2 border-border py-1 px-2 rounded-md">
-                    <FontAwesomeIcon icon={faCog} />
-                  </div>
-
-                  <FontAwesomeIcon icon={faArrowRight} />
-
-                  <div className="flex items-center border-2 border-border py-1 px-2 rounded-md gap-1">
-                    <FontAwesomeIcon icon={faFolder} />
-                    <div>Select folder</div>
-                  </div>
-                </div>
-              )}
-            </div>
+            <EmptySongState mode={mode} />
           )}
         </div>
 

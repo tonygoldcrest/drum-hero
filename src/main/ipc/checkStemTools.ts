@@ -18,21 +18,21 @@ function isSupported(): boolean {
 export function checkStemTools(event: Electron.IpcMainEvent) {
   if (!isSupported()) {
     event.reply('check-stem-tools', 'unsupported' satisfies StemToolsStatus);
+
     return;
   }
 
   const binaryName =
     process.platform === 'win32' ? 'demucs-split.exe' : 'demucs-split';
-
   const binaryPath = path.join(
     app.getPath('userData'),
     'stem-tools',
     'demucs-split',
     binaryName,
   );
-
   const status: StemToolsStatus = fs.existsSync(binaryPath)
     ? 'ready'
     : 'download';
+
   event.reply('check-stem-tools', status);
 }

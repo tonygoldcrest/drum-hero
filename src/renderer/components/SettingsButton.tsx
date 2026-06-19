@@ -60,7 +60,6 @@ export function SettingsButton({
     popoverRef.current?.hidePopover();
     setIsPopoverOpen(false);
   }, [pathname]);
-
   usePopoverOutsideClick(isPopoverOpen, popoverRef, triggerRef, () => {
     popoverRef.current?.hidePopover();
     setIsPopoverOpen(false);

@@ -4,6 +4,7 @@ import { ActiveNoteInfo } from './types';
 
 const applyTransform = (el: SVGElement, transform: string) => {
   const g = el as SVGGraphicsElement;
+
   g.style.transformBox = 'fill-box';
   g.style.transformOrigin = 'center';
   g.style.transition = 'transform 0.08s ease-out';
@@ -24,6 +25,7 @@ export function useActiveNoteScale(
         prev.noteHeadEls.forEach((el) => applyTransform(el, ''));
         prevRef.current = null;
       }
+
       return;
     }
 
@@ -38,7 +40,6 @@ export function useActiveNoteScale(
     activeNote.noteHeadEls.forEach((el) => applyTransform(el, 'scale(1.5)'));
     prevRef.current = activeNote;
   }, [activeNote]);
-
   useEffect(() => {
     prevRef.current = null;
   }, [renderData]);

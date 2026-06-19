@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   main: {
-    build: { externalizeDeps: true },
+    build: { externalizeDeps: true, watch: {} },
   },
   preload: {
     build: { externalizeDeps: true },

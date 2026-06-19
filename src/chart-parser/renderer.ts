@@ -22,7 +22,6 @@ import themedark from '../renderer/theme';
 
 const STAVE_WIDTH = 600;
 const STAVE_PER_ROW = 2;
-
 const NOTE_COLOR_MAP: { [key: string]: string } = {
   'e/4': themedark.color.orange,
   'f/4': themedark.color.orange,
@@ -34,7 +33,6 @@ const NOTE_COLOR_MAP: { [key: string]: string } = {
   'd/5': themedark.color.blue,
   'a/4': themedark.color.green,
 };
-
 const STEM_DIRECTION = -1;
 const REST_KEY = 'b/4';
 
@@ -49,10 +47,11 @@ export function renderMusic(
   }
 
   const renderer = new Renderer(elementRef.current, Renderer.Backends.SVG);
-
   const context = renderer.getContext();
+
   context.setFillStyle(themedark.color.ink);
   context.setStrokeStyle(themedark.color.ink);
+
   const lineHeight = showBarNumbers ? 180 : 130;
 
   renderer.resize(
@@ -71,13 +70,13 @@ export function renderMusic(
       showBarNumbers,
       enableColors,
     );
+
     return { measure, stave, renderedNotes };
   });
 }
 
 function buildVoice(measure: Measure, enableColors: boolean) {
   const tupletGroups = new Map<number, StaveNote[]>();
-
   const staveNotes = measure.notes.map((note) => {
     const isMeasureRest = note.isRest && note.duration === 'w';
     const staveNote = new StaveNote({
@@ -106,9 +105,11 @@ function buildVoice(measure: Measure, enableColors: boolean) {
           }),
       );
       const graceGroup = new GraceNoteGroup(graceNotes, false);
+
       if (graceNotes.length > 1) {
         graceGroup.beamNotes();
       }
+
       staveNote.addModifier(graceGroup, 0);
     }
 
@@ -120,13 +121,13 @@ function buildVoice(measure: Measure, enableColors: boolean) {
 
     if (note.tupletId !== undefined) {
       const group = tupletGroups.get(note.tupletId) ?? [];
+
       group.push(staveNote);
       tupletGroups.set(note.tupletId, group);
     }
 
     return staveNote;
   });
-
   const tuplets = measure.tuplets
     .filter((meta) => (tupletGroups.get(meta.id)?.length ?? 0) > 1)
     .map(
@@ -138,14 +139,12 @@ function buildVoice(measure: Measure, enableColors: boolean) {
           location: STEM_DIRECTION,
         }),
     );
-
   const voice = new Voice({
     num_beats: measure.timeSig[0],
     beat_value: measure.timeSig[1],
   })
     .setStrict(false)
     .addTickables(staveNotes);
-
   const beams = Beam.generateBeams(staveNotes, {
     flat_beams: true,
     stem_direction: STEM_DIRECTION,
@@ -172,9 +171,11 @@ function renderMeasure(
   if (endMeasure) {
     stave.setEndBarType(Barline.type.END);
   }
+
   if (measure.hasClef) {
     stave.addClef('percussion');
   }
+
   if (measure.sigChange) {
     stave.addTimeSignature(`${measure.timeSig[0]}/${measure.timeSig[1]}`);
   }
@@ -199,13 +200,10 @@ function renderMeasure(
   );
 
   new Formatter().joinVoices([voice]).format([voice], STAVE_WIDTH - 40);
-
   voice.draw(context, stave);
-
   beams.forEach((beam) => {
     beam.setContext(context).draw();
   });
-
   tuplets.forEach((tuplet) => {
     tuplet.setContext(context).draw();
   });

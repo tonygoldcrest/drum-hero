@@ -22,6 +22,7 @@ export async function downloadStemTools(event: Electron.IpcMainEvent) {
 
   try {
     const response = await fetch(url);
+
     if (!response.ok) {
       throw new Error(`Download failed: ${response.status}`);
     }
@@ -29,14 +30,11 @@ export async function downloadStemTools(event: Electron.IpcMainEvent) {
     const contentLength = Number(response.headers.get('content-length')) || 0;
     const reader = response.body!.getReader();
     const fileStream = fs.createWriteStream(tmpPath);
-
     let downloaded = 0;
-
     let result = await reader.read();
 
     while (!result.done) {
       downloaded += result.value.length;
-
       fileStream.write(result.value);
 
       if (contentLength > 0) {
@@ -51,10 +49,8 @@ export async function downloadStemTools(event: Electron.IpcMainEvent) {
     await new Promise<void>((resolve, reject) => {
       fileStream.close((err) => (err ? reject(err) : resolve()));
     });
-
     fs.mkdirSync(destDir, { recursive: true });
     event.reply('stem-tools-progress', 95);
-
     await new Promise<void>((resolve, reject) => {
       const proc =
         process.platform === 'win32'
@@ -72,9 +68,7 @@ export async function downloadStemTools(event: Electron.IpcMainEvent) {
           : reject(new Error(`Extraction failed with code ${code}`)),
       );
     });
-
     fs.unlinkSync(tmpPath);
-
     event.reply('download-stem-tools', { success: true });
   } catch (err) {
     try {
@@ -82,6 +76,7 @@ export async function downloadStemTools(event: Electron.IpcMainEvent) {
     } catch {
       // tmp file may not exist
     }
+
     event.reply('download-stem-tools', { success: false, error: String(err) });
   }
 }

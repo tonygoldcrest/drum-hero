@@ -10,5 +10,6 @@ export function loadSong(event: Electron.IpcMainEvent, id: string) {
     songData.format === 'mid' ? 'notes.mid' : 'notes.chart',
   );
   const fileData = fs.readFileSync(notesFile);
+
   event.reply('load-song', { data: songData, fileData });
 }

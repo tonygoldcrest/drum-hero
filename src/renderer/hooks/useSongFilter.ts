@@ -1,0 +1,74 @@
+import { useMemo, useState } from 'react';
+import Fuse from 'fuse.js';
+import { SongData } from '../../types';
+import { Mode } from '../components/SongFilter';
+import { type SortState } from '../components/SortButton';
+import { useOnlineSearch } from './useOnlineSearch';
+
+export function useSongFilter(songList: SongData[]) {
+  const [nameFilter, setNameFilter] = useState('');
+  const [mode, setMode] = useState<Mode>('local');
+  const [sort, setSort] = useState<SortState>({
+    key: 'favorite',
+    direction: 'asc',
+  });
+  const {
+    results: onlineResults,
+    loading: onlineLoading,
+    loadMore,
+  } = useOnlineSearch(mode === 'online', nameFilter);
+  const filteredSongList = useMemo(() => {
+    if (mode === 'online') {
+      return onlineResults;
+    }
+
+    if (nameFilter) {
+      const fuse = new Fuse(songList, { keys: ['name', 'artist', 'charter'] });
+
+      return fuse.search(nameFilter).map((result) => result.item);
+    }
+
+    return [...songList].sort((a, b) => {
+      switch (sort.key) {
+        case 'name': {
+          const cmp = a.name.localeCompare(b.name);
+
+          return sort.direction === 'asc' ? cmp : -cmp;
+        }
+
+        case 'favorite':
+          return +(b.liked ?? 0) - +(a.liked ?? 0);
+
+        case 'lastAdded': {
+          const at = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+          const bt = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+
+          return sort.direction === 'asc' ? at - bt : bt - at;
+        }
+
+        case 'difficulty': {
+          const ad = parseInt(a.diff_drums ?? '-1');
+          const bd = parseInt(b.diff_drums ?? '-1');
+
+          return sort.direction === 'asc' ? ad - bd : bd - ad;
+        }
+
+        default:
+          return a.name.localeCompare(b.name);
+      }
+    });
+  }, [songList, nameFilter, mode, onlineResults, sort]);
+
+  return {
+    nameFilter,
+    setNameFilter,
+    mode,
+    setMode,
+    sort,
+    setSort,
+    filteredSongList,
+    onlineResults,
+    onlineLoading,
+    loadMore,
+  };
+}

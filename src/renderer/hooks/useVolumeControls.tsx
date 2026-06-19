@@ -26,6 +26,7 @@ export function useVolumeControls(
     if (trackData.length === 0) {
       return;
     }
+
     setVolumeControls(
       trackData.map(({ name }) => ({
         trackName: name,
@@ -35,7 +36,6 @@ export function useVolumeControls(
       })),
     );
   }, [trackData]);
-
   useEffect(() => {
     if (volumeControls.length === 0 || !audioPlayer) {
       return;
@@ -80,7 +80,6 @@ export function useVolumeControls(
     },
     [volumeControls],
   );
-
   const handleSolo = useCallback(
     (control: VolumeControl) => {
       const otherControls = volumeControls.filter((c) => c !== control);
@@ -110,6 +109,7 @@ export function useVolumeControls(
             },
           ]);
         }
+
         return;
       }
 
@@ -137,7 +137,6 @@ export function useVolumeControls(
     },
     [volumeControls],
   );
-
   const volumeSliders = useMemo(() => {
     if (volumeControls.length === 0 || !audioPlayer) {
       return [];

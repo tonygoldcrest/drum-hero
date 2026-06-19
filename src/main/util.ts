@@ -12,11 +12,13 @@ export function resolveHtmlPath(_htmlFileName: string) {
   if (process.env.NODE_ENV === 'development') {
     return process.env['ELECTRON_RENDERER_URL']!;
   }
+
   return `file://${path.resolve(__dirname, '../renderer/index.html')}`;
 }
 
 export function isUnderDirectory(songDir: string, rootDir: string): boolean {
   const relative = path.relative(rootDir, songDir);
+
   return !relative.startsWith('..') && !path.isAbsolute(relative);
 }
 
@@ -25,6 +27,7 @@ export function buildSongFromDir(
   existing?: { id?: string; liked?: boolean },
 ): SongData | null {
   const songIniPath = path.join(dir, 'song.ini');
+
   if (!fs.existsSync(songIniPath)) {
     return null;
   }
@@ -34,19 +37,18 @@ export function buildSongFromDir(
       .readFileSync(songIniPath, 'utf-8')
       .replace(/<color=[^>]*>(.*?)<\/color>/g, '$1'),
   );
-
   const supportedImageExtensions = ['png', 'jpg', 'jpeg'];
   const albumCoverPath = supportedImageExtensions
     .map((ext) => path.join(dir, `album.${ext}`))
     .find((p) => fs.existsSync(p));
-
   const hasMid = fs.existsSync(path.join(dir, 'notes.mid'));
   const hasChart = fs.existsSync(path.join(dir, 'notes.chart'));
+
   if (!hasMid && !hasChart) {
     return null;
   }
-  const format: 'mid' | 'chart' = hasMid ? 'mid' : 'chart';
 
+  const format: 'mid' | 'chart' = hasMid ? 'mid' : 'chart';
   const audio: AudioData[] = fs
     .readdirSync(dir)
     .filter(
@@ -85,11 +87,11 @@ export async function parseAndSaveSongs(
   }
 
   const selectedPath = result.filePaths[0];
+
   appState.store.set('lastOpenedPath', selectedPath);
 
   const existingSongs =
     (appState.store.get('songs') as StorageSchema['songs']) ?? {};
-
   const existingByDir = new Map<string, StorageSchema['songs'][string]>();
 
   for (const song of Object.values(existingSongs)) {
@@ -109,6 +111,7 @@ export async function parseAndSaveSongs(
 
     for (const file of files) {
       const dir = path.dirname(file);
+
       if (!dirToFile.has(dir) || path.extname(file) === '.mid') {
         dirToFile.set(dir, file);
       }
@@ -117,17 +120,16 @@ export async function parseAndSaveSongs(
     const songList = [...dirToFile.keys()]
       .map((dir) => buildSongFromDir(dir, existingByDir.get(dir)))
       .filter((s): s is SongData => s !== null);
-
     const rescannedSongs = songList.reduce(
       (acc, song) => {
         acc[song.id] = song;
+
         return acc;
       },
       {} as StorageSchema['songs'],
     );
 
     appState.store.set('songs', { ...otherSongs, ...rescannedSongs });
-
     callback?.(rescannedSongs);
   });
 }

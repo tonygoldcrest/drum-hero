@@ -12,7 +12,7 @@ module.exports = {
     'plugin:import/typescript',
     'plugin:prettier/recommended',
   ],
-  plugins: ['@typescript-eslint', 'import', 'prettier'],
+  plugins: ['@typescript-eslint', 'import', 'prettier', 'unused-imports'],
   rules: {
     'react/react-in-jsx-scope': 'off',
     'react/jsx-filename-extension': 'off',
@@ -22,7 +22,9 @@ module.exports = {
     'no-shadow': 'off',
     '@typescript-eslint/no-shadow': 'error',
     'no-unused-vars': 'off',
-    '@typescript-eslint/no-unused-vars': [
+    '@typescript-eslint/no-unused-vars': 'off',
+    'unused-imports/no-unused-imports': 'error',
+    'unused-imports/no-unused-vars': [
       'error',
       { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
     ],
@@ -36,6 +38,17 @@ module.exports = {
     camelcase: 'off',
     'no-underscore-dangle': 'off',
     curly: ['error', 'all'],
+    'padding-line-between-statements': [
+      'error',
+      { blankLine: 'always', prev: '*', next: '*' },
+      {
+        blankLine: 'never',
+        prev: ['const', 'let', 'var'],
+        next: ['const', 'let', 'var'],
+      },
+      { blankLine: 'never', prev: 'expression', next: 'expression' },
+      { blankLine: 'never', prev: 'import', next: 'import' },
+    ],
   },
   parserOptions: {
     ecmaVersion: 2022,

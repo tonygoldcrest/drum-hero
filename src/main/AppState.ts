@@ -31,6 +31,7 @@ class AppState {
     if (!AppState.instance) {
       AppState.instance = new AppState();
     }
+
     return AppState.instance;
   }
 
@@ -47,14 +48,13 @@ class AppState {
         },
       },
     ]);
-
     app.on('window-all-closed', () => {
       this.cleanup();
+
       if (process.platform !== 'darwin') {
         app.quit();
       }
     });
-
     app
       .whenReady()
       .then(() => {
@@ -64,12 +64,11 @@ class AppState {
           const filePath = decodeURIComponent(
             request.url.replace(/^gh:\/+/, '/'),
           );
+
           return net.fetch(pathToFileURL(filePath).toString());
         });
-
         this.setupIpc();
         this.createWindow();
-
         app.on('activate', () => {
           if (!this.mainWindow) {
             this.createWindow();
@@ -94,10 +93,10 @@ class AppState {
     ipcMain.on('open-song-directory', (_event, dir: string) => {
       shell.openPath(dir);
     });
-
     ipcMain.on('rescan-songs', async (event) => {
       await parseAndSaveSongs((songs) => {
         const lastOpenedPath = this.store.get('lastOpenedPath') as string;
+
         event.reply('rescan-songs', {
           songs: Object.values(songs).map((s) => ({
             ...s,
@@ -107,15 +106,12 @@ class AppState {
         });
       });
     });
-
     ipcMain.on('check-dev', (event) => {
       event.reply('check-dev', isDebug);
     });
-
     ipcMain.on('like-song', (event, id, liked) => {
       this.store.set(`songs.${id}.liked`, liked);
     });
-
     ipcMain.on('prevent-sleep', () => this.preventSleep());
     ipcMain.on('resume-sleep', () => this.resumeSleep());
   }
@@ -124,7 +120,6 @@ class AppState {
     const RESOURCES_PATH = app.isPackaged
       ? path.join(process.resourcesPath, 'assets')
       : path.join(__dirname, '../../assets');
-
     const getAssetPath = (...paths: string[]): string => {
       return path.join(RESOURCES_PATH, ...paths);
     };
@@ -145,13 +140,12 @@ class AppState {
         preload: path.join(__dirname, '../preload/index.js'),
       },
     });
-
     this.mainWindow.loadURL(resolveHtmlPath('index.html'));
-
     this.mainWindow.on('ready-to-show', () => {
       if (!this.mainWindow) {
         throw new Error('"mainWindow" is not defined');
       }
+
       if (process.env.START_MINIMIZED) {
         this.mainWindow.minimize();
       } else {
@@ -159,19 +153,18 @@ class AppState {
         this.mainWindow.show();
       }
     });
-
     this.mainWindow.on('closed', () => {
       this.mainWindow = null;
     });
 
     const menuBuilder = new MenuBuilder(this.mainWindow);
-    menuBuilder.buildMenu();
 
+    menuBuilder.buildMenu();
     this.mainWindow.webContents.setWindowOpenHandler((edata) => {
       shell.openExternal(edata.url);
+
       return { action: 'deny' };
     });
-
     new AppUpdater();
   }
 

@@ -1,5 +1,4 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-
 import { App as AntdApp, ConfigProvider } from 'antd';
 import './App.css';
 import { SongListView } from './views/SongListView';

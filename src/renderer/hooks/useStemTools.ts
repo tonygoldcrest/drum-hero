@@ -11,7 +11,6 @@ export function useStemTools() {
 
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage('check-stem-tools');
-
     window.electron.ipcRenderer.once<StemToolsStatus>(
       'check-stem-tools',
       (status) => {
@@ -24,6 +23,7 @@ export function useStemTools() {
       (status) => {
         if (status.progress !== undefined) {
           setDownloadPercent(status.progress);
+
           return;
         }
 

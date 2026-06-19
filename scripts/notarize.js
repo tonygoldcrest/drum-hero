@@ -3,12 +3,14 @@ const { build } = require('../package.json');
 
 exports.default = async function notarizeMacos(context) {
   const { electronPlatformName, appOutDir } = context;
+
   if (electronPlatformName !== 'darwin') {
     return;
   }
 
   if (process.env.CI !== 'true') {
     console.warn('Skipping notarizing step. Packaging is not running in CI');
+
     return;
   }
 
@@ -18,6 +20,7 @@ exports.default = async function notarizeMacos(context) {
     console.warn(
       'Skipping notarizing step. APPLE_ID and APPLE_APP_SPECIFIC_PASSWORD env variables must be set',
     );
+
     return;
   }
 

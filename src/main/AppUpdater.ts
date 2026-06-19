@@ -10,16 +10,15 @@ export class AppUpdater {
     log.transports.file.level = 'info';
     autoUpdater.logger = log;
     autoUpdater.autoDownload = false;
-
     autoUpdater.on('update-available', (info) => {
       const notification = new Notification({
         title: 'DrumHero Update Available',
         body: `Version ${info.version} is available. Click to download.`,
       });
+
       notification.on('click', () => shell.openExternal(RELEASES_URL));
       notification.show();
     });
-
     autoUpdater
       .checkForUpdates()
       .catch((err) => log.warn('Update check failed:', err));

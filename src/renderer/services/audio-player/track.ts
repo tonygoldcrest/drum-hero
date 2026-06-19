@@ -23,7 +23,6 @@ export class AudioTrack {
 
       return gainNode;
     });
-
     this.duration = Math.max(...this.buffers.map((buffer) => buffer.duration));
   }
 
@@ -43,14 +42,12 @@ export class AudioTrack {
     }
 
     this.ended = false;
-
     this.sources = this.buffers.map((buffer, index) => {
       const source = this.context.createBufferSource();
+
       source.buffer = buffer;
       source.start(at, offset);
-
       source.connect(this.gainNodes[index]);
-
       source.addEventListener('ended', this.endedEventListener);
 
       return source;
@@ -59,7 +56,6 @@ export class AudioTrack {
 
   stop() {
     this.sources.forEach((source) => this.stopSource(source));
-
     this.sources = [];
   }
 
@@ -71,7 +67,6 @@ export class AudioTrack {
 
     if (this.sources.length === 0) {
       this.ended = true;
-
       this.endedListener?.();
     }
   };
@@ -84,12 +79,10 @@ export class AudioTrack {
 
   destroy() {
     this.stop();
-
     this.gainNodes.forEach((node) => {
       node.disconnect();
     });
     this.gainNodes = [];
-
     this.endedListener = null;
   }
 }

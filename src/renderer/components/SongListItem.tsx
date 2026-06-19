@@ -52,7 +52,6 @@ export function SongListItem({
   stemToolsStatus,
 }: SongListItemProps) {
   const navigate = useNavigate();
-
   const indicator = useMemo(() => {
     if (mode === 'local') {
       return (
@@ -95,6 +94,7 @@ export function SongListItem({
           }}
         />
       );
+
       return downloadingDisabled ? (
         <Tooltip
           title="To enable download, select library folder"
@@ -126,6 +126,7 @@ export function SongListItem({
     downloadingDisabled,
     audio?.length,
     stemToolsStatus,
+    dir,
     onSplit,
     splitting,
   ]);

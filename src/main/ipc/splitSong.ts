@@ -14,6 +14,7 @@ let activeId: string | null = null;
 export function cancelSplit(_event: Electron.IpcMainEvent, id: string) {
   if (activeId === id && activeProc) {
     activeProc.kill();
+
     return;
   }
 
@@ -33,6 +34,7 @@ export function cancelSplit(_event: Electron.IpcMainEvent, id: string) {
 function getBinaryPath() {
   const binaryName =
     process.platform === 'win32' ? 'demucs-split.exe' : 'demucs-split';
+
   return path.join(
     app.getPath('userData'),
     'stem-tools',
@@ -51,6 +53,7 @@ async function doSplit(event: Electron.IpcMainEvent, id: string) {
       success: false,
       error: 'No audio file found',
     });
+
     return;
   }
 
@@ -65,6 +68,7 @@ async function doSplit(event: Electron.IpcMainEvent, id: string) {
         ['--two-stems=drums', '-o', './stems', audioFilename],
         { cwd: songData.dir },
       );
+
       activeProc = proc;
       activeId = id;
 
@@ -72,14 +76,15 @@ async function doSplit(event: Electron.IpcMainEvent, id: string) {
 
       proc.stderr?.on('data', (data: Buffer) => {
         const text = data.toString();
+
         stderr.push(text);
+
         const match = text.match(/(\d+)%\|/);
 
         if (match) {
           event.reply('split-song', { id, progress: parseInt(match[1]) });
         }
       });
-
       proc.on('close', (code, signal) => {
         activeProc = null;
         activeId = null;
@@ -121,6 +126,7 @@ async function doSplit(event: Electron.IpcMainEvent, id: string) {
       id,
       liked: songData.liked,
     });
+
     if (!updatedSong) {
       throw new Error('Failed to rebuild song after splitting');
     }
@@ -136,8 +142,11 @@ async function processNext() {
   if (processing || queue.length === 0) {
     return;
   }
+
   processing = true;
+
   const item = queue.shift()!;
+
   await doSplit(item.event, item.id);
   processing = false;
   processNext();

@@ -14,7 +14,6 @@ export function useSongLoader(id: string | undefined): SongLoaderResult {
   const [format, setFormat] = useState<'mid' | 'chart'>('mid');
   const [songData, setSongData] = useState<SongData | null>(null);
   const [trackData, setTrackData] = useState<TrackConfig[]>([]);
-
   const loadSong = useCallback(() => {
     window.electron.ipcRenderer.once<IpcLoadSongResponse>(
       'load-song',
@@ -26,7 +25,6 @@ export function useSongLoader(id: string | undefined): SongLoaderResult {
         const drums = data.audio
           .filter((file: AudioData) => file.name.includes('drums'))
           .map((file: AudioData) => file.src);
-
         const other = data.audio
           .filter((file: AudioData) => !file.name.includes('drums'))
           .map((file: AudioData) => ({ urls: [file.src], name: file.name }));

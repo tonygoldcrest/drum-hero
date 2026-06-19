@@ -21,11 +21,11 @@ export function useAudioPlayer(
     if (trackData.length === 0) {
       return;
     }
+
     const player = new AudioPlayer(trackData, () => setIsPlaying(false));
 
     player.ready.then(() => setAudioPlayer(player)).catch(() => {});
   }, [trackData]);
-
   useEffect(() => {
     if (audioPlayer === null) {
       return undefined;
@@ -45,7 +45,6 @@ export function useAudioPlayer(
       }
     };
   }, [audioPlayer, isDev]);
-
   useEffect(() => {
     if (audioPlayer === null) {
       return;

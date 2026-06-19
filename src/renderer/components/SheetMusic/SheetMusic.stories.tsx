@@ -40,7 +40,6 @@ function seq(pitch: number, ticks: number[]): Hit[] {
 const B = 480;
 const range = (n: number, step: number) =>
   Array.from({ length: n }, (_, i) => i * step);
-
 const MEASURES: MeasureSpec[] = [
   { hits: seq(GEM.snare, [0, B, 2 * B, 3 * B]) }, // quarters
   { hits: seq(GEM.snare, range(8, 240)) }, // eighths
@@ -110,11 +109,11 @@ const MEASURES: MeasureSpec[] = [
   },
   { timeSig: [2, 4], hits: seq(GEM.snare, [0, B]) },
 ];
-
 const meta: Meta<typeof Sheet> = {
   title: 'Parser',
   component: Sheet,
 };
+
 export default meta;
 
 type Story = StoryObj<typeof Sheet>;

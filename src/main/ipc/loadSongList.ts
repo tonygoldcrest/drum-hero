@@ -10,6 +10,7 @@ export async function loadSongList(event: Electron.IpcMainEvent) {
 
   if (!lastOpenedPath || !fs.existsSync(lastOpenedPath)) {
     event.reply('load-song-list', { songs: [], lastOpenedPath: null });
+
     return;
   }
 
@@ -24,5 +25,6 @@ export async function loadSongList(event: Electron.IpcMainEvent) {
           updatedAt: fs.statSync(s.dir).mtime.toISOString(),
         }))
     : [];
+
   event.reply('load-song-list', { songs, lastOpenedPath });
 }
