@@ -42,8 +42,11 @@ Press the globe icon to switch to online search and download songs directly from
 Many Clone Hero songs ship with a single mixed audio file instead of separate stems. Drum Hero can split it automatically so you can mute the drums and play along.
 
 * In the Settings menu, press **Get stem splitter** to download the tool (~130 MB, one-time). Supported on macOS (Apple Silicon) and Windows.
+<img width="1478" height="880" alt="image" src="https://github.com/user-attachments/assets/486f15d9-b735-464f-a94f-7cf1dddbafbe" />
 * Once downloaded, open the **⋮** menu on any song with a single audio track and choose **Split stems**.
+<img width="1478" height="880" alt="image" src="https://github.com/user-attachments/assets/8f777d1b-59ba-466f-b5ea-2786cbb0235e" />
 * A progress bar appears in the header while splitting. You can cancel at any time.
+<img width="1478" height="880" alt="image" src="https://github.com/user-attachments/assets/c0b097b4-4f85-48ac-8f5d-4ba70b3f9425" />
 * When done, the song is updated in place. Open it and you'll find the drums and backing track available in the mixer.
 
 ## Roadmap
