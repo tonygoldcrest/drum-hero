@@ -37,6 +37,15 @@ Press the globe icon to switch to online search and download songs directly from
 * You can switch difficulty in the side menu if expert is too fast.
 * Notes are highlighted with Clone Hero colors by default, but you can turn that off in the Settings.
 
+### 4. Split stems for songs that don't have them
+
+Many Clone Hero songs ship with a single mixed audio file instead of separate stems. Drum Hero can split it automatically so you can mute the drums and play along.
+
+* In the Settings menu, press **Get stem splitter** to download the tool (~130 MB, one-time). Supported on macOS (Apple Silicon) and Windows.
+* Once downloaded, open the **⋮** menu on any song with a single audio track and choose **Split stems**.
+* A progress bar appears in the header while splitting. You can cancel at any time.
+* When done, the song is updated in place. Open it and you'll find the drums and backing track available in the mixer.
+
 ## Roadmap
 
 - [ ] Practice mode - selecting measures makes the song loop within them
