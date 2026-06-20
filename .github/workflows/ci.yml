@@ -1,14 +1,10 @@
-name: Test
+name: CI
 
 on: [push, pull_request]
 
 jobs:
-  test:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        os: [macos-latest, windows-latest]
+  ci:
+    runs-on: ubuntu-latest
 
     steps:
       - name: Check out Git repository
@@ -24,9 +20,13 @@ jobs:
         run: corepack enable
 
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --mode=skip-build
 
-      - name: Build and package
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: yarn package
+      - name: Lint
+        run: yarn lint
+
+      - name: Type check
+        run: yarn tsc --noEmit
+
+      - name: Test
+        run: yarn test
