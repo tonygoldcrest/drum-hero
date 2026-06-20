@@ -1,6 +1,6 @@
 name: Test
 
-on: [pull_request]
+on: [push, pull_request]
 
 jobs:
   test:
@@ -14,21 +14,23 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v3
 
-      - name: Install Node.js and NPM
+      - name: Install Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
-          cache: npm
+          node-version: 20
+          cache: yarn
 
-      - name: npm install
-        run: |
-          npm install
+      - name: Enable Corepack
+        run: corepack enable
 
-      - name: npm test
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          npm run package
-          npm run lint
-          npm exec tsc
-          npm test
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Type check
+        run: yarn tsc --noEmit
+
+      - name: Test
+        run: yarn test

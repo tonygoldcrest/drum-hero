@@ -78,12 +78,10 @@ export function useHitDetection(
 
   useEffect(() => {
     if (!selectedDevice) {
-      return;
+      return undefined;
     }
 
-    window.electron.ipcRenderer.sendMessage('listen-midi', selectedDevice.port);
-
-    const off = window.electron.ipcRenderer.on<MidiMessage>(
+    return window.electron.ipcRenderer.on<MidiMessage>(
       'listen-midi',
       ({ type, note, velocity }) => {
         if (type !== MidiMessageType.NoteOn || velocity === 0) {
@@ -178,11 +176,6 @@ export function useHitDetection(
         }
       },
     );
-
-    return () => {
-      off();
-      window.electron.ipcRenderer.sendMessage('stop-listen-midi');
-    };
   }, [selectedDevice]);
 
   return { hitKeys: hitKeysRef, incorrectHitCount: incorrectHitCountRef };

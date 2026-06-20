@@ -24,6 +24,7 @@ export async function downloadSong(
     if (!lastOpenedPath) {
       event.reply('download-song', {
         success: false,
+        md5,
         error: 'No folder selected',
       });
 
@@ -107,12 +108,17 @@ export async function downloadSong(
     appState.store.set(`songs.${md5}`, songData);
     event.reply('download-song', {
       success: true,
+      md5,
       song: {
         ...songData,
         updatedAt: fs.statSync(outputDir).mtime.toISOString(),
       },
     });
   } catch (err) {
-    event.reply('download-song', { success: false, error: String(err) });
+    event.reply('download-song', {
+      success: false,
+      md5,
+      error: String(err),
+    });
   }
 }

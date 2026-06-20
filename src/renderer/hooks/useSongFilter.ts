@@ -5,6 +5,12 @@ import { Mode } from '../components/SongFilter';
 import { type SortState } from '../components/SortButton';
 import { useOnlineSearch } from './useOnlineSearch';
 
+function parseDifficulty(value: string | undefined): number {
+  const parsed = parseInt(value ?? '', 10);
+
+  return Number.isNaN(parsed) ? -1 : parsed;
+}
+
 export function useSongFilter(songList: SongData[]) {
   const [nameFilter, setNameFilter] = useState('');
   const [mode, setMode] = useState<Mode>('local');
@@ -48,8 +54,8 @@ export function useSongFilter(songList: SongData[]) {
         }
 
         case 'difficulty': {
-          const ad = parseInt(a.diff_drums ?? '-1');
-          const bd = parseInt(b.diff_drums ?? '-1');
+          const ad = parseDifficulty(a.diff_drums);
+          const bd = parseDifficulty(b.diff_drums);
 
           return sort.direction === 'asc' ? ad - bd : bd - ad;
         }

@@ -1,6 +1,13 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { App } from 'antd';
 import { SongData } from '../../types';
+
+interface DownloadReply {
+  success: boolean;
+  md5: string;
+  song?: SongData;
+  error?: string;
+}
 
 export function useDownload(
   onlineResults: SongData[],
@@ -8,37 +15,24 @@ export function useDownload(
 ) {
   const { notification } = App.useApp();
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
-  const handleDownload = useCallback(
-    (id: string) => {
-      const song = onlineResults.find((s) => s.id === id);
+  const downloadingRef = useRef<Set<string>>(new Set());
+  const onSongAddedRef = useRef(onSongAdded);
 
-      if (!song || downloadingIds.has(id)) {
-        return;
-      }
+  onSongAddedRef.current = onSongAdded;
 
-      setDownloadingIds((prev) => new Set(prev).add(id));
-      window.electron.ipcRenderer.sendMessage('download-song', {
-        url: song.dir,
-        md5: song.id,
-        name: song.name,
-        artist: song.artist,
-        charter: song.charter,
-      });
-      window.electron.ipcRenderer.once<{
-        success: boolean;
-        song?: SongData;
-        error?: string;
-      }>('download-song', ({ success, song: newSong, error }) => {
-        setDownloadingIds((prev) => {
-          const next = new Set(prev);
+  useEffect(() => {
+    return window.electron.ipcRenderer.on<DownloadReply>(
+      'download-song',
+      ({ success, md5, song: newSong, error }) => {
+        if (!downloadingRef.current.has(md5)) {
+          return;
+        }
 
-          next.delete(id);
-
-          return next;
-        });
+        downloadingRef.current.delete(md5);
+        setDownloadingIds(new Set(downloadingRef.current));
 
         if (success && newSong) {
-          onSongAdded(newSong);
+          onSongAddedRef.current(newSong);
         } else {
           notification.error({
             message: 'Download failed',
@@ -46,9 +40,29 @@ export function useDownload(
             placement: 'bottomRight',
           });
         }
+      },
+    );
+  }, [notification]);
+
+  const handleDownload = useCallback(
+    (id: string) => {
+      const song = onlineResults.find((s) => s.id === id);
+
+      if (!song || downloadingRef.current.has(id)) {
+        return;
+      }
+
+      downloadingRef.current.add(id);
+      setDownloadingIds(new Set(downloadingRef.current));
+      window.electron.ipcRenderer.sendMessage('download-song', {
+        url: song.dir,
+        md5: song.id,
+        name: song.name,
+        artist: song.artist,
+        charter: song.charter,
       });
     },
-    [onlineResults, downloadingIds, onSongAdded, notification],
+    [onlineResults],
   );
 
   return { downloadingIds, handleDownload };

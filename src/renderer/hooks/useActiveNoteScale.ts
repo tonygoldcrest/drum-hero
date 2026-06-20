@@ -18,6 +18,9 @@ export function useActiveNoteScale(
   const prevRef = useRef<ActiveNoteInfo | null>(null);
 
   useEffect(() => {
+    prevRef.current = null;
+  }, [renderData]);
+  useEffect(() => {
     const prev = prevRef.current;
 
     if (!activeNote) {
@@ -40,7 +43,4 @@ export function useActiveNoteScale(
     activeNote.noteHeadEls.forEach((el) => applyTransform(el, 'scale(1.5)'));
     prevRef.current = activeNote;
   }, [activeNote]);
-  useEffect(() => {
-    prevRef.current = null;
-  }, [renderData]);
 }

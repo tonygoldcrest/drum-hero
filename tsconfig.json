@@ -14,5 +14,6 @@
     "skipLibCheck": true,
     "outDir": "out"
   },
+  "include": ["src", "assets/assets.d.ts"],
   "exclude": ["test", "release/build", "out", ".erb/dll"]
 }

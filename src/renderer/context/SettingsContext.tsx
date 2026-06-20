@@ -146,6 +146,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     );
   }, [setSelectedDevice]);
 
+  useEffect(() => {
+    if (!selectedDevice) {
+      return undefined;
+    }
+
+    window.electron.ipcRenderer.sendMessage('listen-midi', selectedDevice.port);
+
+    return () => {
+      window.electron.ipcRenderer.sendMessage('stop-listen-midi');
+    };
+  }, [selectedDevice]);
+
   return (
     <SettingsContext.Provider
       value={{

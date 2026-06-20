@@ -41,6 +41,14 @@ export function useProgressColoring(
   );
 
   useEffect(() => {
+    decolorizedElsRef.current.forEach((el) => {
+      (el as SVGGraphicsElement).style.fill = '';
+    });
+    decolorizedElsRef.current.clear();
+    prevKeyRef.current = null;
+    prevPosRef.current = null;
+  }, [renderData]);
+  useEffect(() => {
     if (activeNote?.key === prevKeyRef.current) {
       return;
     }
@@ -125,12 +133,4 @@ export function useProgressColoring(
     prevKeyRef.current = activeNote.key;
     prevPosRef.current = { measureIdx, noteIdx };
   }, [activeNote, playheadStyle, renderData, enabled, hitKeys]);
-  useEffect(() => {
-    decolorizedElsRef.current.forEach((el) => {
-      (el as SVGGraphicsElement).style.fill = '';
-    });
-    decolorizedElsRef.current.clear();
-    prevKeyRef.current = null;
-    prevPosRef.current = null;
-  }, [renderData]);
 }

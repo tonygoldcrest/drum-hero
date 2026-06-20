@@ -107,8 +107,6 @@ export function MidiConfigModal({ isOpen, onClose }: Props) {
       return;
     }
 
-    window.electron.ipcRenderer.sendMessage('listen-midi', selectedDevice.port);
-
     return window.electron.ipcRenderer.on<MidiMessage>(
       'listen-midi',
       ({ note, type }) => {
@@ -127,7 +125,6 @@ export function MidiConfigModal({ isOpen, onClose }: Props) {
       backdropRef.current?.showPopover();
     } else {
       backdropRef.current?.hidePopover();
-      window.electron.ipcRenderer.sendMessage('stop-listen-midi');
       setListeningTo(undefined);
     }
   }, [isOpen]);
