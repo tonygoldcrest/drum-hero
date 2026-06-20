@@ -33,6 +33,7 @@ export function SongListView() {
     setSort,
     filteredSongList,
     onlineResults,
+    onlineTotal,
     onlineLoading,
     loadMore,
   } = useSongFilter(songList);
@@ -51,7 +52,11 @@ export function SongListView() {
           <SongFilter
             nameFilter={nameFilter}
             onChangeFilter={setNameFilter}
-            filteredSongsCount={filteredSongList.length}
+            filteredSongsCount={
+              mode === 'online' && onlineTotal !== undefined
+                ? onlineTotal
+                : filteredSongList.length
+            }
             mode={mode}
             onChangeMode={setMode}
           />

@@ -14,6 +14,7 @@ export function useSongFilter(songList: SongData[]) {
   });
   const {
     results: onlineResults,
+    total: onlineTotal,
     loading: onlineLoading,
     loadMore,
   } = useOnlineSearch(mode === 'online', nameFilter);
@@ -68,6 +69,7 @@ export function useSongFilter(songList: SongData[]) {
     setSort,
     filteredSongList,
     onlineResults,
+    onlineTotal,
     onlineLoading,
     loadMore,
   };

@@ -1,10 +1,12 @@
 import { useCallback, useState } from 'react';
+import { App } from 'antd';
 import { SongData } from '../../types';
 
 export function useDownload(
   onlineResults: SongData[],
   onSongAdded: (song: SongData) => void,
 ) {
+  const { notification } = App.useApp();
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
   const handleDownload = useCallback(
     (id: string) => {
@@ -38,11 +40,15 @@ export function useDownload(
         if (success && newSong) {
           onSongAdded(newSong);
         } else {
-          console.error('Download failed:', error);
+          notification.error({
+            message: 'Download failed',
+            description: error,
+            placement: 'bottomRight',
+          });
         }
       });
     },
-    [onlineResults, downloadingIds, onSongAdded],
+    [onlineResults, downloadingIds, onSongAdded, notification],
   );
 
   return { downloadingIds, handleDownload };

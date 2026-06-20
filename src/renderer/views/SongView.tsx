@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Button, Layout } from 'antd';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { App, Button, Layout } from 'antd';
 import { Content } from 'antd/es/layout/layout';
 import { useNavigate, useParams } from 'react-router-dom';
 import { SheetMusic } from '../components/SheetMusic/SheetMusic';
@@ -20,6 +20,7 @@ import { useAudioPlayer } from '../hooks/useAudioPlayer';
 import { useVolumeControls } from '../hooks/useVolumeControls';
 
 export function SongView() {
+  const { notification } = App.useApp();
   const { playheadStyle, enableColors, showBarNumbers, progressColoring } =
     useSettings();
   const [difficulty, setDifficulty] = useState<Difficulty>('expert');
@@ -68,21 +69,42 @@ export function SongView() {
   const activeDifficulty: Difficulty = difficulties.includes(difficulty)
     ? difficulty
     : last(difficulties) ?? 'expert';
-  const parsedMidi = useMemo(() => {
+  const [parsedMidi, setParsedMidi] = useState<ChartParser | null>(null);
+  const lastParseKeyRef = useRef<string>('');
+
+  useEffect(() => {
     if (!songData || !chart) {
-      return null;
+      setParsedMidi(null);
+
+      return;
     }
 
+    const key = `${activeDifficulty}:${songData.id}`;
+
+    if (key === lastParseKeyRef.current) {
+      return;
+    }
+
+    lastParseKeyRef.current = key;
+
     try {
-      return new ChartParser(
-        chart,
-        songData.five_lane_drums === 'True',
-        activeDifficulty,
+      setParsedMidi(
+        new ChartParser(
+          chart,
+          songData.five_lane_drums === 'True',
+          activeDifficulty,
+        ),
       );
     } catch {
-      return null;
+      setParsedMidi(null);
+      notification.error({
+        message: 'Chart parse failed',
+        description:
+          "This song's chart could not be parsed and cannot be displayed.",
+        placement: 'bottomRight',
+      });
     }
-  }, [chart, songData, activeDifficulty]);
+  }, [chart, songData, activeDifficulty, notification]);
 
   return (
     <Layout className="h-full pointer-events-auto">
