@@ -2,7 +2,7 @@
 
 A drum sightreading game with sheet music and thousands of songs.
 
-[DOWNLOAD](https://github.com/tonygoldcrest/sightkick/releases)
+[Website](https://sightkick.dev) · [Download](https://github.com/tonygoldcrest/sightkick/releases)
 
 ## Requirements
 
