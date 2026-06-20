@@ -155,7 +155,7 @@ export function SettingsButton({
             setMidiConfigOpen(true);
           }}
         >
-          Setup E-Drums
+          Setup E-kit
         </Button>
 
         {page === 'song-view' && difficulties && difficulties.length > 0 ? (

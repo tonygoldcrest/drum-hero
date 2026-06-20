@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   main: {
+    // @ts-expect-error — watch is valid at runtime but missing from BuildEnvironmentOptions in Vite 6 types
     build: { externalizeDeps: true, watch: {} },
   },
   preload: {

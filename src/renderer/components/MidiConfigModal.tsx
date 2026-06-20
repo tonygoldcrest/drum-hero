@@ -11,7 +11,6 @@ import { cn } from '../cn';
 import themedark from '../theme';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
-import { uniq } from 'es-toolkit';
 
 type Props = {
   isOpen: boolean;
@@ -34,17 +33,20 @@ const KIT_ELEMENTS: {
 ];
 
 export function MidiConfigModal({ isOpen, onClose }: Props) {
-  const { setSelectedDevice, selectedDevice, midiMapping, setMidiMapping } =
-    useSettings();
+  const {
+    setSelectedDevice,
+    selectedDevice,
+    midiMapping,
+    assignNote,
+    removeNote,
+  } = useSettings();
   const backdropRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const [midiDevices, setMidiDevices] = useState<MidiDevice[]>([]);
   const [listeningTo, setListeningTo] = useState<keyof MidiMapping>();
   const listeningToRef = useRef(listeningTo);
-  const midiMappingRef = useRef(midiMapping);
 
   listeningToRef.current = listeningTo;
-  midiMappingRef.current = midiMapping;
 
   useEffect(() => {
     if (!isOpen) {
@@ -72,22 +74,12 @@ export function MidiConfigModal({ isOpen, onClose }: Props) {
         const listening = listeningToRef.current;
 
         if (type === MidiMessageType.NoteOn && listening) {
-          const current = midiMappingRef.current;
-          const updated = Object.fromEntries(
-            (Object.keys(current) as (keyof MidiMapping)[]).map((key) => [
-              key,
-              key === listening
-                ? uniq([...(current[key] ?? []), note])
-                : (current[key] ?? []).filter((n) => n !== note),
-            ]),
-          ) as MidiMapping;
-
-          setMidiMapping(updated);
+          assignNote(listening, note);
           setListeningTo(undefined);
         }
       },
     );
-  }, [setMidiMapping, selectedDevice, isOpen]);
+  }, [assignNote, selectedDevice, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -127,7 +119,7 @@ export function MidiConfigModal({ isOpen, onClose }: Props) {
           className="text-text-body font-semibold text-xl p-4 rounded-t-xl"
           style={{ background: 'var(--gradient-header)' }}
         >
-          Configure E-Drums
+          Configure E-kit
         </div>
         <Divider />
         <div className="flex flex-col gap-3 p-4">
@@ -187,15 +179,7 @@ export function MidiConfigModal({ isOpen, onClose }: Props) {
                         {note}
                         <button
                           className="text-accent border-0 cursor-pointer px-0.5 hover:text-accent-text focus-visible:outline-accent-hover focus-visible:outline-1 rounded-xs"
-                          onClick={() => {
-                            const prev =
-                              midiMappingRef.current[element.value] ?? [];
-
-                            setMidiMapping({
-                              ...midiMappingRef.current,
-                              [element.value]: prev.filter((n) => n !== note),
-                            });
-                          }}
+                          onClick={() => removeNote(element.value, note)}
                         >
                           <FontAwesomeIcon icon={faXmark} size="xs" />
                         </button>

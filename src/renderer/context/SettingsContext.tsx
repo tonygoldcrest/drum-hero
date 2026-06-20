@@ -2,9 +2,11 @@ import {
   createContext,
   useContext,
   useState,
+  useCallback,
   ReactNode,
   useEffect,
 } from 'react';
+import { uniq } from 'es-toolkit';
 import { MidiMapping, MidiDevice } from '../../types';
 import { PlayheadStyle, PLAYHEAD_STYLES } from '../types';
 
@@ -22,8 +24,21 @@ interface SettingsContextValue {
   selectedDevice: MidiDevice | null;
   setSelectedDevice: (d: MidiDevice | null) => void;
   midiMapping: MidiMapping;
-  setMidiMapping: (m: MidiMapping) => void;
+  assignNote: (element: keyof MidiMapping, note: number) => void;
+  removeNote: (element: keyof MidiMapping, note: number) => void;
 }
+
+const EMPTY_MIDI_MAPPING: MidiMapping = {
+  hihat: [],
+  ride: [],
+  crash: [],
+  kick: [],
+  snare: [],
+  tom1: [],
+  tom2: [],
+  tom3: [],
+};
+const KIT_ELEMENTS = Object.keys(EMPTY_MIDI_MAPPING) as (keyof MidiMapping)[];
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -69,9 +84,53 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     'settings.selectedDevice',
     null,
   );
-  const [midiMapping, setMidiMapping] = usePersisted<MidiMapping>(
-    'settings.midiMapping',
-    {},
+  const [midiMappings, setMidiMappings] = usePersisted<
+    Record<string, MidiMapping>
+  >('settings.midiMappings', {});
+  const midiMapping: MidiMapping = {
+    ...EMPTY_MIDI_MAPPING,
+    ...(selectedDevice ? midiMappings[selectedDevice.name] : undefined),
+  };
+  const updateMapping = useCallback(
+    (update: (current: MidiMapping) => MidiMapping) => {
+      if (!selectedDevice) {
+        return;
+      }
+
+      setMidiMappings((prev) => ({
+        ...prev,
+        [selectedDevice.name]: update({
+          ...EMPTY_MIDI_MAPPING,
+          ...prev[selectedDevice.name],
+        }),
+      }));
+    },
+    [selectedDevice, setMidiMappings],
+  );
+  const assignNote = useCallback(
+    (element: keyof MidiMapping, note: number) => {
+      updateMapping(
+        (current) =>
+          Object.fromEntries(
+            KIT_ELEMENTS.map((key) => [
+              key,
+              key === element
+                ? uniq([...(current[key] ?? []), note])
+                : (current[key] ?? []).filter((n) => n !== note),
+            ]),
+          ) as MidiMapping,
+      );
+    },
+    [updateMapping],
+  );
+  const removeNote = useCallback(
+    (element: keyof MidiMapping, note: number) => {
+      updateMapping((current) => ({
+        ...current,
+        [element]: (current[element] ?? []).filter((n) => n !== note),
+      }));
+    },
+    [updateMapping],
   );
 
   useEffect(() => {
@@ -103,7 +162,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         selectedDevice,
         setSelectedDevice,
         midiMapping,
-        setMidiMapping,
+        assignNote,
+        removeNote,
       }}
     >
       {children}

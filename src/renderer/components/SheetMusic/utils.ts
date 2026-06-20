@@ -2,7 +2,7 @@ import { clamp } from 'es-toolkit';
 import { ParsedChart, RenderData } from '../../../chart-parser/types';
 import { StaveNote } from 'vexflow';
 
-export const HIT_NOTE_COLOR = '#2f8f5b';
+export const HIT_NOTE_COLOR = '#00000000';
 
 export const MISSED_NOTE_COLOR = '#a09890';
 
