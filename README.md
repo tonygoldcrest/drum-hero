@@ -7,7 +7,7 @@ A drum sightreading game with sheet music and thousands of songs.
 ## Requirements
 
 * **macOS** or **Windows** (x64).
-* Optional drum-track separation needs the stem splitter tool (~130 MB, one-time download from within the app; Apple Silicon and Windows only, see [step 4](#4-separate-the-drum-track-from-a-mixed-recording)).
+* Optional drum-track separation needs the [stem splitter tool](https://github.com/tonygoldcrest/sightkick-tools) (~130 MB, one-time download from within the app; Apple Silicon and Windows only, see [step 4](#4-separate-the-drum-track-from-a-mixed-recording)).
 
 ## Why?
 
