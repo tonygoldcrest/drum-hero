@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SightKick - Drum Sheet Music &amp; Sightreading</title>
+  <meta name="description" content="A drum sightreading app that shows real sheet music for thousands of songs. Free for macOS and Windows.">
+  <meta property="og:title" content="SightKick - Drum Sheet Music &amp; Sightreading">
+  <meta property="og:description" content="A drum sightreading app that shows real sheet music for thousands of songs.">
+  <meta property="og:image" content="https://github.com/user-attachments/assets/60512f29-2b0c-433f-9a25-459af5bff090">
+  <link rel="icon" href="https://github.com/user-attachments/assets/e7b4df52-573e-4ac1-af78-83c425ac0301">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:              #141517;
+      --surface:         #1c1d20;
+      --surface-raised:  #232428;
+      --surface-sunken:  #0e0f11;
+
+      --border:          rgba(255,255,255,0.07);
+      --border-soft:     rgba(255,255,255,0.04);
+      --divider:         rgba(255,255,255,0.05);
+
+      --text:            #f2ede1;
+      --text-body:       #e6e0d3;
+      --text-muted:      #9c9484;
+      --text-faint:      #8a8474;
+      --text-dim:        #615c50;
+
+      --accent:          #ff5a3c;
+      --accent-hover:    #ff6a4d;
+      --accent-deep:     #ec4527;
+      --accent-text:     #ff7a5f;
+      --accent-soft-bg:  rgba(255,90,60,0.08);
+      --accent-soft-brd: rgba(255,90,60,0.22);
+
+      --font-display: 'Newsreader', Georgia, serif;
+      --font-ui:      'Space Grotesk', system-ui, sans-serif;
+
+      --shadow-frame:  0 40px 90px -30px rgba(40,30,10,0.55), 0 0 0 1px rgba(255,255,255,0.04);
+      --shadow-accent: 0 12px 32px -6px rgba(255,90,60,0.6), inset 0 1px 0 rgba(255,255,255,0.25);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 48px;
+      height: 58px;
+      background: rgba(20,21,23,0.75);
+      backdrop-filter: blur(14px) saturate(1.4);
+      -webkit-backdrop-filter: blur(14px) saturate(1.4);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .nav-brand img {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+    }
+
+    .nav-brand-name {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin-top: 5px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 8px;
+      transition: color 0.14s, background 0.14s;
+    }
+
+    .nav-link:hover {
+      color: var(--text);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--accent);
+      color: #fff;
+      text-decoration: none;
+      padding: 8px 18px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-left: 8px;
+      box-shadow: 0 4px 16px rgba(255,90,60,0.35);
+      transition: background 0.14s, box-shadow 0.14s;
+    }
+
+    .nav-cta:hover {
+      background: var(--accent-hover);
+      box-shadow: 0 6px 22px rgba(255,90,60,0.55);
+    }
+
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 90px 40px 60px;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .hero-glow-top {
+      position: absolute;
+      top: -120px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 600px;
+      background: radial-gradient(ellipse at 50% 20%, rgba(255,90,60,0.13) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.022) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+      mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, black 30%, transparent 80%);
+      -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, black 30%, transparent 80%);
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 780px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--accent-soft-bg);
+      border: 1px solid var(--accent-soft-brd);
+      color: var(--accent-text);
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 600;
+      letter-spacing: 0.045em;
+      text-transform: uppercase;
+      margin-bottom: 30px;
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(46px, 7.5vw, 88px);
+      font-weight: 600;
+      line-height: 1.02;
+      letter-spacing: -0.035em;
+      color: var(--text);
+      margin-bottom: 22px;
+    }
+
+    .hero-title em {
+      font-style: italic;
+      color: var(--accent-text);
+    }
+
+    .hero-sub {
+      font-size: clamp(16px, 2vw, 19px);
+      color: var(--text-muted);
+      line-height: 1.7;
+      max-width: 560px;
+      margin: 0 auto 44px;
+      font-weight: 400;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 72px;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      background: linear-gradient(145deg, #ff6a4d, #e83f22);
+      color: #fff;
+      text-decoration: none;
+      padding: 14px 28px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 600;
+      box-shadow: var(--shadow-accent);
+      transition: transform 0.14s, box-shadow 0.14s;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 44px -8px rgba(255,90,60,0.7), inset 0 1px 0 rgba(255,255,255,0.25);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      background: var(--surface-raised);
+      color: var(--text);
+      text-decoration: none;
+      padding: 14px 28px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      transition: background 0.14s, border-color 0.14s, transform 0.14s;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(255,255,255,0.13);
+      transform: translateY(-2px);
+    }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 14px 16px;
+      font-size: 14.5px;
+      font-weight: 500;
+      transition: color 0.14s;
+    }
+
+    .btn-ghost:hover { color: var(--text); }
+
+    .hero-screenshot {
+      position: relative;
+      z-index: 1;
+      max-width: 1040px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .hero-screenshot::before {
+      content: '';
+      position: absolute;
+      inset: -60px;
+      background: radial-gradient(ellipse at 50% 50%, rgba(255,90,60,0.07), transparent 70%);
+      pointer-events: none;
+      border-radius: 50%;
+    }
+
+    .hero-screenshot img {
+      width: 100%;
+      border-radius: 14px;
+      box-shadow: var(--shadow-frame);
+      border: 1px solid rgba(255,255,255,0.06);
+      display: block;
+    }
+
+    .feat-body a, .step-body a {
+      color: var(--accent-text);
+      text-decoration: none;
+      transition: color 0.14s;
+    }
+    .feat-body a:hover, .step-body a:hover { color: var(--text); }
+
+    .section-eyebrow {
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-text);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(30px, 4vw, 50px);
+      font-weight: 600;
+      letter-spacing: -0.028em;
+      line-height: 1.08;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+
+    .section-body {
+      font-size: 17px;
+      color: var(--text-muted);
+      line-height: 1.72;
+    }
+
+    .features {
+      padding: 110px 40px;
+      border-top: 1px solid var(--divider);
+    }
+
+    .features-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    .features-header {
+      max-width: 560px;
+      margin-bottom: 52px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .feat {
+      background: var(--surface);
+      padding: 36px 30px;
+      transition: background 0.16s;
+    }
+
+    .feat:hover { background: var(--surface-raised); }
+
+    .feat-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .feat-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--accent-soft-bg);
+      border: 1px solid var(--accent-soft-brd);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .feat-icon svg { width: 18px; height: 18px; }
+
+    .feat-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .feat-body {
+      font-size: 16px;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    /* ─── WORKFLOW ─── */
+    .workflow {
+      padding: 110px 40px;
+      border-top: 1px solid var(--divider);
+    }
+
+    .workflow-inner { max-width: 1120px; margin: 0 auto; }
+
+    .workflow-header {
+      text-align: center;
+      margin-bottom: 88px;
+    }
+
+    .workflow-header .section-body {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .steps { display: flex; flex-direction: column; gap: 110px; }
+
+    .step {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+
+    .step:nth-child(even) .step-image { order: -1; }
+
+    .step-num-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .step-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: var(--accent-soft-bg);
+      border: 1px solid var(--accent-soft-brd);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .step-tag {
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .step-title {
+      font-family: var(--font-display);
+      font-size: clamp(22px, 2.8vw, 34px);
+      font-weight: 600;
+      letter-spacing: -0.022em;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+
+    .step-body {
+      font-size: 15.5px;
+      color: var(--text-muted);
+      line-height: 1.72;
+    }
+
+    .step-image img {
+      width: 100%;
+      border-radius: 12px;
+      box-shadow: var(--shadow-frame);
+      border: 1px solid rgba(255,255,255,0.05);
+      display: block;
+    }
+
+    /* ─── COLOR LEGEND ─── */
+    .legend {
+      padding: 80px 40px;
+      border-top: 1px solid var(--divider);
+    }
+
+    .legend-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+
+    .legend-chips {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .chip-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .chip-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .chip-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .chip-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* ─── DOWNLOAD ─── */
+    .download {
+      padding: 110px 40px 100px;
+      border-top: 1px solid var(--divider);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .download::before {
+      content: '';
+      position: absolute;
+      bottom: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 500px;
+      background: radial-gradient(ellipse at 50% 100%, rgba(255,90,60,0.08), transparent 65%);
+      pointer-events: none;
+    }
+
+    .download-inner {
+      position: relative;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .download-title {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 5.5vw, 62px);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.06;
+      margin-bottom: 16px;
+    }
+
+    .download-sub {
+      font-size: 17px;
+      color: var(--text-muted);
+      margin-bottom: 44px;
+      line-height: 1.6;
+    }
+
+    .platform-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .platform-btn {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      color: var(--text);
+      text-decoration: none;
+      padding: 16px 28px;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      transition: background 0.14s, border-color 0.14s, transform 0.14s;
+      min-width: 190px;
+    }
+
+    .platform-btn:hover {
+      background: rgba(255,255,255,0.065);
+      border-color: rgba(255,255,255,0.12);
+      transform: translateY(-2px);
+    }
+
+    .platform-btn svg { color: var(--text-muted); flex-shrink: 0; }
+
+    .platform-btn-info { text-align: left; }
+
+    .platform-btn-sub {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--text-muted);
+      display: block;
+      margin-top: 1px;
+    }
+
+    .download-note {
+      margin-top: 26px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .download-note a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.14s;
+    }
+
+    .download-note a:hover { color: var(--accent-text); }
+
+    /* ─── FOOTER ─── */
+    footer {
+      border-top: 1px solid var(--divider);
+      padding: 28px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .footer-brand img {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      opacity: 0.55;
+    }
+
+    .footer-name {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+
+    .footer-copy {
+      font-size: 12.5px;
+      color: var(--text-dim);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .footer-link {
+      font-size: 13px;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.14s;
+    }
+
+    .footer-link:hover { color: var(--text-muted); }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 900px) {
+      nav { padding: 0 24px; }
+      .nav-link { display: none; }
+      .hero { padding: 70px 24px 50px; }
+      .features { padding: 70px 24px; }
+      .features-grid { grid-template-columns: 1fr; }
+      .workflow { padding: 70px 24px; }
+      .steps { gap: 64px; }
+      .step { grid-template-columns: 1fr; gap: 28px; }
+      .step:nth-child(even) .step-image { order: 0; }
+      .legend { padding: 60px 24px; }
+      .legend-inner { grid-template-columns: 1fr; gap: 40px; }
+      .download { padding: 70px 24px 80px; }
+      footer { padding: 24px; flex-direction: column; align-items: flex-start; gap: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-brand">
+    <img src="https://github.com/user-attachments/assets/e7b4df52-573e-4ac1-af78-83c425ac0301" alt="SightKick">
+    <span class="nav-brand-name">SightKick</span>
+  </a>
+  <div class="nav-links">
+    <a href="#features" class="nav-link">Features</a>
+    <a href="#workflow" class="nav-link">How it works</a>
+    <a href="https://github.com/tonygoldcrest/sightkick" class="nav-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px;margin-right:3px"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      GitHub
+    </a>
+    <a href="https://github.com/tonygoldcrest/sightkick/releases" class="nav-cta">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download
+    </a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-glow-top"></div>
+  <div class="hero-grid"></div>
+
+  <div class="hero-content">
+    <div class="badge">
+      <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><circle cx="4" cy="4" r="4"/></svg>
+      Free &amp; open source
+    </div>
+    <h1 class="hero-title">
+      Drum sightreading game
+    </h1>
+    <p class="hero-sub">
+      Thousands of songs turned into real drum notation, with the recorded drums ready to mute so you can play your own.
+    </p>
+    <div class="hero-actions">
+      <a id="hero-btn-mac" href="https://github.com/tonygoldcrest/sightkick/releases/download/v0.7.0/DrumHero-0.7.0-arm64.dmg" class="btn-primary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download for macOS
+      </a>
+      <a id="hero-btn-win" href="https://github.com/tonygoldcrest/sightkick/releases/download/v0.7.0/DrumHero.Setup.0.7.0.exe" class="btn-secondary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download for Windows
+      </a>
+      <a href="https://github.com/tonygoldcrest/sightkick" class="btn-ghost">
+        View source →
+      </a>
+    </div>
+  </div>
+
+  <div class="hero-screenshot">
+    <img
+      src="https://github.com/user-attachments/assets/60512f29-2b0c-433f-9a25-459af5bff090"
+      alt="SightKick sheet music view"
+      loading="eager"
+    >
+  </div>
+</section>
+
+<section class="features" id="features">
+  <div class="features-inner">
+    <div class="features-header">
+      <h2 class="section-title">What SightKick does</h2>
+    </div>
+    <div class="features-grid">
+
+      <div class="feat">
+        <div class="feat-header">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </div>
+          <div class="feat-title">Real sheet music</div>
+        </div>
+        <div class="feat-body">Every song is shown as standard drum notation, the same as a printed chart, so playing along is real sight-reading practice.</div>
+      </div>
+
+      <div class="feat">
+        <div class="feat-header">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <div class="feat-title">Thousands of songs</div>
+        </div>
+        <div class="feat-body">Search and download straight from the <a href="https://www.enchor.us/" target="_blank" rel="noopener">Enchor</a> community library, all with drum charts. The charts aren't always perfect, but they're usually close enough.</div>
+      </div>
+
+      <div class="feat">
+        <div class="feat-header">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
+          <div class="feat-title">Multi-stem mixer</div>
+        </div>
+        <div class="feat-body">When a song comes with separate tracks, set the level of each one (drums, bass, guitar, vocals) and mute the recorded drums to play along.</div>
+      </div>
+
+      <div class="feat">
+        <div class="feat-header">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </div>
+          <div class="feat-title">Drum-track separation</div>
+        </div>
+        <div class="feat-body">When a song is one mixed file, SightKick can split the recorded drums out into their own track so you can mute them. Apple Silicon and Windows.</div>
+      </div>
+
+      <div class="feat">
+        <div class="feat-header">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </div>
+          <div class="feat-title">Every difficulty</div>
+        </div>
+        <div class="feat-body">If a song has more than one drum chart, switch between difficulties from the side menu.</div>
+      </div>
+
+      <div class="feat">
+        <div class="feat-header">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+          <div class="feat-title">Playhead your way</div>
+        </div>
+        <div class="feat-body">Follow the song with a moving cursor, highlight just the current measure, or turn the playhead off. Click any measure to jump straight to it.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="workflow" id="workflow">
+  <div class="workflow-inner">
+
+    <div class="workflow-header">
+      <h2 class="section-title">How to start playing</h2>
+    </div>
+
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-text">
+          <div class="step-num-row">
+            <span class="step-num">1</span>
+            <span class="step-tag">Setup</span>
+          </div>
+          <h3 class="step-title">Set up your song library</h3>
+          <p class="step-body">Point SightKick at a local folder of songs. Don't have one yet? Download songs from inside the app, or grab them from <a href="https://www.enchor.us/" target="_blank" rel="noopener">Enchor</a> by hand and drop them in.</p>
+        </div>
+        <div class="step-image">
+          <img src="https://github.com/user-attachments/assets/6d5529a5-1b78-4519-9f54-1f6fb9dc5979" alt="Song library setup" loading="lazy">
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-text">
+          <div class="step-num-row">
+            <span class="step-num">2</span>
+            <span class="step-tag">Browse</span>
+          </div>
+          <h3 class="step-title">Search for a song you want to play</h3>
+          <p class="step-body">Look through your local library, or press the globe icon to switch to online search and pull songs from <a href="https://www.enchor.us/" target="_blank" rel="noopener">Enchor</a> straight into your folder. Favorite the ones you keep coming back to.</p>
+        </div>
+        <div class="step-image">
+          <img src="https://github.com/user-attachments/assets/884d0730-ca84-42cc-a35b-5622793b35ae" alt="Song search" loading="lazy">
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-text">
+          <div class="step-num-row">
+            <span class="step-num">3</span>
+            <span class="step-tag">Play</span>
+          </div>
+          <h3 class="step-title">Press play and jam along</h3>
+          <p class="step-body">The drum part renders as sheet music with a playhead that follows the song. Mute the recorded drums in the mixer and play over the top, click any measure to jump to it, and watch notes dim once they've gone by.</p>
+        </div>
+        <div class="step-image">
+          <img src="https://github.com/user-attachments/assets/60512f29-2b0c-433f-9a25-459af5bff090" alt="Sheet music playback" loading="lazy">
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-text">
+          <div class="step-num-row">
+            <span class="step-num">4</span>
+            <span class="step-tag">Isolate</span>
+          </div>
+          <h3 class="step-title">Separate the drum track from a mixed recording</h3>
+          <p class="step-body">A lot of songs come as one mixed file. Download the stem splitter once (about 130 MB, Apple Silicon or Windows), then split any single-track song from its ⋮ menu. When it finishes, the drums and backing track are waiting in the mixer.</p>
+        </div>
+        <div class="step-image">
+          <img src="https://github.com/user-attachments/assets/486f15d9-b735-464f-a94f-7cf1dddbafbe" alt="Stem splitting" loading="lazy">
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="legend">
+  <div class="legend-inner">
+    <div>
+      <h2 class="section-title">Colored by kit piece</h2>
+      <p class="section-body" style="max-width:420px">Each note is colored by the part of the kit it belongs to, which makes passages easier to read. Within a color, a filled notehead is a drum hit and an × is a cymbal. On by default; turn it off in Settings.</p>
+    </div>
+    <div class="legend-chips">
+      <div class="chip-row">
+        <div class="chip-dot" style="background:#e0651c"></div>
+        <span class="chip-label">Kick (bass drum)</span>
+        <span class="chip-sub">Orange</span>
+      </div>
+      <div class="chip-row">
+        <div class="chip-dot" style="background:#cf3b2e"></div>
+        <span class="chip-label">Snare</span>
+        <span class="chip-sub">Red</span>
+      </div>
+      <div class="chip-row">
+        <div class="chip-dot" style="background:#c79019"></div>
+        <span class="chip-label">High tom / Hi-hat</span>
+        <span class="chip-sub">Yellow</span>
+      </div>
+      <div class="chip-row">
+        <div class="chip-dot" style="background:#1f6fb2"></div>
+        <span class="chip-label">Mid tom / Ride</span>
+        <span class="chip-sub">Blue</span>
+      </div>
+      <div class="chip-row">
+        <div class="chip-dot" style="background:#2f8f5b"></div>
+        <span class="chip-label">Floor tom / Crash</span>
+        <span class="chip-sub">Green</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="download" id="download">
+  <div class="download-inner">
+    <h2 class="download-title">Download SightKick</h2>
+    <p class="download-sub">Free and open source, no account needed.<br>Works on macOS and Windows.</p>
+    <div class="platform-buttons">
+
+      <a id="dl-mac-arm" href="https://github.com/tonygoldcrest/sightkick/releases" class="platform-btn">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.73M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+        </svg>
+        <div class="platform-btn-info">
+          macOS
+          <span class="platform-btn-sub">Apple Silicon</span>
+        </div>
+      </a>
+
+      <a id="dl-mac-x64" href="https://github.com/tonygoldcrest/sightkick/releases" class="platform-btn">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.73M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+        </svg>
+        <div class="platform-btn-info">
+          macOS
+          <span class="platform-btn-sub">Intel</span>
+        </div>
+      </a>
+
+      <a id="dl-win" href="https://github.com/tonygoldcrest/sightkick/releases" class="platform-btn">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 5.557l7.357-1.002.004 7.097-7.354.042L3 5.557zm7.354 6.913l.006 7.107-7.354-1.012v-6.136l7.348.041zm.892-8.046L21.001 3v8.562l-9.755.077V4.424zm9.758 8.113l-.003 8.523-9.755-1.378-.014-7.161 9.772.016z"/>
+        </svg>
+        <div class="platform-btn-info">
+          Windows
+          <span class="platform-btn-sub">x64</span>
+        </div>
+      </a>
+
+    </div>
+    <p class="download-note">
+      All releases at <a href="https://github.com/tonygoldcrest/sightkick/releases">github.com/tonygoldcrest/sightkick/releases</a>
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-brand">
+    <img src="https://github.com/user-attachments/assets/e7b4df52-573e-4ac1-af78-83c425ac0301" alt="">
+    <span class="footer-name">SightKick</span>
+    <span class="footer-copy">MIT License, Anton Korolkov</span>
+  </div>
+  <div class="footer-links">
+    <a href="https://github.com/tonygoldcrest/sightkick" class="footer-link">GitHub</a>
+    <a href="https://github.com/tonygoldcrest/sightkick/releases" class="footer-link">Releases</a>
+    <a href="https://www.enchor.us/" class="footer-link">Enchor</a>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var RELEASES = 'https://github.com/tonygoldcrest/sightkick/releases';
+
+    function applyPlatform(macUrl, winUrl) {
+      var isWin = /Win/.test(navigator.platform) || /Windows/.test(navigator.userAgent);
+      var btnMac = document.getElementById('hero-btn-mac');
+      var btnWin = document.getElementById('hero-btn-win');
+      btnMac.href = macUrl;
+      btnWin.href = winUrl;
+      btnMac.className = isWin ? 'btn-secondary' : 'btn-primary';
+      btnWin.className = isWin ? 'btn-primary'   : 'btn-secondary';
+    }
+
+    applyPlatform(RELEASES, RELEASES);
+
+    fetch('https://api.github.com/repos/tonygoldcrest/sightkick/releases/latest')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var assets = data.assets || [];
+
+        function url(test) {
+          var a = assets.find(function (a) { return test(a.name); });
+          return a ? a.browser_download_url : RELEASES;
+        }
+
+        var macArm = url(function (n) { return /arm64\.dmg$/.test(n); });
+        var macX64 = url(function (n) { return /\.dmg$/.test(n) && !/arm64/.test(n) && !/blockmap/.test(n); });
+        var win    = url(function (n) { return /\.exe$/.test(n) && !/blockmap/.test(n); });
+
+        applyPlatform(macArm, win);
+        document.getElementById('dl-mac-arm').href = macArm;
+        document.getElementById('dl-mac-x64').href = macX64;
+        document.getElementById('dl-win').href     = win;
+      })
+      .catch(function () { /* buttons already point to releases page */ });
+  })();
+</script>
+</body>
+</html>
