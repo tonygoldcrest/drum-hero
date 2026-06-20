@@ -1,0 +1,12 @@
+name: DocuCraft
+on:
+  pull_request:
+    types: [opened, synchronize]
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: CreativeCodingSolutions/docucraft@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
