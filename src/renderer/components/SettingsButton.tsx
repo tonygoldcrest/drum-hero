@@ -9,13 +9,19 @@ import {
 import { useLocation } from 'react-router-dom';
 import { Button, Divider, Progress, Switch } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCog, faDownload, faFolder } from '@fortawesome/free-solid-svg-icons';
+import {
+  faCog,
+  faDownload,
+  faDrum,
+  faFolder,
+} from '@fortawesome/free-solid-svg-icons';
 import { PLAYHEAD_STYLES } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import { cn } from '../cn';
 import { usePopoverOutsideClick } from '../hooks/usePopoverOutsideClick';
 import { Difficulty } from 'scan-chart';
 import { StemToolsStatus } from '../../types';
+import { MidiConfigModal } from './MidiConfigModal';
 
 interface Props {
   volumeSliders?: ReactNode[];
@@ -54,6 +60,7 @@ export function SettingsButton({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [midiConfigOpen, setMidiConfigOpen] = useState(false);
   const { pathname } = useLocation();
 
   useEffect(() => {
@@ -90,18 +97,25 @@ export function SettingsButton({
         size="large"
         style={{ anchorName: '--settings-trigger' } as CSSProperties}
       />
+
+      <MidiConfigModal
+        isOpen={midiConfigOpen}
+        onClose={() => {
+          setMidiConfigOpen(false);
+        }}
+      />
+
       <div
         ref={popoverRef}
         popover="manual"
         className={cn(
-          'border border-border p-3 rounded-xl shadow-panel font-ui fixed min-w-90 inset-[unset] m-[unset] gap-3',
+          'border border-border p-3 rounded-xl shadow-panel font-ui fixed min-w-90 inset-[unset] m-[unset] gap-3 bg-bg',
           {
             'flex flex-col ': isPopoverOpen,
           },
         )}
         style={
           {
-            background: 'var(--gradient-header)',
             positionAnchor: '--settings-trigger',
             top: 'calc(anchor(bottom) + 8px)',
             right: 'anchor(right)',
@@ -133,6 +147,16 @@ export function SettingsButton({
             )}
           </>
         )}
+
+        <Button
+          icon={<FontAwesomeIcon icon={faDrum} />}
+          loading={stemToolsLoading}
+          onClick={() => {
+            setMidiConfigOpen(true);
+          }}
+        >
+          Setup E-Drums
+        </Button>
 
         {page === 'song-view' && difficulties && difficulties.length > 0 ? (
           <>

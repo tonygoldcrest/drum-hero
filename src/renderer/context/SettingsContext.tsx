@@ -5,6 +5,7 @@ import {
   ReactNode,
   useEffect,
 } from 'react';
+import { MidiMapping, MidiDevice } from '../../types';
 import { PlayheadStyle, PLAYHEAD_STYLES } from '../types';
 
 interface SettingsContextValue {
@@ -18,6 +19,10 @@ interface SettingsContextValue {
   setProgressColoring: (v: boolean) => void;
   currentPath: string | null;
   setCurrentPath: (p: string | null) => void;
+  selectedDevice: MidiDevice | null;
+  setSelectedDevice: (d: MidiDevice | null) => void;
+  midiMapping: MidiMapping;
+  setMidiMapping: (m: MidiMapping) => void;
 }
 
 function load<T>(key: string, fallback: T): T {
@@ -60,6 +65,27 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     true,
   );
   const [currentPath, setCurrentPath] = useState<string | null>(null);
+  const [selectedDevice, setSelectedDevice] = usePersisted<MidiDevice | null>(
+    'settings.selectedDevice',
+    null,
+  );
+  const [midiMapping, setMidiMapping] = usePersisted<MidiMapping>(
+    'settings.midiMapping',
+    {},
+  );
+
+  useEffect(() => {
+    window.electron.ipcRenderer.sendMessage('midi-device-list');
+
+    window.electron.ipcRenderer.once<MidiDevice[]>(
+      'midi-device-list',
+      (list) => {
+        setSelectedDevice((prev: MidiDevice | null) =>
+          prev && list.some((d) => d.name === prev.name) ? prev : null,
+        );
+      },
+    );
+  }, [setSelectedDevice]);
 
   return (
     <SettingsContext.Provider
@@ -74,6 +100,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setProgressColoring,
         currentPath,
         setCurrentPath,
+        selectedDevice,
+        setSelectedDevice,
+        midiMapping,
+        setMidiMapping,
       }}
     >
       {children}

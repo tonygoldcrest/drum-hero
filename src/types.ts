@@ -76,6 +76,33 @@ export interface IpcSplitSongResponse {
   error?: string;
 }
 
+export interface MidiDevice {
+  port: number;
+  name: string;
+}
+
+export enum MidiMessageType {
+  NoteOn = 144,
+  NoteOff = 128,
+}
+
+export interface MidiMessage {
+  type: MidiMessageType;
+  note: number;
+  velocity: number;
+}
+
+export interface MidiMapping {
+  hihat?: number[];
+  ride?: number[];
+  crash?: number[];
+  kick?: number[];
+  snare?: number[];
+  tom1?: number[];
+  tom2?: number[];
+  tom3?: number[];
+}
+
 export interface IpcLoadSongResponse {
   data: SongData;
   fileData: Buffer;

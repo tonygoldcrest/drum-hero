@@ -16,7 +16,9 @@ export type Channels =
   | 'split-song'
   | 'cancel-split'
   | 'open-song-directory'
-  | 'midi-device-list';
+  | 'midi-device-list'
+  | 'listen-midi'
+  | 'stop-listen-midi';
 
 const electronHandler = {
   ipcRenderer: {

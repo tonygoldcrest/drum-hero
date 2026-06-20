@@ -4,7 +4,7 @@ export function usePopoverOutsideClick(
   isOpen: boolean,
   popoverRef: RefObject<HTMLElement | null>,
   triggerRef: RefObject<HTMLElement | null>,
-  onClose: () => void,
+  onClose: (event: MouseEvent) => void,
 ) {
   useEffect(() => {
     if (!isOpen) {
@@ -18,7 +18,7 @@ export function usePopoverOutsideClick(
         !popoverRef.current?.contains(target) &&
         !triggerRef.current?.contains(target)
       ) {
-        onClose();
+        onClose(e);
       }
     };
 

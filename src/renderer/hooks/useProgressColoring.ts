@@ -1,14 +1,38 @@
 import { useRef, useEffect } from 'react';
 import { RenderData } from '../../chart-parser/types';
-import { getNoteSvg } from '../components/SheetMusic/utils';
+import { StaveNote } from 'vexflow';
+import {
+  HIT_NOTE_COLOR,
+  MISSED_NOTE_COLOR,
+} from '../components/SheetMusic/utils';
 import { PlayheadStyle } from '../types';
 import { ActiveNoteInfo } from './types';
+
+function keyPrefix(key: string): string {
+  const [pitch, octave] = key.split('/');
+
+  return `${pitch}/${octave}`;
+}
+
+function forEachNoteHead(
+  note: StaveNote,
+  cb: (el: SVGElement, keyPrefix: string) => void,
+) {
+  note.getKeys().forEach((key, i) => {
+    const el = note.noteHeads[i]?.getSVGElement();
+
+    if (el) {
+      cb(el, keyPrefix(key));
+    }
+  });
+}
 
 export function useProgressColoring(
   activeNote: ActiveNoteInfo | null,
   playheadStyle: PlayheadStyle,
   renderData: RenderData[],
   enabled: boolean,
+  hitKeys: { current: Set<string> },
 ) {
   const decolorizedElsRef = useRef<Set<SVGElement>>(new Set());
   const prevKeyRef = useRef<string | null>(null);
@@ -21,13 +45,17 @@ export function useProgressColoring(
       return;
     }
 
-    const grey = (el: SVGElement) => {
-      (el as SVGGraphicsElement).style.filter = 'grayscale(1) opacity(0.4)';
+    const colorNote = (el: SVGElement, tick: number, key: string) => {
+      (el as SVGGraphicsElement).style.fill = hitKeys.current.has(
+        `${tick}:${key}`,
+      )
+        ? HIT_NOTE_COLOR
+        : MISSED_NOTE_COLOR;
       decolorizedElsRef.current.add(el);
     };
     const clearAll = () => {
       decolorizedElsRef.current.forEach((el) => {
-        (el as SVGGraphicsElement).style.filter = '';
+        (el as SVGGraphicsElement).style.fill = '';
       });
       decolorizedElsRef.current.clear();
     };
@@ -51,13 +79,15 @@ export function useProgressColoring(
       clearAll();
 
       for (let m = 0; m < measureIdx; m++) {
-        renderData[m]?.renderedNotes.forEach(({ note }) =>
-          getNoteSvg(note).forEach(grey),
+        renderData[m]?.renderedNotes.forEach(({ note, tick }) =>
+          forEachNoteHead(note, (el, key) => colorNote(el, tick, key)),
         );
       }
 
       for (let i = 0; i < noteIdx; i++) {
-        getNoteSvg(curRenderedNotes[i].note).forEach(grey);
+        const { note, tick } = curRenderedNotes[i];
+
+        forEachNoteHead(note, (el, key) => colorNote(el, tick, key));
       }
     } else {
       const fromMeasure = prev?.measureIdx ?? 0;
@@ -65,33 +95,39 @@ export function useProgressColoring(
 
       if (fromMeasure === measureIdx) {
         for (let i = fromNote; i < noteIdx; i++) {
-          getNoteSvg(curRenderedNotes[i].note).forEach(grey);
+          const { note, tick } = curRenderedNotes[i];
+
+          forEachNoteHead(note, (el, key) => colorNote(el, tick, key));
         }
       } else {
         const prevMeasureNotes = renderData[fromMeasure]?.renderedNotes ?? [];
 
         for (let i = fromNote; i < prevMeasureNotes.length; i++) {
-          getNoteSvg(prevMeasureNotes[i].note).forEach(grey);
+          const { note, tick } = prevMeasureNotes[i];
+
+          forEachNoteHead(note, (el, key) => colorNote(el, tick, key));
         }
 
         for (let m = fromMeasure + 1; m < measureIdx; m++) {
-          renderData[m]?.renderedNotes.forEach(({ note }) =>
-            getNoteSvg(note).forEach(grey),
+          renderData[m]?.renderedNotes.forEach(({ note, tick }) =>
+            forEachNoteHead(note, (el, key) => colorNote(el, tick, key)),
           );
         }
 
         for (let i = 0; i < noteIdx; i++) {
-          getNoteSvg(curRenderedNotes[i].note).forEach(grey);
+          const { note, tick } = curRenderedNotes[i];
+
+          forEachNoteHead(note, (el, key) => colorNote(el, tick, key));
         }
       }
     }
 
     prevKeyRef.current = activeNote.key;
     prevPosRef.current = { measureIdx, noteIdx };
-  }, [activeNote, playheadStyle, renderData, enabled]);
+  }, [activeNote, playheadStyle, renderData, enabled, hitKeys]);
   useEffect(() => {
     decolorizedElsRef.current.forEach((el) => {
-      (el as SVGGraphicsElement).style.filter = '';
+      (el as SVGGraphicsElement).style.fill = '';
     });
     decolorizedElsRef.current.clear();
     prevKeyRef.current = null;

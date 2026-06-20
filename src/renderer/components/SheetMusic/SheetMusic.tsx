@@ -12,7 +12,9 @@ import { cn } from '../../cn';
 import { PlayheadStyle } from '../../types';
 import { ActiveNoteInfo } from '../../hooks/types';
 import { useActiveNoteScale } from '../../hooks/useActiveNoteScale';
+import { useHitDetection } from '../../hooks/useHitDetection';
 import { useProgressColoring } from '../../hooks/useProgressColoring';
+import { useSettings } from '../../context/SettingsContext';
 
 export interface SheetMusicProps {
   chart: ParsedChart;
@@ -35,6 +37,7 @@ export function SheetMusic({
   onSelectMeasure,
   playheadStyle,
 }: SheetMusicProps) {
+  const { selectedDevice, midiMapping } = useSettings();
   const vexflowContainerRef = useRef<HTMLDivElement>(null);
   const [renderData, setRenderData] = useState<RenderData[]>([]);
   const [highlightedMeasureIndex, setHighlightedMeasureIndex] =
@@ -50,105 +53,6 @@ export function SheetMusic({
     () => renderData.map(() => createRef<HTMLButtonElement>()),
     [renderData],
   );
-
-  useEffect(() => {
-    if (!vexflowContainerRef.current || !parsedMidi) {
-      return;
-    }
-
-    if (vexflowContainerRef.current.children.length > 0) {
-      vexflowContainerRef.current.removeChild(
-        vexflowContainerRef.current.children[0],
-      );
-    }
-
-    setRenderData(
-      renderMusic(
-        vexflowContainerRef,
-        parsedMidi,
-        showBarNumbers,
-        enableColors,
-      ),
-    );
-  }, [parsedMidi, showBarNumbers, enableColors]);
-  useEffect(() => {
-    if (currentTick === null) {
-      return;
-    }
-
-    const index = renderData.findIndex(
-      ({ measure }) =>
-        currentTick >= measure.startTick && currentTick < measure.endTick,
-    );
-
-    if (index >= 0) {
-      setHighlightedMeasureIndex(index);
-    }
-  }, [currentTick, renderData]);
-  useEffect(() => {
-    if (playheadStyle === 'None' || highlightedMeasureIndex < 0) {
-      return;
-    }
-
-    highlightsRef[highlightedMeasureIndex]?.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center',
-    });
-  }, [highlightsRef, highlightedMeasureIndex, playheadStyle]);
-
-  const activeNoteInfo = useMemo<ActiveNoteInfo | null>(() => {
-    if (
-      playheadStyle === 'None' ||
-      currentTick === null ||
-      highlightedMeasureIndex < 0
-    ) {
-      return null;
-    }
-
-    const measureData = renderData[highlightedMeasureIndex];
-
-    if (!measureData) {
-      return null;
-    }
-
-    const { renderedNotes } = measureData;
-    let noteIdx = -1;
-
-    for (let i = 0; i < renderedNotes.length; i++) {
-      if (renderedNotes[i].tick <= currentTick) {
-        noteIdx = i;
-      } else {
-        break;
-      }
-    }
-
-    if (noteIdx === -1) {
-      return null;
-    }
-
-    const noteSvgs = getNoteSvg(renderedNotes[noteIdx].note);
-
-    if (noteSvgs.length === 0) {
-      return null;
-    }
-
-    return {
-      key: `${highlightedMeasureIndex}-${noteIdx}`,
-      noteHeadEls: noteSvgs,
-      noteIdx,
-      measureIdx: highlightedMeasureIndex,
-      renderedNotes,
-    };
-  }, [playheadStyle, currentTick, renderData, highlightedMeasureIndex]);
-
-  useActiveNoteScale(activeNoteInfo, renderData);
-  useProgressColoring(
-    activeNoteInfo,
-    playheadStyle,
-    renderData,
-    progressColoring,
-  );
-
   const cursorPosition = useMemo(() => {
     if (playheadStyle !== 'Cursor' || !chart || highlightedMeasureIndex < 0) {
       return null;
@@ -199,6 +103,113 @@ export function SheetMusic({
       />
     );
   });
+  const activeNoteInfo = useMemo<ActiveNoteInfo | null>(() => {
+    if (
+      playheadStyle === 'None' ||
+      currentTick === null ||
+      highlightedMeasureIndex < 0
+    ) {
+      return null;
+    }
+
+    const measureData = renderData[highlightedMeasureIndex];
+
+    if (!measureData) {
+      return null;
+    }
+
+    const { renderedNotes } = measureData;
+    let noteIdx = -1;
+
+    for (let i = 0; i < renderedNotes.length; i++) {
+      if (renderedNotes[i].tick <= currentTick) {
+        noteIdx = i;
+      } else {
+        break;
+      }
+    }
+
+    if (noteIdx === -1) {
+      return null;
+    }
+
+    const noteSvgs = getNoteSvg(renderedNotes[noteIdx].note);
+
+    if (noteSvgs.length === 0) {
+      return null;
+    }
+
+    return {
+      key: `${highlightedMeasureIndex}-${noteIdx}`,
+      noteHeadEls: noteSvgs,
+      noteIdx,
+      measureIdx: highlightedMeasureIndex,
+      renderedNotes,
+    };
+  }, [playheadStyle, currentTick, renderData, highlightedMeasureIndex]);
+  const { hitKeys: hitKeysRef } = useHitDetection(
+    currentTick,
+    selectedDevice,
+    midiMapping,
+    renderData,
+    chart,
+  );
+
+  useEffect(() => {
+    if (!vexflowContainerRef.current || !parsedMidi) {
+      return;
+    }
+
+    if (vexflowContainerRef.current.children.length > 0) {
+      vexflowContainerRef.current.removeChild(
+        vexflowContainerRef.current.children[0],
+      );
+    }
+
+    setRenderData(
+      renderMusic(
+        vexflowContainerRef,
+        parsedMidi,
+        showBarNumbers,
+        enableColors,
+      ),
+    );
+  }, [parsedMidi, showBarNumbers, enableColors]);
+
+  useEffect(() => {
+    if (currentTick === null) {
+      return;
+    }
+
+    const index = renderData.findIndex(
+      ({ measure }) =>
+        currentTick >= measure.startTick && currentTick < measure.endTick,
+    );
+
+    if (index >= 0) {
+      setHighlightedMeasureIndex(index);
+    }
+  }, [currentTick, renderData]);
+
+  useEffect(() => {
+    if (playheadStyle === 'None' || highlightedMeasureIndex < 0) {
+      return;
+    }
+
+    highlightsRef[highlightedMeasureIndex]?.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+  }, [highlightsRef, highlightedMeasureIndex, playheadStyle]);
+
+  useActiveNoteScale(activeNoteInfo, renderData);
+  useProgressColoring(
+    activeNoteInfo,
+    playheadStyle,
+    renderData,
+    progressColoring,
+    hitKeysRef,
+  );
 
   return (
     <div className="min-w-max relative z-0">

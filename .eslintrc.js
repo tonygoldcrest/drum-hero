@@ -46,7 +46,7 @@ module.exports = {
         prev: ['const', 'let', 'var'],
         next: ['const', 'let', 'var'],
       },
-      { blankLine: 'never', prev: 'expression', next: 'expression' },
+      { blankLine: 'any', prev: 'expression', next: 'expression' },
       { blankLine: 'never', prev: 'import', next: 'import' },
     ],
   },

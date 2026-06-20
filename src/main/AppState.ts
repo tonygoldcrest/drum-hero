@@ -20,6 +20,7 @@ import { downloadSong } from './ipc/downloadSong';
 import { checkStemTools } from './ipc/checkStemTools';
 import { downloadStemTools } from './ipc/downloadStemTools';
 import { splitSong, cancelSplit } from './ipc/splitSong';
+import { listenMidi, loadMidiDeviceList, stopListenMidi } from './ipc/midi';
 
 class AppState {
   private static instance: AppState;
@@ -86,10 +87,17 @@ class AppState {
     ipcMain.on('load-song', loadSong);
     ipcMain.on('load-song-list', loadSongList);
     ipcMain.on('download-song', downloadSong);
+
     ipcMain.on('check-stem-tools', checkStemTools);
     ipcMain.on('download-stem-tools', downloadStemTools);
+
     ipcMain.on('split-song', splitSong);
     ipcMain.on('cancel-split', cancelSplit);
+
+    ipcMain.on('midi-device-list', loadMidiDeviceList);
+    ipcMain.on('listen-midi', listenMidi);
+    ipcMain.on('stop-listen-midi', stopListenMidi);
+
     ipcMain.on('open-song-directory', (_event, dir: string) => {
       shell.openPath(dir);
     });
