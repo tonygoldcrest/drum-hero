@@ -6,14 +6,14 @@ import { SettingsButton } from '../components/SettingsButton';
 import { SortButton } from '../components/SortButton';
 import { SplittingQueue } from '../components/SplittingQueue';
 import { EmptySongState } from '../components/EmptySongState';
-import { useSettings } from '../context/SettingsContext';
+import { useApp } from '../context/AppContext';
 import { useStemTools } from '../hooks/useStemTools';
 import { useSongList } from '../hooks/useSongList';
 import { useDownload } from '../hooks/useDownload';
 import { useSongFilter } from '../hooks/useSongFilter';
 
 export function SongListView() {
-  const { currentPath } = useSettings();
+  const { currentPath } = useApp();
   const { stemToolsStatus, stemToolsLoading, downloadPercent, download } =
     useStemTools();
   const {

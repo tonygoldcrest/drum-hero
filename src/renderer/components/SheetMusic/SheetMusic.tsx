@@ -14,7 +14,7 @@ import { ActiveNoteInfo } from '../../hooks/types';
 import { useActiveNoteScale } from '../../hooks/useActiveNoteScale';
 import { useHitDetection } from '../../hooks/useHitDetection';
 import { useProgressColoring } from '../../hooks/useProgressColoring';
-import { useSettings } from '../../context/SettingsContext';
+import { useApp } from '../../context/AppContext';
 
 export interface SheetMusicProps {
   chart: ParsedChart;
@@ -37,7 +37,7 @@ export function SheetMusic({
   onSelectMeasure,
   playheadStyle,
 }: SheetMusicProps) {
-  const { selectedDevice, midiMapping } = useSettings();
+  const { selectedDevice, midiMapping } = useApp();
   const vexflowContainerRef = useRef<HTMLDivElement>(null);
   const [renderData, setRenderData] = useState<RenderData[]>([]);
   const [highlightedMeasureIndex, setHighlightedMeasureIndex] =

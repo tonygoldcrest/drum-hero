@@ -22,8 +22,8 @@ vi.mock('antd', async (importOriginal) => {
   };
 });
 
-vi.mock('../context/SettingsContext', () => ({
-  useSettings: () => ({ setCurrentPath }),
+vi.mock('../context/AppContext', () => ({
+  useApp: () => ({ setCurrentPath }),
 }));
 
 let ipc: IpcMock;

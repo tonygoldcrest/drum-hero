@@ -4,7 +4,7 @@ import './App.css';
 import { SongListView } from './views/SongListView';
 import { SongView } from './views/SongView';
 import themedark from './theme';
-import { SettingsProvider } from './context/SettingsContext';
+import { AppProvider } from './context/AppContext';
 
 export default function App() {
   return (
@@ -85,7 +85,7 @@ export default function App() {
         }}
       >
         <AntdApp>
-          <SettingsProvider>
+          <AppProvider>
             <Router>
               <Routes>
                 <Route path="/" element={<SongListView />}>
@@ -93,7 +93,7 @@ export default function App() {
                 </Route>
               </Routes>
             </Router>
-          </SettingsProvider>
+          </AppProvider>
         </AntdApp>
       </ConfigProvider>
     </>

@@ -3,7 +3,7 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { MidiDevice } from '../../types';
 import { installIpcMock, IpcMock } from '../hooks/test-support';
-import { SettingsProvider, useSettings } from './SettingsContext';
+import { AppProvider, useApp } from './AppContext';
 
 let ipc: IpcMock;
 
@@ -30,7 +30,7 @@ function installLocalStorage() {
 }
 
 function wrapper({ children }: { children: ReactNode }) {
-  return <SettingsProvider>{children}</SettingsProvider>;
+  return <AppProvider>{children}</AppProvider>;
 }
 
 function listenPorts() {
@@ -51,15 +51,15 @@ beforeEach(() => {
 const DEVICE_A: MidiDevice = { port: 2, name: 'Pad A' };
 const DEVICE_B: MidiDevice = { port: 5, name: 'Pad B' };
 
-describe('SettingsContext midi stream ownership', () => {
+describe('AppContext midi stream ownership', () => {
   it('does not listen when no device is selected', () => {
-    renderHook(() => useSettings(), { wrapper });
+    renderHook(() => useApp(), { wrapper });
 
     expect(listenPorts()).toEqual([]);
   });
 
   it('starts listening when a device is selected', () => {
-    const { result } = renderHook(() => useSettings(), { wrapper });
+    const { result } = renderHook(() => useApp(), { wrapper });
 
     act(() => result.current.setSelectedDevice(DEVICE_A));
 
@@ -67,7 +67,7 @@ describe('SettingsContext midi stream ownership', () => {
   });
 
   it('restarts on the new port when the device changes', () => {
-    const { result } = renderHook(() => useSettings(), { wrapper });
+    const { result } = renderHook(() => useApp(), { wrapper });
 
     act(() => result.current.setSelectedDevice(DEVICE_A));
     act(() => result.current.setSelectedDevice(DEVICE_B));
@@ -77,7 +77,7 @@ describe('SettingsContext midi stream ownership', () => {
   });
 
   it('stops listening when the device is cleared', () => {
-    const { result } = renderHook(() => useSettings(), { wrapper });
+    const { result } = renderHook(() => useApp(), { wrapper });
 
     act(() => result.current.setSelectedDevice(DEVICE_A));
     act(() => result.current.setSelectedDevice(null));
@@ -86,7 +86,7 @@ describe('SettingsContext midi stream ownership', () => {
   });
 
   it('stops listening on unmount', () => {
-    const { result, unmount } = renderHook(() => useSettings(), { wrapper });
+    const { result, unmount } = renderHook(() => useApp(), { wrapper });
 
     act(() => result.current.setSelectedDevice(DEVICE_A));
     unmount();

@@ -5,7 +5,7 @@ import {
   IpcSplitSongResponse,
   SongData,
 } from '../../types';
-import { useSettings } from '../context/SettingsContext';
+import { useApp } from '../context/AppContext';
 
 export function useSongList() {
   const [songList, setSongList] = useState<SongData[]>([]);
@@ -14,7 +14,7 @@ export function useSongList() {
     new Map(),
   );
   const { notification } = App.useApp();
-  const { setCurrentPath } = useSettings();
+  const { setCurrentPath } = useApp();
 
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage('load-song-list');

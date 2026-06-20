@@ -16,7 +16,7 @@ import {
   faFolder,
 } from '@fortawesome/free-solid-svg-icons';
 import { PLAYHEAD_STYLES } from '../types';
-import { useSettings } from '../context/SettingsContext';
+import { useApp } from '../context/AppContext';
 import { cn } from '../cn';
 import { usePopoverOutsideClick } from '../hooks/usePopoverOutsideClick';
 import { Difficulty } from 'scan-chart';
@@ -56,7 +56,7 @@ export function SettingsButton({
     progressColoring,
     setProgressColoring,
     currentPath,
-  } = useSettings();
+  } = useApp();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);

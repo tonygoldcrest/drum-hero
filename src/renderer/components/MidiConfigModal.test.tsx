@@ -26,8 +26,8 @@ const { settings } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('../context/SettingsContext', () => ({
-  useSettings: () => settings,
+vi.mock('../context/AppContext', () => ({
+  useApp: () => settings,
 }));
 
 let ipc: IpcMock;

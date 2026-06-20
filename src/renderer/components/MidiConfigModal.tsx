@@ -1,5 +1,5 @@
 import { Button, Divider } from 'antd';
-import { useSettings } from '../context/SettingsContext';
+import { useApp } from '../context/AppContext';
 import { useEffect, useRef, useState } from 'react';
 import {
   MidiDevice,
@@ -80,7 +80,7 @@ export function MidiConfigModal({ isOpen, onClose }: Props) {
     midiMapping,
     assignNote,
     removeNote,
-  } = useSettings();
+  } = useApp();
   const backdropRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const [midiDevices, setMidiDevices] = useState<MidiDevice[]>([]);

@@ -10,7 +10,7 @@ import { uniq } from 'es-toolkit';
 import { MidiMapping, MidiDevice } from '../../types';
 import { PlayheadStyle, PLAYHEAD_STYLES } from '../types';
 
-interface SettingsContextValue {
+interface AppContextValue {
   playheadStyle: PlayheadStyle;
   setPlayheadStyle: (s: PlayheadStyle) => void;
   enableColors: boolean;
@@ -60,9 +60,9 @@ function usePersisted<T>(key: string, fallback: T) {
   return [value, setValue] as const;
 }
 
-const SettingsContext = createContext<SettingsContextValue | null>(null);
+const AppContext = createContext<AppContextValue | null>(null);
 
-export function SettingsProvider({ children }: { children: ReactNode }) {
+export function AppProvider({ children }: { children: ReactNode }) {
   const [playheadStyle, setPlayheadStyle] = usePersisted<PlayheadStyle>(
     'settings.playheadStyle',
     PLAYHEAD_STYLES[0],
@@ -159,7 +159,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [selectedDevice]);
 
   return (
-    <SettingsContext.Provider
+    <AppContext.Provider
       value={{
         playheadStyle,
         setPlayheadStyle,
@@ -179,15 +179,15 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-    </SettingsContext.Provider>
+    </AppContext.Provider>
   );
 }
 
-export function useSettings(): SettingsContextValue {
-  const ctx = useContext(SettingsContext);
+export function useApp(): AppContextValue {
+  const ctx = useContext(AppContext);
 
   if (!ctx) {
-    throw new Error('useSettings must be used within SettingsProvider');
+    throw new Error('useApp must be used within AppProvider');
   }
 
   return ctx;

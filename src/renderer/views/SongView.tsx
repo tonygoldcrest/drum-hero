@@ -11,7 +11,7 @@ import {
   faPause,
   faPlay,
 } from '@fortawesome/free-solid-svg-icons';
-import { useSettings } from '../context/SettingsContext';
+import { useApp } from '../context/AppContext';
 import { Difficulty, parseChartFile } from 'scan-chart';
 import { ChartParser } from '../../chart-parser/parser';
 import { last } from 'es-toolkit';
@@ -22,7 +22,7 @@ import { useVolumeControls } from '../hooks/useVolumeControls';
 export function SongView() {
   const { notification } = App.useApp();
   const { playheadStyle, enableColors, showBarNumbers, progressColoring } =
-    useSettings();
+    useApp();
   const [difficulty, setDifficulty] = useState<Difficulty>('expert');
   const [isDev, setIsDev] = useState(true);
   const { id } = useParams();
