@@ -8,7 +8,11 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]
+        include:
+          - os: macos-latest
+            package_cmd: yarn package
+          - os: windows-latest
+            package_cmd: yarn package:win
 
     steps:
       - name: Check out Git repository
@@ -29,4 +33,4 @@ jobs:
       - name: Build and package
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: yarn package
+        run: ${{ matrix.package_cmd }}
