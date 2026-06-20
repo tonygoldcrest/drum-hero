@@ -10,7 +10,7 @@ import {
 import { cn } from '../cn';
 import themedark from '../theme';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faCircle, faPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
 
 type Props = {
   isOpen: boolean;
@@ -21,15 +21,56 @@ const KIT_ELEMENTS: {
   value: keyof MidiMapping;
   color: string;
   displayName: string;
+  type: 'cymbal' | 'drum';
 }[] = [
-  { value: 'hihat', displayName: 'Hi-Hat', color: themedark.color.yellow },
-  { value: 'ride', displayName: 'Ride', color: themedark.color.blue },
-  { value: 'crash', displayName: 'Crash', color: themedark.color.green },
-  { value: 'snare', displayName: 'Snare', color: themedark.color.red },
-  { value: 'tom1', displayName: 'Tom 1', color: themedark.color.yellow },
-  { value: 'tom2', displayName: 'Tom 2', color: themedark.color.blue },
-  { value: 'tom3', displayName: 'Tom 3', color: themedark.color.green },
-  { value: 'kick', displayName: 'Kick', color: themedark.color.orange },
+  {
+    value: 'hihat',
+    displayName: 'Hi-Hat',
+    color: themedark.color.yellow,
+    type: 'cymbal',
+  },
+  {
+    value: 'ride',
+    displayName: 'Ride',
+    color: themedark.color.blue,
+    type: 'cymbal',
+  },
+  {
+    value: 'crash',
+    displayName: 'Crash',
+    color: themedark.color.green,
+    type: 'cymbal',
+  },
+  {
+    value: 'snare',
+    displayName: 'Snare',
+    color: themedark.color.red,
+    type: 'drum',
+  },
+  {
+    value: 'tom1',
+    displayName: 'Tom 1',
+    color: themedark.color.yellow,
+    type: 'drum',
+  },
+  {
+    value: 'tom2',
+    displayName: 'Tom 2',
+    color: themedark.color.blue,
+    type: 'drum',
+  },
+  {
+    value: 'tom3',
+    displayName: 'Tom 3',
+    color: themedark.color.green,
+    type: 'drum',
+  },
+  {
+    value: 'kick',
+    displayName: 'Kick',
+    color: themedark.color.orange,
+    type: 'drum',
+  },
 ];
 
 export function MidiConfigModal({ isOpen, onClose }: Props) {
@@ -157,15 +198,14 @@ export function MidiConfigModal({ isOpen, onClose }: Props) {
               >
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-3 w-20 shrink-0">
-                    <div
-                      className="w-4 h-4 rounded-xs shrink-0"
+                    <FontAwesomeIcon
                       style={{
-                        background: element.color,
                         color: element.color,
-                        border: `2px solid ${element.color}70`,
-                        backgroundClip: 'padding-box',
                       }}
-                    ></div>
+                      icon={element.type === 'cymbal' ? faXmark : faCircle}
+                      size="lg"
+                      className="w-5"
+                    />
                     <div className="font-semibold text-nowrap">
                       {element.displayName}
                     </div>
