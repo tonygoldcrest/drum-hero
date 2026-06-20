@@ -1,5 +1,5 @@
 {
-  "name": "drum-hero",
+  "name": "sight-kick",
   "description": "Play your favorite Clone Hero drum tracks",
   "version": "0.1.0",
   "keywords": [
@@ -11,7 +11,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/peancored/drum-hero.git"
+    "url": "git+https://github.com/tonygoldcrest/sightkick.git"
   },
   "license": "MIT",
   "author": {
@@ -168,9 +168,9 @@
     "vite": "^5.4.21"
   },
   "build": {
-    "productName": "DrumHero",
+    "productName": "SightKick",
     "buildVersion": "0.1.0",
-    "appId": "org.dh.DrumHero",
+    "appId": "org.sk.SightKick",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",
     "files": [
@@ -228,7 +228,7 @@
     "publish": {
       "provider": "github",
       "owner": "tonygoldcrest",
-      "repo": "drum-hero"
+      "repo": "sightkick"
     }
   },
   "engines": {

@@ -3,7 +3,7 @@ import log from 'electron-log';
 import { Notification, shell } from 'electron';
 
 const RELEASES_URL =
-  'https://github.com/tonygoldcrest/drum-hero/releases/latest';
+  'https://github.com/tonygoldcrest/sightkick/releases/latest';
 
 export class AppUpdater {
   constructor() {
@@ -12,7 +12,7 @@ export class AppUpdater {
     autoUpdater.autoDownload = false;
     autoUpdater.on('update-available', (info) => {
       const notification = new Notification({
-        title: 'DrumHero Update Available',
+        title: 'SightKick Update Available',
         body: `Version ${info.version} is available. Click to download.`,
       });
 

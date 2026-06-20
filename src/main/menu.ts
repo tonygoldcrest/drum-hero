@@ -53,7 +53,7 @@ export default class MenuBuilder {
 
   buildDarwinTemplate(): MenuItemConstructorOptions[] {
     const subMenuAbout: DarwinMenuItemConstructorOptions = {
-      label: 'Drum Hero',
+      label: 'SightKick',
       submenu: [
         {
           label: 'Quit',

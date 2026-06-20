@@ -135,25 +135,24 @@ export function MidiConfigModal({ isOpen, onClose }: Props) {
             <div className="text-text-faint text-[12px] font-semibold uppercase">
               MIDI Input Device
             </div>
-            <div className="bg-surface text-text-body border border-border p-2 rounded-md flex flex-col">
-              <select
-                value={selectedDevice?.name}
-                onChange={(event) => {
-                  setSelectedDevice(
-                    midiDevices.find(
-                      (device) => device.name === event.target.value,
-                    ) ?? null,
-                  );
-                }}
-              >
-                <option value={undefined}>Please select a device</option>
-                {midiDevices.map(({ name, port }) => (
-                  <option key={port} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              className="select"
+              value={selectedDevice?.name}
+              onChange={(event) => {
+                setSelectedDevice(
+                  midiDevices.find(
+                    (device) => device.name === event.target.value,
+                  ) ?? null,
+                );
+              }}
+            >
+              <option value={undefined}>- None -</option>
+              {midiDevices.map(({ name, port }) => (
+                <option key={port} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="flex flex-col gap-2">
             <div className="text-text-faint text-[12px] font-semibold uppercase">
@@ -187,7 +186,7 @@ export function MidiConfigModal({ isOpen, onClose }: Props) {
                       >
                         {note}
                         <button
-                          className="text-accent border-0 cursor-pointer px-0.5 hover:text-accent-text"
+                          className="text-accent border-0 cursor-pointer px-0.5 hover:text-accent-text focus-visible:outline-accent-hover focus-visible:outline-1 rounded-xs"
                           onClick={() => {
                             const prev =
                               midiMappingRef.current[element.value] ?? [];

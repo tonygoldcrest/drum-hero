@@ -1,12 +1,12 @@
-# <img width="64" height="64" alt="DrumHero Logo Github" src="https://github.com/user-attachments/assets/e7b4df52-573e-4ac1-af78-83c425ac0301" /> Drum Hero
+# <img width="64" height="64" alt="SightKick Logo Github" src="https://github.com/user-attachments/assets/e7b4df52-573e-4ac1-af78-83c425ac0301" /> SightKick
 
 Play your favourite Clone Hero tracks on drums, assisted by sheet music.
 
-[DOWNLOAD](https://github.com/peancored/drum-hero/releases)
+[DOWNLOAD](https://github.com/tonygoldcrest/sightkick/releases)
 
 ## Why?
 
-Finding drumless tracks with sheet music is a pain. Clone Hero is a Guitar Hero-style rhythm game with a massive community song library. Each song comes with note charts for each instrument and, often, separated audio stems. Drum Hero takes the drum charts from those songs (which are essentially MIDI hit data) and renders them as sheet music you can play along to, while letting you mute the drum stem so you're playing instead of listening.
+Finding drumless tracks with sheet music is a pain. Clone Hero is a Guitar Hero-style rhythm game with a massive community song library. Each song comes with note charts for each instrument and, often, separated audio stems. SightKick takes the drum charts from those songs (which are essentially MIDI hit data) and renders them as sheet music you can play along to, while letting you mute the drum stem so you're playing instead of listening.
 
 The charts aren't always 100% accurate, but they're usually close enough. I made this to help myself move beyond just playing Clone Hero toward, learning to sightread.
 
@@ -39,7 +39,7 @@ Press the globe icon to switch to online search and download songs directly from
 
 ### 4. Split stems for songs that don't have them
 
-Many Clone Hero songs ship with a single mixed audio file instead of separate stems. Drum Hero can split it automatically so you can mute the drums and play along.
+Many Clone Hero songs ship with a single mixed audio file instead of separate stems. SightKick can split it automatically so you can mute the drums and play along.
 
 In the Settings menu, press **Get stem splitter** to download the tool (~130 MB, one-time). Supported on macOS (Apple Silicon) and Windows.
 <img width="1478" height="880" alt="image" src="https://github.com/user-attachments/assets/486f15d9-b735-464f-a94f-7cf1dddbafbe" />

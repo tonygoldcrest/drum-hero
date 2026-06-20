@@ -53,6 +53,51 @@
   --gradient-slider-fill: linear-gradient(90deg, #ec4527, #ff5a3c);
 }
 
+.select {
+  appearance: base-select;
+  background-color: var(--color-surface);
+  color: var(--color-text-body);
+  border: 1px solid var(--color-border);
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  font-family: var(--font-ui);
+  font-size: inherit;
+  width: 100%;
+
+  &:focus-visible {
+    outline: 1px solid var(--color-accent-hover);
+  }
+
+  &::picker-icon {
+    color: var(--color-text-muted);
+  }
+}
+
+.select::picker(select) {
+  appearance: base-select;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  padding: 0.25rem;
+  box-shadow: var(--shadow-panel);
+  color: var(--color-text-body);
+  font-family: var(--font-ui);
+  font-size: inherit;
+}
+
+.select option {
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.25rem;
+
+  &:hover {
+    background-color: var(--color-fill-strong);
+  }
+
+  &:checked {
+    background-color: var(--color-fill-strong);
+  }
+}
+
 .ant-input-prefix {
   margin-inline-end: 12px !important;
 }

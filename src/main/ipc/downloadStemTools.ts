@@ -4,7 +4,7 @@ import fs from 'fs';
 import os from 'os';
 import { app } from 'electron';
 
-const REPO = 'tonygoldcrest/drum-hero-tools';
+const REPO = 'tonygoldcrest/sightkick-tools';
 
 function getAssetName() {
   if (process.platform === 'darwin') {
