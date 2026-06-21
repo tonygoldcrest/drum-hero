@@ -1,6 +1,7 @@
 import { clamp } from 'es-toolkit';
-import { ParsedChart, RenderData } from '../../../chart-parser/types';
 import { StaveNote } from 'vexflow';
+import { ParsedChart, RenderData } from '../../chart-parser/types';
+import { ScoreData } from '../../types';
 
 export const HIT_NOTE_COLOR = '#00000000';
 
@@ -114,4 +115,16 @@ export function getNoteSvg(note: StaveNote) {
   return note.noteHeads
     .map((nh) => nh.getSVGElement())
     .filter((el): el is SVGElement => el !== null);
+}
+
+export function calculateAccuracy({
+  totalNotes,
+  falseHits,
+  hitNotes = 0,
+}: ScoreData) {
+  return hitNotes / (totalNotes + falseHits);
+}
+
+export function getStarRating(scoreData: ScoreData) {
+  return Math.floor(calculateAccuracy(scoreData) * 5);
 }

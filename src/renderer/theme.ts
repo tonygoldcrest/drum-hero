@@ -1,24 +1,3 @@
-export const theme = {
-  boxShadow: {
-    soft: 'rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px',
-  },
-  color: {
-    dark: '#2D3436',
-    primaryDark: '#50a5b2',
-    primary: '#92C7CF',
-    primaryLight: '#AAD7D9',
-    primaryLightest: '#c9e5e7',
-    foreground: '#FBF9F1',
-    background: '#E5E1DA',
-    text: {
-      primary: '#333',
-      secondary: '#444',
-      tertiary: '#888',
-    },
-  },
-  borderRadius: 5,
-};
-
 export const themedark = {
   color: {
     bg: '#141517',
@@ -39,6 +18,9 @@ export const themedark = {
     textFaint: '#8a8474',
     textDim: '#615c50',
     textDimmer: '#5f5a4e',
+
+    star: 'rgb(232, 183, 58)',
+    starGradient: '',
 
     accent: '#ff5a3c',
     accentHover: '#ff6a4d',
@@ -95,6 +77,7 @@ export const themedark = {
   shadow: {
     frame:
       '0 40px 90px -30px rgba(40,30,10,0.55), 0 0 0 1px rgba(255,255,255,0.04)',
+    star: 'drop-shadow(rgba(232, 183, 58, 0.45) 0px 3px 8px)',
     panel:
       '0 40px 90px -30px rgba(40,30,10,0.55), 0 0 0 1px rgba(255,255,255,0.05)',
     accentButton:

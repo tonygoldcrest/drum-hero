@@ -6,7 +6,11 @@ import {
   faSpinner,
   faCheck,
 } from '@fortawesome/free-solid-svg-icons';
-import { faHeart } from '@fortawesome/free-regular-svg-icons';
+import {
+  faHeart,
+  faStar as faStarRegular,
+} from '@fortawesome/free-regular-svg-icons';
+import { faStar as faStarSolid } from '@fortawesome/free-solid-svg-icons';
 import { times } from 'es-toolkit/compat';
 import appIcon from '../../../assets/icon.png';
 import { SongData, StemToolsStatus } from '../../types';
@@ -15,6 +19,9 @@ import { Button, Tooltip } from 'antd';
 import { useMemo } from 'react';
 import { Mode } from './SongFilter';
 import { SongMenu } from './SongMenu';
+import themedark from '../theme';
+import { Difficulty } from 'scan-chart';
+import { getStarRating } from '../views/utils';
 
 function DifficultyRing({ value }: { value: number }) {
   const size = 44;
@@ -91,6 +98,7 @@ export function SongListItem({
     diff_drums,
     liked,
     audio,
+    scoreData,
   },
   onLikeChange,
   onDownload,
@@ -103,6 +111,13 @@ export function SongListItem({
   stemToolsStatus,
 }: SongListItemProps) {
   const navigate = useNavigate();
+  const starRating = useMemo(() => {
+    const score = (['expert', 'hard', 'medium', 'easy'] as Difficulty[])
+      .map((d) => scoreData?.[d])
+      .find(Boolean);
+
+    return score ? getStarRating(score) : 0;
+  }, [scoreData]);
   const indicator = useMemo(() => {
     if (mode === 'local') {
       return (
@@ -224,6 +239,24 @@ export function SongListItem({
               </div>
             </div>
           )}
+
+          <div className="flex gap-1 items-center">
+            {times(5, (num) => (
+              <FontAwesomeIcon
+                key={num}
+                icon={
+                  starRating && num < starRating ? faStarSolid : faStarRegular
+                }
+                size="xs"
+                style={{
+                  color:
+                    starRating && num < starRating
+                      ? themedark.color.star
+                      : themedark.color.textDim,
+                }}
+              />
+            ))}
+          </div>
 
           {diff_drums && <DifficultyRing value={Number(diff_drums)} />}
 

@@ -6,11 +6,7 @@ import {
   MidiMessage,
   MidiMessageType,
 } from '../../types';
-import {
-  HIT_NOTE_COLOR,
-  secondsToTicks,
-  ticksToSeconds,
-} from '../components/SheetMusic/utils';
+import { HIT_NOTE_COLOR, secondsToTicks, ticksToSeconds } from '../views/utils';
 
 const MIDI_MAPPING_TO_KEYS: Record<keyof MidiMapping, string[]> = {
   kick: ['f/4', 'e/4'],
@@ -39,7 +35,7 @@ export function useHitDetection(
   selectedDevice: MidiDevice | null,
   midiMapping: MidiMapping,
   renderData: RenderData[],
-  chart: ParsedChart,
+  chart: ParsedChart | null,
 ): HitDetectionResult {
   const hitKeysRef = useRef<Set<string>>(new Set());
   const incorrectHitCountRef = useRef<number>(0);
@@ -107,6 +103,11 @@ export function useHitDetection(
         }
 
         const chartData = chartRef.current;
+
+        if (chartData === null) {
+          return;
+        }
+
         const currentTimeS = ticksToSeconds(
           tick,
           chartData.resolution,

@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
+import { App } from 'antd';
 import { SheetMusic } from './SheetMusic';
 import {
   buildDrumMidi,
@@ -9,27 +11,66 @@ import {
   Hit,
   MeasureSpec,
 } from './drumMidiFixture';
-import { parseChartFile } from 'scan-chart';
-import { ChartParser } from '../../../chart-parser/parser';
+import { useSheetMusic } from '../../hooks/useSheetMusic';
+import { usePlayhead } from '../../hooks/usePlayhead';
+import { SongData } from '../../../types';
 
-function Sheet({ measures }: { measures: MeasureSpec[] }) {
-  const fileData = buildDrumMidi(measures) as unknown as Buffer;
-  const chart = parseChartFile(new Uint8Array(fileData), 'mid');
-  const parsedMidi = new ChartParser(chart, false, 'expert');
+const STORY_SONG = {
+  name: 'Parser',
+  artist: '',
+  charter: '',
+} as unknown as SongData;
+
+function SheetHarness({ measures }: { measures: MeasureSpec[] }) {
+  const fileData = useMemo(
+    () => buildDrumMidi(measures) as unknown as Buffer,
+    [measures],
+  );
+  const { chart, parsedMidi, renderData, vexflowContainerRef } = useSheetMusic({
+    fileData,
+    format: 'mid',
+    fiveLaneDrums: false,
+    proDrums: true,
+    songId: 'story',
+    difficulty: 'expert',
+    showBarNumbers: false,
+    enableColors: true,
+  });
+  const { highlightedMeasureIndex, cursorPosition, highlightsRef } =
+    usePlayhead({
+      chart,
+      currentTime: 0,
+      currentTick: null,
+      renderData,
+      playheadStyle: 'None',
+    });
+
+  if (!chart || !parsedMidi) {
+    return null;
+  }
 
   return (
-    <div style={{ padding: 24, background: '#fff', overflow: 'auto' }}>
-      <SheetMusic
-        chart={chart}
-        parsedMidi={parsedMidi}
-        showBarNumbers={false}
-        enableColors
-        progressColoring={false}
-        currentTime={0}
-        onSelectMeasure={() => {}}
-        playheadStyle="None"
-      />
-    </div>
+    <SheetMusic
+      songData={STORY_SONG}
+      renderData={renderData}
+      vexflowContainerRef={vexflowContainerRef}
+      highlightsRef={highlightsRef}
+      highlightedMeasureIndex={highlightedMeasureIndex}
+      cursorPosition={cursorPosition}
+      playheadStyle="None"
+      isDev={false}
+      onSelectMeasure={() => {}}
+    />
+  );
+}
+
+function Sheet({ measures }: { measures: MeasureSpec[] }) {
+  return (
+    <App>
+      <div style={{ padding: 24, background: '#fff', overflow: 'auto' }}>
+        <SheetHarness measures={measures} />
+      </div>
+    </App>
   );
 }
 

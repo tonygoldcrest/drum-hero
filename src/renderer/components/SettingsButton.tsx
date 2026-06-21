@@ -150,7 +150,6 @@ export function SettingsButton({
 
         <Button
           icon={<FontAwesomeIcon icon={faDrum} />}
-          loading={stemToolsLoading}
           onClick={() => {
             setMidiConfigOpen(true);
           }}

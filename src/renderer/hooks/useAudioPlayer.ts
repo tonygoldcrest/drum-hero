@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { App } from 'antd';
 import { AudioPlayer } from '../services/audio-player/player';
 import { TrackConfig } from '../services/audio-player/types';
@@ -7,24 +7,31 @@ interface AudioPlayerResult {
   audioPlayer: AudioPlayer | null;
   isPlaying: boolean;
   setIsPlaying: (playing: boolean) => void;
-  currentPlayback: number;
+  currentTime: number;
 }
 
 export function useAudioPlayer(
   trackData: TrackConfig[],
   isDev: boolean,
+  onEnded: () => void,
 ): AudioPlayerResult {
   const { notification } = App.useApp();
   const [audioPlayer, setAudioPlayer] = useState<AudioPlayer | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentPlayback, setCurrentPlayback] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const onEndedRef = useRef(onEnded);
+
+  onEndedRef.current = onEnded;
 
   useEffect(() => {
     if (trackData.length === 0) {
       return;
     }
 
-    const player = new AudioPlayer(trackData, () => setIsPlaying(false));
+    const player = new AudioPlayer(trackData, () => {
+      setIsPlaying(false);
+      onEndedRef.current?.();
+    });
 
     player.ready
       .then(() => setAudioPlayer(player))
@@ -43,7 +50,7 @@ export function useAudioPlayer(
     }
 
     const audioPolling = setInterval(() => {
-      setCurrentPlayback(audioPlayer.currentTime);
+      setCurrentTime(audioPlayer.currentTime);
     }, 20);
 
     return () => {
@@ -70,5 +77,5 @@ export function useAudioPlayer(
     }
   }, [audioPlayer, isPlaying]);
 
-  return { audioPlayer, isPlaying, setIsPlaying, currentPlayback };
+  return { audioPlayer, isPlaying, setIsPlaying, currentTime };
 }
