@@ -175,9 +175,9 @@ describe('useSheetMusic', () => {
   });
 
   it('notifies and clears the parser on a parse error', () => {
-    ChartParserMock.mockImplementation(() => {
+    ChartParserMock.mockImplementation(function () {
       throw new Error('bad chart');
-    });
+    } as never);
 
     const { result } = setup();
 

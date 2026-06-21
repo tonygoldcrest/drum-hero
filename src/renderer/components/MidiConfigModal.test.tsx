@@ -36,6 +36,7 @@ beforeEach(() => {
   ipc = installIpcMock();
   settings.assignNote.mockClear();
   settings.removeNote.mockClear();
+  settings.setSelectedDevice.mockClear();
   (
     HTMLElement.prototype as unknown as { showPopover: () => void }
   ).showPopover = vi.fn();
@@ -82,6 +83,26 @@ describe('MidiConfigModal', () => {
     );
 
     expect(settings.assignNote).not.toHaveBeenCalled();
+  });
+
+  it('clears the selected device when it is no longer in the device list', () => {
+    render(<MidiConfigModal isOpen onClose={() => {}} />);
+
+    act(() => {
+      ipc.emit('midi-device-list', [{ port: 2, name: 'Other Device' }]);
+    });
+
+    expect(settings.setSelectedDevice).toHaveBeenCalledWith(null);
+  });
+
+  it('keeps the selected device when it is still in the device list', () => {
+    render(<MidiConfigModal isOpen onClose={() => {}} />);
+
+    act(() => {
+      ipc.emit('midi-device-list', [{ port: 1, name: 'Pad' }]);
+    });
+
+    expect(settings.setSelectedDevice).not.toHaveBeenCalledWith(null);
   });
 
   it('assigns the next learned note to the chosen element', () => {

@@ -98,9 +98,18 @@ export function MidiConfigModal({ isOpen, onClose }: Props) {
 
     window.electron.ipcRenderer.once<MidiDevice[]>(
       'midi-device-list',
-      setMidiDevices,
+      (list) => {
+        setMidiDevices(list);
+
+        if (
+          selectedDevice &&
+          !list.some((d) => d.name === selectedDevice.name)
+        ) {
+          setSelectedDevice(null);
+        }
+      },
     );
-  }, [isOpen]);
+  }, [isOpen, selectedDevice, setSelectedDevice]);
 
   useEffect(() => {
     if (!selectedDevice || !isOpen) {
