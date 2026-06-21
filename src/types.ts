@@ -83,6 +83,7 @@ export interface IpcSplitSongResponse {
   success?: boolean;
   song?: SongData;
   error?: string;
+  cancelled?: boolean;
 }
 
 export interface MidiDevice {

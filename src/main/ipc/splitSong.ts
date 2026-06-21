@@ -6,6 +6,8 @@ import { StorageSchema } from '../../types';
 import { appState } from '../AppState';
 import { buildSongFromDir } from '../util';
 
+class CancelledError extends Error {}
+
 const queue: Array<{ event: Electron.IpcMainEvent; id: string }> = [];
 let processing = false;
 let activeProc: ReturnType<typeof spawn> | null = null;
@@ -26,7 +28,7 @@ export function cancelSplit(_event: Electron.IpcMainEvent, id: string) {
     removed.event.reply('split-song', {
       id,
       success: false,
-      error: 'Cancelled',
+      cancelled: true,
     });
   }
 }
@@ -90,7 +92,7 @@ async function doSplit(event: Electron.IpcMainEvent, id: string) {
         activeId = null;
 
         if (signal === 'SIGTERM' || signal === 'SIGKILL') {
-          reject(new Error('Cancelled'));
+          reject(new CancelledError());
         } else if (code === 0) {
           resolve();
         } else {
@@ -134,6 +136,12 @@ async function doSplit(event: Electron.IpcMainEvent, id: string) {
     appState.store.set(`songs.${id}`, updatedSong);
     event.reply('split-song', { id, success: true, song: updatedSong });
   } catch (err) {
+    if (err instanceof CancelledError) {
+      event.reply('split-song', { id, success: false, cancelled: true });
+
+      return;
+    }
+
     event.reply('split-song', { id, success: false, error: String(err) });
   }
 }

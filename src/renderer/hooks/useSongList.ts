@@ -43,7 +43,7 @@ export function useSongList() {
   useEffect(() => {
     return window.electron.ipcRenderer.on<IpcSplitSongResponse>(
       'split-song',
-      ({ id, progress, success, song, error }) => {
+      ({ id, progress, success, song, error, cancelled }) => {
         if (progress !== undefined) {
           setSplitProgress((prev) => new Map(prev).set(id, progress));
 
@@ -64,11 +64,17 @@ export function useSongList() {
 
           return next;
         });
+        console.log(cancelled);
 
         if (success && song) {
           setSongList((prev) => prev.map((s) => (s.id === id ? song : s)));
           notification.success({
             title: `"${song.name}" split successfully`,
+            placement: 'bottomRight',
+          });
+        } else if (cancelled) {
+          notification.info({
+            message: 'Split cancelled',
             placement: 'bottomRight',
           });
         } else {
