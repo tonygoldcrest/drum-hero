@@ -111,20 +111,12 @@ export function SongListItem({
   stemToolsStatus,
 }: SongListItemProps) {
   const navigate = useNavigate();
-  const starRating = useMemo<number>(() => {
-    if (!scoreData) {
-      return 0;
-    }
+  const starRating = useMemo(() => {
+    const score = (['expert', 'hard', 'medium', 'easy'] as Difficulty[])
+      .map((d) => scoreData?.[d])
+      .find(Boolean);
 
-    const difficulties: Difficulty[] = ['expert', 'hard', 'medium', 'easy'];
-
-    for (let i = 0; i < difficulties.length; i++) {
-      if (scoreData[difficulties[i]]) {
-        return getStarRating(scoreData[difficulties[i]]);
-      }
-    }
-
-    return 0;
+    return score ? getStarRating(score) : 0;
   }, [scoreData]);
   const indicator = useMemo(() => {
     if (mode === 'local') {
