@@ -11027,7 +11027,6 @@ __metadata:
     identity-obj-proxy: "npm:^3.0.0"
     ini: "npm:^4.1.1"
     jsdom: "npm:^29.1.1"
-    lodash: "npm:^4.17.21"
     prettier: "npm:^3.0.3"
     react: "npm:^19.0.0"
     react-dom: "npm:^19.0.0"
