@@ -6,7 +6,11 @@ import {
   faSpinner,
   faCheck,
 } from '@fortawesome/free-solid-svg-icons';
-import { faHeart } from '@fortawesome/free-regular-svg-icons';
+import {
+  faHeart,
+  faStar as faStarRegular,
+} from '@fortawesome/free-regular-svg-icons';
+import { faStar as faStarSolid } from '@fortawesome/free-solid-svg-icons';
 import { times } from 'es-toolkit/compat';
 import appIcon from '../../../assets/icon.png';
 import { SongData, StemToolsStatus } from '../../types';
@@ -15,6 +19,7 @@ import { Button, Tooltip } from 'antd';
 import { useMemo } from 'react';
 import { Mode } from './SongFilter';
 import { SongMenu } from './SongMenu';
+import themedark from '../theme';
 
 function DifficultyRing({ value }: { value: number }) {
   const size = 44;
@@ -91,6 +96,7 @@ export function SongListItem({
     diff_drums,
     liked,
     audio,
+    score,
   },
   onLikeChange,
   onDownload,
@@ -224,6 +230,22 @@ export function SongListItem({
               </div>
             </div>
           )}
+
+          <div className="flex gap-1 items-center">
+            {times(5, (num) => (
+              <FontAwesomeIcon
+                key={num}
+                icon={score && num < score ? faStarSolid : faStarRegular}
+                size="xs"
+                style={{
+                  color:
+                    score && num < score
+                      ? themedark.color.star
+                      : themedark.color.textDim,
+                }}
+              />
+            ))}
+          </div>
 
           {diff_drums && <DifficultyRing value={Number(diff_drums)} />}
 

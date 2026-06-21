@@ -53,6 +53,7 @@ export interface SongData {
   updatedAt?: string;
   format: 'mid' | 'chart';
   audio: AudioData[];
+  score?: number;
 }
 
 export interface AudioData {

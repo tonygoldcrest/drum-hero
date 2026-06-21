@@ -1,10 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { RenderData } from '../../chart-parser/types';
 import { StaveNote } from 'vexflow';
-import {
-  HIT_NOTE_COLOR,
-  MISSED_NOTE_COLOR,
-} from '../components/SheetMusic/utils';
+import { HIT_NOTE_COLOR, MISSED_NOTE_COLOR } from '../views/utils';
 import { PlayheadStyle } from '../types';
 import { ActiveNoteInfo } from './types';
 

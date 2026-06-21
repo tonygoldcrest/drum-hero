@@ -107,11 +107,15 @@ async function flush() {
   });
 }
 
-async function load(trackData: TrackConfig[], isDev = false) {
+async function load(
+  trackData: TrackConfig[],
+  isDev = false,
+  onEnded: () => void = () => {},
+) {
   const { useAudioPlayer } = await import('./useAudioPlayer');
   const view = renderHook(
     ({ td, dev }: { td: TrackConfig[]; dev: boolean }) =>
-      useAudioPlayer(td, dev),
+      useAudioPlayer(td, dev, onEnded),
     { initialProps: { td: trackData, dev: isDev } },
   );
 
@@ -156,7 +160,7 @@ describe('useAudioPlayer', () => {
       vi.advanceTimersByTime(20);
     });
 
-    expect(result.current.currentPlayback).toBe(7);
+    expect(result.current.currentTime).toBe(7);
   });
 
   it('starts playback when not yet initialised', async () => {
@@ -181,8 +185,9 @@ describe('useAudioPlayer', () => {
     expect(Cls.instances[0].resume).toHaveBeenCalledTimes(1);
   });
 
-  it('flips isPlaying back when the player reports it ended', async () => {
-    const { result } = await load(TRACKS);
+  it('flips isPlaying back and fires onEnded when the player reports it ended', async () => {
+    const onEnded = vi.fn();
+    const { result } = await load(TRACKS, false, onEnded);
     const Cls = await getPlayerClass();
 
     act(() => result.current.setIsPlaying(true));
@@ -191,6 +196,7 @@ describe('useAudioPlayer', () => {
     act(() => Cls.instances[0].onEnded());
 
     expect(result.current.isPlaying).toBe(false);
+    expect(onEnded).toHaveBeenCalledTimes(1);
   });
 
   it('destroys the player on unmount in production', async () => {
@@ -224,6 +230,6 @@ describe('useAudioPlayer', () => {
       vi.advanceTimersByTime(100);
     });
 
-    expect(result.current.currentPlayback).not.toBe(99);
+    expect(result.current.currentTime).not.toBe(99);
   });
 });

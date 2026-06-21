@@ -1,6 +1,6 @@
 import { clamp } from 'es-toolkit';
-import { ParsedChart, RenderData } from '../../../chart-parser/types';
 import { StaveNote } from 'vexflow';
+import { ParsedChart, RenderData } from '../../chart-parser/types';
 
 export const HIT_NOTE_COLOR = '#00000000';
 
