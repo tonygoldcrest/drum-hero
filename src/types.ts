@@ -59,7 +59,7 @@ export interface SongData {
 }
 
 export interface ScoreData {
-  hitNotes: number;
+  hitNotes?: number;
   totalNotes: number;
   falseHits: number;
 }
