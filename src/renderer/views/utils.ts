@@ -94,11 +94,13 @@ export function getCursorX(
           return currentNoteX;
         }
 
-        return (
-          currentNoteX +
-          ((currentTick - currentNote.tick) / ticksLeft) *
-            (staveRight - currentNoteX)
+        const progress = clamp(
+          (currentTick - currentNote.tick) / ticksLeft,
+          0,
+          1,
         );
+
+        return currentNoteX + progress * (staveRight - currentNoteX);
       } else {
         return (
           currentNoteX +
