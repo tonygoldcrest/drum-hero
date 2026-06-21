@@ -22,6 +22,8 @@ import { usePlayhead } from '../hooks/usePlayhead';
 import { useActiveNoteScale } from '../hooks/useActiveNoteScale';
 import { useHitDetection } from '../hooks/useHitDetection';
 import { useProgressColoring } from '../hooks/useProgressColoring';
+import { ScoreModal } from '../components/ScoreModal';
+import { ScoreData } from '../../types';
 
 export function SongView() {
   const {
@@ -33,6 +35,8 @@ export function SongView() {
     midiMapping,
   } = useApp();
   const [difficulty, setDifficulty] = useState<Difficulty>('expert');
+  const [scoreData, setScoreData] = useState<ScoreData>();
+  const [isScoreModalOpen, setIsScoreModalOpen] = useState(false);
   const [isDev, setIsDev] = useState(true);
   const { id } = useParams();
   const navigate = useNavigate();
@@ -41,7 +45,24 @@ export function SongView() {
     trackData,
     isDev,
     () => {
-      console.log('ended');
+      const score = {
+        hitNotes: hitKeys.current.size,
+        falseHits: incorrectHitCount.current,
+        totalNotes: renderData
+          .flatMap((rd) => rd.measure.notes)
+          .filter((n) => !n.isRest)
+          .reduce((sum, n) => sum + n.notes.length, 0),
+      };
+
+      setScoreData(score);
+      setIsScoreModalOpen(true);
+
+      if (id) {
+        window.electron.ipcRenderer.sendMessage('update-song', {
+          id,
+          scoreData: { [activeDifficulty]: score },
+        });
+      }
     },
   );
   const { volumeSliders } = useVolumeControls(trackData, audioPlayer);
@@ -63,12 +84,12 @@ export function SongView() {
     showBarNumbers,
     enableColors,
   });
+  const delaySeconds = (Number(songData?.delay) || 0) / 1000;
+  const chartTime = currentTime - delaySeconds;
   const currentTick = useMemo(
     () =>
-      chart
-        ? secondsToTicks(currentTime, chart.resolution, chart.tempos)
-        : null,
-    [currentTime, chart],
+      chart ? secondsToTicks(chartTime, chart.resolution, chart.tempos) : null,
+    [chartTime, chart],
   );
   const {
     highlightedMeasureIndex,
@@ -77,12 +98,12 @@ export function SongView() {
     highlightsRef,
   } = usePlayhead({
     chart,
-    currentTime,
+    currentTime: chartTime,
     currentTick,
     renderData,
     playheadStyle,
   });
-  const { hitKeys: hitKeysRef } = useHitDetection(
+  const { hitKeys, incorrectHitCount } = useHitDetection(
     currentTick,
     selectedDevice,
     midiMapping,
@@ -112,11 +133,24 @@ export function SongView() {
     playheadStyle,
     renderData,
     progressColoring,
-    hitKeysRef,
+    hitKeys,
   );
 
   return (
     <Layout className="h-full pointer-events-auto">
+      <ScoreModal
+        isOpen={isScoreModalOpen}
+        onNextSong={() => {
+          setIsScoreModalOpen(false);
+          navigate('/');
+        }}
+        onRetry={() => {
+          setIsScoreModalOpen(false);
+        }}
+        songData={songData}
+        difficulty={activeDifficulty}
+        scoreData={scoreData}
+      />
       <div
         className="flex items-center p-4 gap-5"
         style={{ background: 'var(--gradient-header)' }}
@@ -198,7 +232,7 @@ export function SongView() {
                   measure.startTick,
                   chart.resolution,
                   chart.tempos,
-                ),
+                ) + delaySeconds,
               );
               setIsPlaying(true);
             }}

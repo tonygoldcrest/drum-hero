@@ -21,6 +21,8 @@ export function useAudioPlayer(
   const [currentTime, setCurrentTime] = useState(0);
   const onEndedRef = useRef(onEnded);
 
+  onEndedRef.current = onEnded;
+
   useEffect(() => {
     if (trackData.length === 0) {
       return;

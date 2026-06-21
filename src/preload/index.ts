@@ -18,7 +18,8 @@ export type Channels =
   | 'open-song-directory'
   | 'midi-device-list'
   | 'listen-midi'
-  | 'stop-listen-midi';
+  | 'stop-listen-midi'
+  | 'update-song';
 
 const electronHandler = {
   ipcRenderer: {

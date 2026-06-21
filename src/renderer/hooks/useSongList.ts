@@ -36,6 +36,11 @@ export function useSongList() {
     );
   }, [setCurrentPath]);
   useEffect(() => {
+    return window.electron.ipcRenderer.on<SongData>('update-song', (song) => {
+      setSongList((prev) => prev.map((s) => (s.id === song.id ? song : s)));
+    });
+  }, []);
+  useEffect(() => {
     return window.electron.ipcRenderer.on<IpcSplitSongResponse>(
       'split-song',
       ({ id, progress, success, song, error }) => {

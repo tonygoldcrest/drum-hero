@@ -20,6 +20,8 @@ import { useMemo } from 'react';
 import { Mode } from './SongFilter';
 import { SongMenu } from './SongMenu';
 import themedark from '../theme';
+import { Difficulty } from 'scan-chart';
+import { getStarRating } from '../views/utils';
 
 function DifficultyRing({ value }: { value: number }) {
   const size = 44;
@@ -96,7 +98,7 @@ export function SongListItem({
     diff_drums,
     liked,
     audio,
-    score,
+    scoreData,
   },
   onLikeChange,
   onDownload,
@@ -109,6 +111,21 @@ export function SongListItem({
   stemToolsStatus,
 }: SongListItemProps) {
   const navigate = useNavigate();
+  const starRating = useMemo<number>(() => {
+    if (!scoreData) {
+      return 0;
+    }
+
+    const difficulties: Difficulty[] = ['expert', 'hard', 'medium', 'easy'];
+
+    for (let i = 0; i < difficulties.length; i++) {
+      if (scoreData[difficulties[i]]) {
+        return getStarRating(scoreData[difficulties[i]]);
+      }
+    }
+
+    return 0;
+  }, [scoreData]);
   const indicator = useMemo(() => {
     if (mode === 'local') {
       return (
@@ -235,11 +252,13 @@ export function SongListItem({
             {times(5, (num) => (
               <FontAwesomeIcon
                 key={num}
-                icon={score && num < score ? faStarSolid : faStarRegular}
+                icon={
+                  starRating && num < starRating ? faStarSolid : faStarRegular
+                }
                 size="xs"
                 style={{
                   color:
-                    score && num < score
+                    starRating && num < starRating
                       ? themedark.color.star
                       : themedark.color.textDim,
                 }}

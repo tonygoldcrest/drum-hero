@@ -1,3 +1,5 @@
+import { Difficulty } from 'scan-chart';
+
 export interface SongData {
   id: string;
   dir: string;
@@ -53,7 +55,13 @@ export interface SongData {
   updatedAt?: string;
   format: 'mid' | 'chart';
   audio: AudioData[];
-  score?: number;
+  scoreData?: Record<Difficulty, ScoreData>;
+}
+
+export interface ScoreData {
+  hitNotes: number;
+  totalNotes: number;
+  falseHits: number;
 }
 
 export interface AudioData {
@@ -103,6 +111,9 @@ export interface MidiMapping {
   tom2?: number[];
   tom3?: number[];
 }
+
+export type IpcUpdateSongPayload = Pick<SongData, 'id'> &
+  Partial<Omit<SongData, 'id'>>;
 
 export interface IpcLoadSongResponse {
   data: SongData;
