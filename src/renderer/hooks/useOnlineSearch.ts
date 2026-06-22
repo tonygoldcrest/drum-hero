@@ -241,7 +241,6 @@ export function useOnlineSearch(active: boolean, search: string) {
     }
 
     pageRef.current += 1;
-    setLoading(true);
     fetchPage(searchRef.current, pageRef.current, true);
   }, [loading, hasMore, fetchPage]);
 
