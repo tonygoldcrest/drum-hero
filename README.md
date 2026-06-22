@@ -1,11 +1,11 @@
 # <img width="64" height="64" alt="SightKick Logo Github" src="https://github.com/user-attachments/assets/e7b4df52-573e-4ac1-af78-83c425ac0301" /> SightKick
 
+A drum sightreading game with sheet music and thousands of songs.
+
 <h1 align="center">
   <a href="https://sightkick.dev">Guide</a> |
   <a href="https://github.com/tonygoldcrest/sightkick/releases">Download</a>
 </h1>
-
-A drum sightreading game with sheet music and thousands of songs.
 
 ## Requirements
 
