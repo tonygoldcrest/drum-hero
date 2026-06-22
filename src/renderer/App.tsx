@@ -71,6 +71,7 @@ export default function App() {
               colorText: themedark.color.textMuted,
               defaultColor: themedark.control.sliderFill,
               colorSuccess: themedark.color.accent,
+              remainingColor: themedark.control.sliderTrack,
             },
             Notification: {
               colorError: themedark.color.accent,
