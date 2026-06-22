@@ -56,7 +56,9 @@ export function SongView() {
       setScoreData(score);
       setIsScoreModalOpen(true);
 
-      if (id) {
+      const previousScore = songData?.scoreData?.[activeDifficulty] ?? 0;
+
+      if (id && score > previousScore) {
         window.electron.ipcRenderer.sendMessage('update-song', {
           id,
           scoreData: { [activeDifficulty]: score },
