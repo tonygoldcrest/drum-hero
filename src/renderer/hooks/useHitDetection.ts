@@ -38,6 +38,7 @@ export function useHitDetection(
   chart: ParsedChart | null,
 ): HitDetectionResult {
   const hitKeysRef = useRef<Set<string>>(new Set());
+  const hiddenElsRef = useRef<Map<string, SVGElement>>(new Map());
   const incorrectHitCountRef = useRef<number>(0);
   const renderDataRef = useRef(renderData);
   const chartRef = useRef(chart);
@@ -60,6 +61,13 @@ export function useHitDetection(
         }
       }
 
+      for (const [key, el] of hiddenElsRef.current) {
+        if (parseInt(key) >= currentTick) {
+          el.style.fill = '';
+          hiddenElsRef.current.delete(key);
+        }
+      }
+
       incorrectHitCountRef.current = 0;
     }
 
@@ -69,6 +77,7 @@ export function useHitDetection(
   useEffect(() => {
     renderDataRef.current = renderData;
     hitKeysRef.current.clear();
+    hiddenElsRef.current.clear();
     incorrectHitCountRef.current = 0;
   }, [renderData]);
 
@@ -161,12 +170,17 @@ export function useHitDetection(
               hitKeysRef.current.add(`${hit.tick}:${p}`),
             );
             hit.note.getKeys().forEach((k, i) => {
-              if (newPrefixes.includes(keyPrefix(k))) {
-                const el = hit.note.noteHeads[i]?.getSVGElement();
+              const p = keyPrefix(k);
 
-                if (el?.style.fill) {
-                  el.style.fill = HIT_NOTE_COLOR;
-                }
+              if (!newPrefixes.includes(p)) {
+                return;
+              }
+
+              const el = hit.note.noteHeads[i]?.getSVGElement();
+
+              if (el) {
+                el.style.fill = HIT_NOTE_COLOR;
+                hiddenElsRef.current.set(`${hit.tick}:${p}`, el);
               }
             });
           } else {

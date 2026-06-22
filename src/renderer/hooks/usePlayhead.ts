@@ -1,4 +1,11 @@
-import { RefObject, createRef, useEffect, useMemo, useState } from 'react';
+import {
+  RefObject,
+  createRef,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { ParsedChart, RenderData } from '../../chart-parser/types';
 import { PlayheadStyle } from '../types';
 import { ActiveNoteInfo } from './types';
@@ -8,6 +15,25 @@ export interface CursorPosition {
   left: number;
   top: number;
   height: number;
+}
+
+function getScrollParent(node: HTMLElement | null): HTMLElement | null {
+  let el = node?.parentElement ?? null;
+
+  while (el) {
+    const { overflowY } = getComputedStyle(el);
+
+    if (
+      (overflowY === 'auto' || overflowY === 'scroll') &&
+      el.scrollHeight > el.clientHeight
+    ) {
+      return el;
+    }
+
+    el = el.parentElement;
+  }
+
+  return null;
 }
 
 interface UsePlayheadParams {
@@ -117,15 +143,37 @@ export function usePlayhead({
     }
   }, [currentTick, renderData]);
 
+  const scrollParentRef = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     if (playheadStyle === 'None' || highlightedMeasureIndex < 0) {
       return;
     }
 
-    highlightsRef[highlightedMeasureIndex]?.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center',
-    });
+    const el = highlightsRef[highlightedMeasureIndex]?.current;
+
+    if (!el) {
+      return;
+    }
+
+    const scrollParent =
+      scrollParentRef.current ??
+      (scrollParentRef.current = getScrollParent(el));
+
+    if (!scrollParent) {
+      return;
+    }
+
+    const elRect = el.getBoundingClientRect();
+    const parentRect = scrollParent.getBoundingClientRect();
+    const margin = parentRect.height * 0.25;
+    const outOfView =
+      elRect.top < parentRect.top + margin ||
+      elRect.bottom > parentRect.bottom - margin;
+
+    if (outOfView) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   }, [highlightsRef, highlightedMeasureIndex, playheadStyle]);
 
   return {

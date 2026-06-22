@@ -78,12 +78,21 @@ export class AudioPlayer {
     this.context.resume();
   }
 
+  get outputLatency() {
+    return this.context.outputLatency || this.context.baseLatency || 0;
+  }
+
   get currentTime() {
     if (this.startedAt < 0) {
       return 0;
     }
 
-    return this.context.currentTime - this.startedAt + this.offset;
+    return (
+      this.context.currentTime -
+      this.startedAt +
+      this.offset -
+      this.outputLatency
+    );
   }
 
   destroy() {

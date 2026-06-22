@@ -185,7 +185,25 @@ describe('usePlayhead', () => {
     expect(result.current.activeNoteInfo).toBeNull();
   });
 
-  it('scrolls the newly highlighted measure into view', () => {
+  function scrollableMeasureEl(rect: { top: number; bottom: number }) {
+    const scrollParent = document.createElement('div');
+
+    scrollParent.style.overflowY = 'auto';
+    Object.defineProperty(scrollParent, 'scrollHeight', { value: 1000 });
+    Object.defineProperty(scrollParent, 'clientHeight', { value: 500 });
+    scrollParent.getBoundingClientRect = () =>
+      ({ top: 0, bottom: 500, height: 500 }) as DOMRect;
+
+    const el = document.createElement('div');
+
+    el.getBoundingClientRect = () => ({ ...rect, height: 100 }) as DOMRect;
+    scrollParent.appendChild(el);
+    document.body.appendChild(scrollParent);
+
+    return el;
+  }
+
+  it('scrolls the highlighted measure into view when it leaves the viewport band', () => {
     const data = [measure(0, 480), measure(480, 960)];
     const { result, rerender } = setup({
       currentTime: 0,
@@ -193,11 +211,11 @@ describe('usePlayhead', () => {
       renderData: data,
       playheadStyle: 'Measure',
     });
+    const el = scrollableMeasureEl({ top: 600, bottom: 700 });
     const scrollIntoView = vi.fn();
 
-    result.current.highlightsRef[1].current = {
-      scrollIntoView,
-    } as unknown as HTMLDivElement;
+    el.scrollIntoView = scrollIntoView;
+    result.current.highlightsRef[1].current = el;
 
     rerender({
       currentTime: 0,
@@ -210,5 +228,29 @@ describe('usePlayhead', () => {
       behavior: 'smooth',
       block: 'center',
     });
+  });
+
+  it('does not scroll while the highlighted measure stays within the band', () => {
+    const data = [measure(0, 480), measure(480, 960)];
+    const { result, rerender } = setup({
+      currentTime: 0,
+      currentTick: 100,
+      renderData: data,
+      playheadStyle: 'Measure',
+    });
+    const el = scrollableMeasureEl({ top: 240, bottom: 260 });
+    const scrollIntoView = vi.fn();
+
+    el.scrollIntoView = scrollIntoView;
+    result.current.highlightsRef[1].current = el;
+
+    rerender({
+      currentTime: 0,
+      currentTick: 500,
+      renderData: data,
+      playheadStyle: 'Measure',
+    });
+
+    expect(scrollIntoView).not.toHaveBeenCalled();
   });
 });

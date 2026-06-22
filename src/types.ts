@@ -100,6 +100,7 @@ export interface MidiMessage {
   type: MidiMessageType;
   note: number;
   velocity: number;
+  channel?: number;
 }
 
 export interface MidiMapping {

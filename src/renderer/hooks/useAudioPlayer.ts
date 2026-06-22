@@ -49,12 +49,13 @@ export function useAudioPlayer(
       return undefined;
     }
 
-    const audioPolling = setInterval(() => {
+    let rafId = requestAnimationFrame(function poll() {
       setCurrentTime(audioPlayer.currentTime);
-    }, 20);
+      rafId = requestAnimationFrame(poll);
+    });
 
     return () => {
-      clearInterval(audioPolling);
+      cancelAnimationFrame(rafId);
 
       if (isDev) {
         audioPlayer.stop();

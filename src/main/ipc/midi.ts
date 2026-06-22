@@ -26,8 +26,11 @@ export async function listenMidi(event: Electron.IpcMainEvent, port: number) {
 
   activeInput = input;
 
-  input.on('message', (_deltaTime, [type, note, velocity]) => {
-    event.reply('listen-midi', { type, note, velocity });
+  input.on('message', (_deltaTime, [status, note, velocity]) => {
+    const type = status & 0xf0;
+    const channel = status & 0x0f;
+
+    event.reply('listen-midi', { type, note, velocity, channel });
   });
 
   input.openPort(port);
