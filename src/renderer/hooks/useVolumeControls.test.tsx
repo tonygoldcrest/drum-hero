@@ -1,10 +1,21 @@
 import { ReactElement } from 'react';
 import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AudioPlayer } from '../services/audio-player/player';
 import { TrackConfig } from '../services/audio-player/types';
 import { AudioVolumeProps } from '../components/AudioVolume';
 import { useVolumeControls } from './useVolumeControls';
+
+const { settings } = vi.hoisted(() => ({
+  settings: {
+    mixerLevels: {},
+    setMixerLevels: vi.fn(),
+  },
+}));
+
+vi.mock('../context/AppContext', () => ({
+  useApp: () => settings,
+}));
 
 type Result = { current: ReturnType<typeof useVolumeControls> };
 
@@ -29,7 +40,7 @@ function render(names: string[], player: AudioPlayer | null) {
 }
 
 function control(result: Result, name: string) {
-  const found = result.current.volumeControls.find((c) => c.trackName === name);
+  const found = result.current.volumeControls.find((c) => c.stemName === name);
 
   if (!found) {
     throw new Error(`no control for ${name}`);
@@ -72,7 +83,6 @@ describe('useVolumeControls', () => {
     expect(result.current.volumeControls).toHaveLength(2);
     result.current.volumeControls.forEach((c) => {
       expect(c.volume).toBe(100);
-      expect(c.isMuted).toBe(false);
       expect(c.isSoloed).toBe(false);
     });
   });
@@ -108,13 +118,11 @@ describe('useVolumeControls', () => {
     mute(result, 'drums');
 
     expect(control(result, 'drums').volume).toBe(0);
-    expect(control(result, 'drums').isMuted).toBe(true);
     expect(player.audioTracks[0].setVolume).toHaveBeenLastCalledWith(0);
 
     mute(result, 'drums');
 
     expect(control(result, 'drums').volume).toBe(80);
-    expect(control(result, 'drums').isMuted).toBe(false);
     expect(player.audioTracks[0].setVolume).toHaveBeenLastCalledWith(0.8);
   });
 
@@ -128,9 +136,7 @@ describe('useVolumeControls', () => {
 
     expect(control(result, 'drums').isSoloed).toBe(true);
     expect(control(result, 'drums').volume).toBe(100);
-    expect(control(result, 'guitar').isMuted).toBe(true);
     expect(control(result, 'guitar').volume).toBe(0);
-    expect(control(result, 'bass').isMuted).toBe(true);
   });
 
   it('un-soloing the only soloed track restores everyone', () => {
@@ -143,7 +149,6 @@ describe('useVolumeControls', () => {
     solo(result, 'drums');
 
     expect(control(result, 'drums').isSoloed).toBe(false);
-    expect(control(result, 'guitar').isMuted).toBe(false);
     expect(control(result, 'guitar').volume).toBe(100);
   });
 
@@ -158,9 +163,7 @@ describe('useVolumeControls', () => {
 
     expect(control(result, 'drums').isSoloed).toBe(true);
     expect(control(result, 'guitar').isSoloed).toBe(true);
-    expect(control(result, 'guitar').isMuted).toBe(false);
     expect(control(result, 'guitar').volume).toBe(100);
-    expect(control(result, 'bass').isMuted).toBe(true);
   });
 
   it('un-soloing one of two soloed tracks mutes only that track', () => {
@@ -174,7 +177,6 @@ describe('useVolumeControls', () => {
     solo(result, 'drums');
 
     expect(control(result, 'drums').isSoloed).toBe(false);
-    expect(control(result, 'drums').isMuted).toBe(true);
     expect(control(result, 'drums').volume).toBe(0);
     expect(control(result, 'guitar').isSoloed).toBe(true);
   });
@@ -205,11 +207,140 @@ describe('useVolumeControls', () => {
     );
 
     mute(result, 'drums');
-    expect(control(result, 'drums').isMuted).toBe(true);
+    expect(control(result, 'drums').volume).toBe(0);
 
     rerender({ td: two });
 
     expect(result.current.volumeControls).toHaveLength(2);
-    expect(control(result, 'drums').isMuted).toBe(false);
+    expect(control(result, 'drums').volume).toBe(100);
+  });
+
+  describe('persistence', () => {
+    beforeEach(() => {
+      settings.setMixerLevels.mockClear();
+      settings.mixerLevels = {};
+    });
+
+    it('initialises from a persisted level', () => {
+      settings.mixerLevels = { drums: 60, guitar: 80 };
+
+      const { result } = render(
+        ['drums', 'guitar'],
+        makePlayer(['drums', 'guitar']),
+      );
+
+      expect(control(result, 'drums').volume).toBe(60);
+      expect(control(result, 'guitar').volume).toBe(80);
+    });
+
+    it('falls back to 100 for a stem with no persisted level', () => {
+      settings.mixerLevels = { drums: 60 };
+
+      const { result } = render(
+        ['drums', 'guitar'],
+        makePlayer(['drums', 'guitar']),
+      );
+
+      expect(control(result, 'guitar').volume).toBe(100);
+    });
+
+    it('uses the persisted level when the track list changes, not the transient muted volume', () => {
+      settings.mixerLevels = { drums: 80 };
+
+      const one = tracks('drums');
+      const two = tracks('drums', 'guitar');
+      const player = makePlayer(['drums', 'guitar']);
+      const { result, rerender } = renderHook(
+        ({ td }: { td: TrackConfig[] }) => useVolumeControls(td, player),
+        { initialProps: { td: one } },
+      );
+
+      mute(result, 'drums');
+      expect(control(result, 'drums').volume).toBe(0);
+
+      rerender({ td: two });
+
+      expect(control(result, 'drums').volume).toBe(80);
+    });
+
+    it('writes to mixerLevels when the slider changes', () => {
+      const { result } = render(['drums'], makePlayer(['drums']));
+
+      setVolume(result, 'drums', 75);
+
+      expect(settings.setMixerLevels).toHaveBeenCalledWith({ drums: 75 });
+    });
+
+    it('writes zero to mixerLevels when muting', () => {
+      const { result } = render(['drums'], makePlayer(['drums']));
+
+      setVolume(result, 'drums', 80);
+      settings.setMixerLevels.mockClear();
+      mute(result, 'drums');
+
+      expect(settings.setMixerLevels).toHaveBeenCalledWith({ drums: 0 });
+    });
+
+    it('writes the restored volume to mixerLevels when unmuting', () => {
+      const { result } = render(['drums'], makePlayer(['drums']));
+
+      setVolume(result, 'drums', 80);
+      mute(result, 'drums');
+      settings.setMixerLevels.mockClear();
+      mute(result, 'drums');
+
+      expect(settings.setMixerLevels).toHaveBeenCalledWith({ drums: 80 });
+    });
+
+    it('does not write to mixerLevels when soloing the first track', () => {
+      const { result } = render(
+        ['drums', 'guitar'],
+        makePlayer(['drums', 'guitar']),
+      );
+
+      solo(result, 'drums');
+
+      expect(settings.setMixerLevels).not.toHaveBeenCalled();
+    });
+
+    it('does not write to mixerLevels when un-soloing the last soloed track', () => {
+      const { result } = render(
+        ['drums', 'guitar'],
+        makePlayer(['drums', 'guitar']),
+      );
+
+      solo(result, 'drums');
+      settings.setMixerLevels.mockClear();
+      solo(result, 'drums');
+
+      expect(settings.setMixerLevels).not.toHaveBeenCalled();
+    });
+
+    it('does not write to mixerLevels when soloing a second track', () => {
+      const { result } = render(
+        ['drums', 'guitar', 'bass'],
+        makePlayer(['drums', 'guitar', 'bass']),
+      );
+
+      solo(result, 'drums');
+      settings.setMixerLevels.mockClear();
+      solo(result, 'guitar');
+
+      expect(settings.setMixerLevels).not.toHaveBeenCalled();
+    });
+
+    it('does not write to mixerLevels when un-soloing one of multiple soloed tracks', () => {
+      const { result } = render(
+        ['drums', 'guitar', 'bass'],
+        makePlayer(['drums', 'guitar', 'bass']),
+      );
+
+      solo(result, 'drums');
+      solo(result, 'guitar');
+      settings.setMixerLevels.mockClear();
+      solo(result, 'drums');
+
+      expect(settings.setMixerLevels).not.toHaveBeenCalled();
+    });
   });
 });

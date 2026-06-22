@@ -26,6 +26,8 @@ interface AppContextValue {
   midiMapping: MidiMapping;
   assignNote: (element: keyof MidiMapping, note: number) => void;
   removeNote: (element: keyof MidiMapping, note: number) => void;
+  mixerLevels: Record<string, number>;
+  setMixerLevels: (mixerLevels: Record<string, number>) => void;
 }
 
 const EMPTY_MIDI_MAPPING: MidiMapping = {
@@ -83,6 +85,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [selectedDevice, setSelectedDevice] = usePersisted<MidiDevice | null>(
     'settings.selectedDevice',
     null,
+  );
+  const [mixerLevels, setMixerLevels] = usePersisted<Record<string, number>>(
+    'settings.mixerLevels',
+    {},
   );
   const [midiMappings, setMidiMappings] = usePersisted<
     Record<string, MidiMapping>
@@ -176,6 +182,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         midiMapping,
         assignNote,
         removeNote,
+        mixerLevels,
+        setMixerLevels,
       }}
     >
       {children}

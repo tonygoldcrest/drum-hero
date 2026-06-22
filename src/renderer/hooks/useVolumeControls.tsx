@@ -1,13 +1,19 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { AudioPlayer } from '../services/audio-player/player';
 import { TrackConfig } from '../services/audio-player/types';
 import { AudioVolume } from '../components/AudioVolume';
+import { useApp } from '../context/AppContext';
 
 interface VolumeControl {
-  trackName: string;
+  stemName: string;
   volume: number;
   previousVolume?: number;
-  isMuted: boolean;
   isSoloed: boolean;
 }
 
@@ -21,6 +27,36 @@ export function useVolumeControls(
   audioPlayer: AudioPlayer | null,
 ): VolumeControlsResult {
   const [volumeControls, setVolumeControls] = useState<VolumeControl[]>([]);
+  const { mixerLevels, setMixerLevels } = useApp();
+  const mixerLevelsRef = useRef(mixerLevels);
+  const volumeControlsRef = useRef(volumeControls);
+
+  mixerLevelsRef.current = mixerLevels;
+  volumeControlsRef.current = volumeControls;
+
+  const updateControlRef = useRef(
+    (
+      stemName: string,
+      control: Partial<VolumeControl> & { volume: number },
+    ) => {
+      setMixerLevels({
+        ...mixerLevelsRef.current,
+        [stemName]: control.volume,
+      });
+
+      const prev = volumeControlsRef.current.find(
+        (c) => c.stemName === stemName,
+      );
+
+      setVolumeControls([
+        ...volumeControlsRef.current.filter((c) => c.stemName !== stemName),
+        {
+          ...prev,
+          ...control,
+        } as VolumeControl,
+      ]);
+    },
+  );
 
   useEffect(() => {
     if (trackData.length === 0) {
@@ -29,13 +65,13 @@ export function useVolumeControls(
 
     setVolumeControls(
       trackData.map(({ name }) => ({
-        trackName: name,
-        volume: 100,
-        isMuted: false,
+        stemName: name,
+        volume: mixerLevelsRef.current[name] ?? 100,
         isSoloed: false,
       })),
     );
   }, [trackData]);
+
   useEffect(() => {
     if (volumeControls.length === 0 || !audioPlayer) {
       return;
@@ -43,7 +79,7 @@ export function useVolumeControls(
 
     volumeControls.forEach((control) => {
       const audioTrack = audioPlayer.audioTracks.find(
-        (track) => track.name === control.trackName,
+        (track) => track.name === control.stemName,
       );
 
       if (!audioTrack) {
@@ -54,32 +90,19 @@ export function useVolumeControls(
     });
   }, [volumeControls, audioPlayer]);
 
-  const handleMute = useCallback(
-    (control: VolumeControl) => {
-      if (control.isMuted) {
-        setVolumeControls([
-          ...volumeControls.filter((c) => c !== control),
-          {
-            ...control,
-            volume: control.previousVolume ?? 100,
-            previousVolume: undefined,
-            isMuted: false,
-          },
-        ]);
-      } else {
-        setVolumeControls([
-          ...volumeControls.filter((c) => c !== control),
-          {
-            ...control,
-            volume: 0,
-            previousVolume: control.volume,
-            isMuted: true,
-          },
-        ]);
-      }
-    },
-    [volumeControls],
-  );
+  const handleMute = useCallback((control: VolumeControl) => {
+    if (control.volume === 0) {
+      updateControlRef.current(control.stemName, {
+        volume: control.previousVolume ?? 100,
+        previousVolume: undefined,
+      });
+    } else {
+      updateControlRef.current(control.stemName, {
+        volume: 0,
+        previousVolume: control.volume,
+      });
+    }
+  }, []);
   const handleSolo = useCallback(
     (control: VolumeControl) => {
       const otherControls = volumeControls.filter((c) => c !== control);
@@ -92,7 +115,6 @@ export function useVolumeControls(
             {
               ...control,
               isSoloed: false,
-              isMuted: true,
               volume: 0,
               previousVolume: control.volume,
             },
@@ -103,7 +125,6 @@ export function useVolumeControls(
             {
               ...control,
               isSoloed: true,
-              isMuted: false,
               volume: control.previousVolume ?? 100,
               previousVolume: undefined,
             },
@@ -117,7 +138,6 @@ export function useVolumeControls(
         setVolumeControls([
           ...otherControls.map((c) => ({
             ...c,
-            isMuted: false,
             previousVolume: undefined,
             volume: c.previousVolume ?? 100,
           })),
@@ -127,7 +147,6 @@ export function useVolumeControls(
         setVolumeControls([
           ...otherControls.map((c) => ({
             ...c,
-            isMuted: true,
             previousVolume: c.volume,
             volume: 0,
           })),
@@ -142,23 +161,22 @@ export function useVolumeControls(
       return [];
     }
 
-    return volumeControls
-      .sort((a, b) => a.trackName.localeCompare(b.trackName))
+    return [...volumeControls]
+      .sort((a, b) => a.stemName.localeCompare(b.stemName))
       .map((control) => (
         <AudioVolume
-          key={control.trackName}
-          name={control.trackName}
+          key={control.stemName}
+          name={control.stemName}
           volume={control.volume}
-          isMuted={control.isMuted}
+          isMuted={control.volume === 0}
           isSoloed={control.isSoloed}
           onMuteClick={() => handleMute(control)}
           onSoloClick={() => handleSolo(control)}
-          onChange={(value) =>
-            setVolumeControls([
-              ...volumeControls.filter((c) => c !== control),
-              { ...control, volume: value },
-            ])
-          }
+          onChange={(value) => {
+            updateControlRef.current(control.stemName, {
+              volume: value,
+            });
+          }}
         />
       ));
   }, [volumeControls, audioPlayer, handleMute, handleSolo]);
