@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Layout } from 'antd';
 import { Content } from 'antd/es/layout/layout';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -19,9 +19,8 @@ import { useVolumeControls } from '../hooks/useVolumeControls';
 import { secondsToTicks, ticksToSeconds } from './utils';
 import { useSheetMusic } from '../hooks/useSheetMusic';
 import { usePlayhead } from '../hooks/usePlayhead';
-import { useActiveNoteScale } from '../hooks/useActiveNoteScale';
 import { useHitDetection } from '../hooks/useHitDetection';
-import { useProgressColoring } from '../hooks/useProgressColoring';
+import { HitHandler, useNoteDecoration } from '../hooks/useNoteDecoration';
 import { ScoreModal } from '../components/ScoreModal';
 import { ScoreData } from '../../types';
 
@@ -103,12 +102,14 @@ export function SongView() {
     renderData,
     playheadStyle,
   });
+  const onHitRef = useRef<HitHandler | null>(null);
   const { hitKeys, incorrectHitCount } = useHitDetection(
     currentTick,
     selectedDevice,
     midiMapping,
     renderData,
     chart,
+    onHitRef,
   );
 
   useEffect(() => {
@@ -126,14 +127,13 @@ export function SongView() {
     });
   }, []);
 
-  useActiveNoteScale(activeNoteInfo, renderData);
-
-  useProgressColoring(
+  useNoteDecoration(
     activeNoteInfo,
     playheadStyle,
     renderData,
     progressColoring,
     hitKeys,
+    onHitRef,
   );
 
   return (

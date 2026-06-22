@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { RefObject, useRef, useEffect } from 'react';
 import { ParsedChart, RenderData } from '../../chart-parser/types';
 import {
   MidiDevice,
@@ -6,7 +6,8 @@ import {
   MidiMessage,
   MidiMessageType,
 } from '../../types';
-import { HIT_NOTE_COLOR, secondsToTicks, ticksToSeconds } from '../views/utils';
+import { secondsToTicks, ticksToSeconds } from '../views/utils';
+import { HitHandler } from './useNoteDecoration';
 
 const MIDI_MAPPING_TO_KEYS: Record<keyof MidiMapping, string[]> = {
   kick: ['f/4', 'e/4'],
@@ -36,9 +37,9 @@ export function useHitDetection(
   midiMapping: MidiMapping,
   renderData: RenderData[],
   chart: ParsedChart | null,
+  onHitRef: RefObject<HitHandler | null>,
 ): HitDetectionResult {
   const hitKeysRef = useRef<Set<string>>(new Set());
-  const hiddenElsRef = useRef<Map<string, SVGElement>>(new Map());
   const incorrectHitCountRef = useRef<number>(0);
   const renderDataRef = useRef(renderData);
   const chartRef = useRef(chart);
@@ -61,13 +62,6 @@ export function useHitDetection(
         }
       }
 
-      for (const [key, el] of hiddenElsRef.current) {
-        if (parseInt(key) >= currentTick) {
-          el.style.fill = '';
-          hiddenElsRef.current.delete(key);
-        }
-      }
-
       incorrectHitCountRef.current = 0;
     }
 
@@ -77,7 +71,6 @@ export function useHitDetection(
   useEffect(() => {
     renderDataRef.current = renderData;
     hitKeysRef.current.clear();
-    hiddenElsRef.current.clear();
     incorrectHitCountRef.current = 0;
   }, [renderData]);
 
@@ -169,20 +162,7 @@ export function useHitDetection(
             newPrefixes.forEach((p) =>
               hitKeysRef.current.add(`${hit.tick}:${p}`),
             );
-            hit.note.getKeys().forEach((k, i) => {
-              const p = keyPrefix(k);
-
-              if (!newPrefixes.includes(p)) {
-                return;
-              }
-
-              const el = hit.note.noteHeads[i]?.getSVGElement();
-
-              if (el) {
-                el.style.fill = HIT_NOTE_COLOR;
-                hiddenElsRef.current.set(`${hit.tick}:${p}`, el);
-              }
-            });
+            onHitRef.current?.(hit.note, newPrefixes);
           } else {
             incorrectHitCountRef.current += 1;
           }
@@ -191,7 +171,7 @@ export function useHitDetection(
         }
       },
     );
-  }, [selectedDevice]);
+  }, [selectedDevice, onHitRef]);
 
   return { hitKeys: hitKeysRef, incorrectHitCount: incorrectHitCountRef };
 }

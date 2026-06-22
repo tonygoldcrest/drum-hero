@@ -1,6 +1,7 @@
+import { RefObject } from 'react';
 import { renderHook } from '@testing-library/react';
 import { act } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { StaveNote } from 'vexflow';
 import {
   ParsedChart,
@@ -10,6 +11,7 @@ import {
 import { MidiDevice, MidiMapping, MidiMessageType } from '../../types';
 import { installIpcMock, IpcMock } from './test-support';
 import { useHitDetection } from './useHitDetection';
+import { HitHandler } from './useNoteDecoration';
 
 let ipc: IpcMock;
 const CHART = {
@@ -53,13 +55,22 @@ interface Props {
 }
 
 function setup(initial: Props) {
+  const onHit = vi.fn<HitHandler>();
+  const onHitRef: RefObject<HitHandler | null> = { current: onHit };
   const view = renderHook(
     ({ currentTick, device, mapping, renderData }: Props) =>
-      useHitDetection(currentTick, device, mapping, renderData, CHART),
+      useHitDetection(
+        currentTick,
+        device,
+        mapping,
+        renderData,
+        CHART,
+        onHitRef,
+      ),
     { initialProps: initial },
   );
 
-  return view;
+  return { ...view, onHit };
 }
 
 function noteOn(note: number, velocity = 100) {
@@ -147,9 +158,9 @@ describe('useHitDetection', () => {
     expect(result.current.incorrectHitCount.current).toBe(0);
   });
 
-  it('registers a correct hit and colours the note head', () => {
+  it('registers a correct hit and notifies onHit with the matched note', () => {
     const note = fakeNote(['c/5']);
-    const { result } = setup({
+    const { result, onHit } = setup({
       currentTick: 480,
       device: DEVICE,
       mapping: { snare: [38] },
@@ -160,9 +171,7 @@ describe('useHitDetection', () => {
 
     expect(result.current.hitKeys.current.has('480:c/5')).toBe(true);
     expect(result.current.incorrectHitCount.current).toBe(0);
-    expect(
-      (note.noteHeads[0].getSVGElement() as SVGElement).style.fill,
-    ).not.toBe('#ffffff');
+    expect(onHit).toHaveBeenCalledWith(note, ['c/5']);
   });
 
   it('ignores note-on with zero velocity', () => {

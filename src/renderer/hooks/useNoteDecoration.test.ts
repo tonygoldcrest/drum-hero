@@ -1,20 +1,25 @@
+import { RefObject } from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { StaveNote } from 'vexflow';
 import { RenderData } from '../../chart-parser/types';
 import { PlayheadStyle } from '../types';
-import { useProgressColoring } from './useProgressColoring';
+import { HitHandler, useNoteDecoration } from './useNoteDecoration';
 import { ActiveNoteInfo } from './types';
 
 const HIT_RGBA = 'rgba(0, 0, 0, 0)';
 const MISSED_NOTE_COLOR = 'rgb(160, 152, 144)';
 
+function svg(): SVGElement {
+  return document.createElementNS(
+    'http://www.w3.org/2000/svg',
+    'path',
+  ) as SVGElement;
+}
+
 function fakeNote(keys: string[]): StaveNote {
   const noteHeads = keys.map(() => {
-    const el = document.createElementNS(
-      'http://www.w3.org/2000/svg',
-      'path',
-    ) as SVGElement;
+    const el = svg();
 
     el.style.fill = '';
 
@@ -73,11 +78,21 @@ function setup(
   hitKeys: { current: Set<string> },
   initial: Props,
 ) {
-  return renderHook(
+  const onHitRef: RefObject<HitHandler | null> = { current: null };
+  const view = renderHook(
     ({ activeNote, playheadStyle, enabled }: Props) =>
-      useProgressColoring(activeNote, playheadStyle, rd, enabled, hitKeys),
+      useNoteDecoration(
+        activeNote,
+        playheadStyle,
+        rd,
+        enabled,
+        hitKeys,
+        onHitRef,
+      ),
     { initialProps: initial },
   );
+
+  return { ...view, onHitRef };
 }
 
 const NO_HITS = { current: new Set<string>() };
@@ -98,7 +113,7 @@ beforeEach(() => {
   ]);
 });
 
-describe('useProgressColoring', () => {
+describe('useNoteDecoration — progress colouring', () => {
   it('colours notes before the active note within a measure', () => {
     const { rerender } = setup(rd, NO_HITS, {
       activeNote: active(rd, 0, 0, 'm0-0'),
@@ -251,5 +266,198 @@ describe('useProgressColoring', () => {
 
     expect(fill(chordData, 0, 0, 0)).toBe(MISSED_NOTE_COLOR);
     expect(fill(chordData, 0, 0, 1)).toBe(MISSED_NOTE_COLOR);
+  });
+});
+
+describe('useNoteDecoration — active note scale', () => {
+  const EMPTY: RenderData[] = [];
+
+  function scaleNote(key: string, els: SVGElement[]): ActiveNoteInfo {
+    return {
+      key,
+      noteHeadEls: els,
+      noteIdx: 0,
+      measureIdx: 0,
+      renderedNotes: [],
+    };
+  }
+
+  function renderScale(
+    activeNote: ActiveNoteInfo | null,
+    data: RenderData[] = EMPTY,
+  ) {
+    const onHitRef: RefObject<HitHandler | null> = { current: null };
+
+    return renderHook(
+      ({ a, d }: { a: ActiveNoteInfo | null; d: RenderData[] }) =>
+        useNoteDecoration(a, 'Cursor', d, true, NO_HITS, onHitRef),
+      { initialProps: { a: activeNote, d: data } },
+    );
+  }
+
+  it('scales the active note heads', () => {
+    const el = svg();
+
+    renderScale(scaleNote('a', [el]));
+
+    expect(el.style.transform).toBe('scale(1.5)');
+    expect(el.style.transformOrigin).toBe('center');
+  });
+
+  it('clears the transform when the active note becomes null', () => {
+    const el = svg();
+    const { rerender } = renderScale(scaleNote('a', [el]));
+
+    expect(el.style.transform).toBe('scale(1.5)');
+
+    act(() => rerender({ a: null, d: EMPTY }));
+
+    expect(el.style.transform).toBe('');
+  });
+
+  it('moves the scale from the old note to the new one', () => {
+    const a = svg();
+    const b = svg();
+    const { rerender } = renderScale(scaleNote('a', [a]));
+
+    act(() => rerender({ a: scaleNote('b', [b]), d: EMPTY }));
+
+    expect(a.style.transform).toBe('');
+    expect(b.style.transform).toBe('scale(1.5)');
+  });
+
+  it('does not re-apply when the key is unchanged', () => {
+    const first = svg();
+    const second = svg();
+    const { rerender } = renderScale(scaleNote('a', [first]));
+
+    act(() => rerender({ a: scaleNote('a', [second]), d: EMPTY }));
+
+    expect(second.style.transform).toBe('');
+    expect(first.style.transform).toBe('scale(1.5)');
+  });
+
+  it('scales every note head in a chord', () => {
+    const els = [svg(), svg(), svg()];
+
+    renderScale(scaleNote('chord', els));
+
+    els.forEach((el) => expect(el.style.transform).toBe('scale(1.5)'));
+  });
+
+  it('reset on renderData lets a matching key re-apply on a new note', () => {
+    const first = svg();
+    const second = svg();
+    const data = [{}] as unknown as RenderData[];
+    const { rerender } = renderScale(scaleNote('a', [first]), data);
+
+    expect(first.style.transform).toBe('scale(1.5)');
+
+    act(() =>
+      rerender({
+        a: scaleNote('a', [second]),
+        d: [{}] as unknown as RenderData[],
+      }),
+    );
+
+    expect(second.style.transform).toBe('scale(1.5)');
+  });
+
+  it('handles a sequence of active notes without leaking transforms', () => {
+    const a = svg();
+    const b = svg();
+    const c = svg();
+    const { rerender } = renderScale(scaleNote('a', [a]));
+
+    act(() => rerender({ a: scaleNote('b', [b]), d: EMPTY }));
+    act(() => rerender({ a: scaleNote('c', [c]), d: EMPTY }));
+    act(() => rerender({ a: null, d: EMPTY }));
+
+    expect(a.style.transform).toBe('');
+    expect(b.style.transform).toBe('');
+    expect(c.style.transform).toBe('');
+  });
+});
+
+describe('useNoteDecoration — immediate hit hiding', () => {
+  it('hides only the hit note heads as soon as onHit fires', () => {
+    const note = fakeNote(['c/5', 'g/5']);
+    const { onHitRef } = setup(rd, NO_HITS, {
+      activeNote: active(rd, 0, 0, 'm0-0'),
+      playheadStyle: 'Cursor',
+      enabled: true,
+    });
+
+    act(() => onHitRef.current!(note, ['c/5']));
+
+    expect((note.noteHeads[0].getSVGElement() as SVGElement).style.fill).toBe(
+      HIT_RGBA,
+    );
+    expect((note.noteHeads[1].getSVGElement() as SVGElement).style.fill).toBe(
+      '',
+    );
+  });
+
+  it('does nothing when the feature is disabled', () => {
+    const note = fakeNote(['c/5']);
+    const { onHitRef } = setup(rd, NO_HITS, {
+      activeNote: active(rd, 0, 0, 'm0-0'),
+      playheadStyle: 'Cursor',
+      enabled: false,
+    });
+
+    act(() => onHitRef.current!(note, ['c/5']));
+
+    expect((note.noteHeads[0].getSVGElement() as SVGElement).style.fill).toBe(
+      '',
+    );
+  });
+
+  it('resets immediate-hit fills on a backward seek', () => {
+    const note = fakeNote(['c/5']);
+    const { onHitRef, rerender } = setup(rd, NO_HITS, {
+      activeNote: active(rd, 1, 2, 'm1-2'),
+      playheadStyle: 'Cursor',
+      enabled: true,
+    });
+
+    act(() => onHitRef.current!(note, ['c/5']));
+    expect((note.noteHeads[0].getSVGElement() as SVGElement).style.fill).toBe(
+      HIT_RGBA,
+    );
+
+    act(() =>
+      rerender({
+        activeNote: active(rd, 0, 0, 'm0-0'),
+        playheadStyle: 'Cursor',
+        enabled: true,
+      }),
+    );
+
+    expect((note.noteHeads[0].getSVGElement() as SVGElement).style.fill).toBe(
+      '',
+    );
+  });
+
+  it('a hit active note is both scaled and hidden', () => {
+    const note = fakeNote(['c/5']);
+    const el = note.noteHeads[0].getSVGElement() as SVGElement;
+    const activeNote: ActiveNoteInfo = {
+      key: 'm0-0',
+      noteHeadEls: [el],
+      noteIdx: 0,
+      measureIdx: 0,
+      renderedNotes: rd[0].renderedNotes,
+    };
+    const { onHitRef } = setup(rd, NO_HITS, {
+      activeNote,
+      playheadStyle: 'Cursor',
+      enabled: true,
+    });
+
+    act(() => onHitRef.current!(note, ['c/5']));
+
+    expect(el.style.transform).toBe('scale(1.5)');
+    expect(el.style.fill).toBe(HIT_RGBA);
   });
 });
