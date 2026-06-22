@@ -106,7 +106,8 @@ export function ScoreModal({
             ))}
           </div>
           <div className="text-text-muted text-[18px]">
-            {(scoreData ? calculateAccuracy(scoreData) : 0) * 100}% accuracy
+            {(scoreData ? Math.round(calculateAccuracy(scoreData)) : 0) * 100}%
+            accuracy
           </div>
           <div className="flex flex-col gap-1 items-center">
             <div className="flex items-center text-text-muted text-[18px] gap-2">

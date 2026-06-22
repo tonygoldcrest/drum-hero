@@ -111,12 +111,19 @@ export function SongListItem({
   stemToolsStatus,
 }: SongListItemProps) {
   const navigate = useNavigate();
-  const starRating = useMemo(() => {
-    const score = (['expert', 'hard', 'medium', 'easy'] as Difficulty[])
-      .map((d) => scoreData?.[d])
-      .find(Boolean);
+  const score = useMemo(() => {
+    const result = (['expert', 'hard', 'medium', 'easy'] as Difficulty[])
+      .map((d) =>
+        scoreData?.[d] ? { difficulty: d, score: scoreData?.[d] } : null,
+      )
+      .find((item) => item !== null);
 
-    return score ? getStarRating(score) : 0;
+    return result
+      ? {
+          difficulty: result.difficulty,
+          starRating: getStarRating(result.score),
+        }
+      : null;
   }, [scoreData]);
   const indicator = useMemo(() => {
     if (mode === 'local') {
@@ -240,22 +247,30 @@ export function SongListItem({
             </div>
           )}
 
-          <div className="flex gap-1 items-center">
-            {times(5, (num) => (
-              <FontAwesomeIcon
-                key={num}
-                icon={
-                  starRating && num < starRating ? faStarSolid : faStarRegular
-                }
-                size="xs"
-                style={{
-                  color:
-                    starRating && num < starRating
-                      ? themedark.color.star
-                      : themedark.color.textDim,
-                }}
-              />
-            ))}
+          <div className="flex flex-col gap-1 items-center">
+            {score && (
+              <div className="text-xs text-text-dim">{score.difficulty}</div>
+            )}
+
+            <div className="flex gap-1 items-center">
+              {times(5, (num) => (
+                <FontAwesomeIcon
+                  key={num}
+                  icon={
+                    score && num < score.starRating
+                      ? faStarSolid
+                      : faStarRegular
+                  }
+                  size="xs"
+                  style={{
+                    color:
+                      score && num < score.starRating
+                        ? themedark.color.star
+                        : themedark.color.textDim,
+                  }}
+                />
+              ))}
+            </div>
           </div>
 
           {diff_drums && <DifficultyRing value={Number(diff_drums)} />}
