@@ -37,6 +37,13 @@ export function ScoreModal({
 
     return getStarRating(scoreData);
   }, [scoreData]);
+  const isPerfect = useMemo(() => {
+    if (!scoreData) {
+      return false;
+    }
+
+    return calculateAccuracy(scoreData) === 1;
+  }, [scoreData]);
 
   useEffect(() => {
     if (isOpen) {
@@ -87,28 +94,38 @@ export function ScoreModal({
         <Divider />
         <div className="flex flex-col gap-5 p-4 items-center">
           <div className="flex gap-3 items-center">
-            {times(5, (num) => (
-              <FontAwesomeIcon
-                key={num}
-                icon={
-                  starRating && num < starRating ? faStarSolid : faStarRegular
-                }
-                size="3x"
-                style={{
-                  color:
-                    starRating && num < starRating
+            {times(5, (num) => {
+              const isFilled = starRating && num < starRating;
+
+              return (
+                <FontAwesomeIcon
+                  key={num}
+                  icon={isFilled ? faStarSolid : faStarRegular}
+                  size="3x"
+                  style={{
+                    color: isPerfect
+                      ? themedark.color.starPerfect
+                      : isFilled
                       ? themedark.color.star
                       : themedark.color.textDim,
-                  filter:
-                    starRating && num < starRating ? themedark.shadow.star : '',
-                }}
-              />
-            ))}
+                    filter: isPerfect
+                      ? themedark.shadow.starPerfect
+                      : isFilled
+                      ? themedark.shadow.star
+                      : '',
+                  }}
+                />
+              );
+            })}
           </div>
-          <div className="text-text-muted text-[18px]">
-            {Math.round((scoreData ? calculateAccuracy(scoreData) : 0) * 100)}%
-            accuracy
-          </div>
+          {isPerfect ? (
+            <div className="text-text-muted text-[18px]">Perfect</div>
+          ) : (
+            <div className="text-text-muted text-[18px]">
+              {Math.round((scoreData ? calculateAccuracy(scoreData) : 0) * 100)}
+              % accuracy
+            </div>
+          )}
           <div className="flex flex-col gap-1 items-center">
             <div className="flex items-center text-text-muted text-[18px] gap-2">
               <div className="text-text-body font-bold text-4xl">

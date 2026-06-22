@@ -10,6 +10,7 @@ import {
   getCursorX,
   getNoteSvg,
   getStarRating,
+  STAR_RATING_BANDS,
   secondsToTicks,
   ticksToSeconds,
 } from './utils';
@@ -272,40 +273,38 @@ describe('calculateAccuracy', () => {
 });
 
 describe('getStarRating', () => {
-  it('returns 0 stars for 0% accuracy', () => {
-    expect(getStarRating({ totalNotes: 10, hitNotes: 0, falseHits: 0 })).toBe(
-      0,
-    );
+  const BANDS = [0.2, 0.4, 0.6, 0.8, 0.9];
+  const score = (hitNotes: number) => ({
+    totalNotes: 100,
+    hitNotes,
+    falseHits: 0,
   });
 
-  it('returns 5 stars for 100% accuracy', () => {
-    expect(getStarRating({ totalNotes: 10, hitNotes: 10, falseHits: 0 })).toBe(
-      5,
-    );
+  it('STAR_RATING_BANDS has 5 entries', () => {
+    expect(STAR_RATING_BANDS).toHaveLength(5);
   });
 
-  it('awards one star per each 20% accuracy increment', () => {
-    expect(getStarRating({ totalNotes: 5, hitNotes: 1, falseHits: 0 })).toBe(1);
-    expect(getStarRating({ totalNotes: 5, hitNotes: 2, falseHits: 0 })).toBe(2);
-    expect(getStarRating({ totalNotes: 5, hitNotes: 3, falseHits: 0 })).toBe(3);
-    expect(getStarRating({ totalNotes: 5, hitNotes: 4, falseHits: 0 })).toBe(4);
+  it('returns 0 stars when accuracy is below the first band', () => {
+    expect(getStarRating(score(0), BANDS)).toBe(0);
+    expect(getStarRating(score(19), BANDS)).toBe(0);
   });
 
-  it('does not award the next star just below a 20% threshold', () => {
-    expect(getStarRating({ totalNotes: 100, hitNotes: 19, falseHits: 0 })).toBe(
-      0,
-    );
-    expect(getStarRating({ totalNotes: 100, hitNotes: 39, falseHits: 0 })).toBe(
-      1,
-    );
-    expect(getStarRating({ totalNotes: 100, hitNotes: 59, falseHits: 0 })).toBe(
-      2,
-    );
-    expect(getStarRating({ totalNotes: 100, hitNotes: 79, falseHits: 0 })).toBe(
-      3,
-    );
-    expect(getStarRating({ totalNotes: 100, hitNotes: 99, falseHits: 0 })).toBe(
-      4,
-    );
+  it('awards one additional star per band threshold crossed', () => {
+    expect(getStarRating(score(20), BANDS)).toBe(1);
+    expect(getStarRating(score(40), BANDS)).toBe(2);
+    expect(getStarRating(score(60), BANDS)).toBe(3);
+    expect(getStarRating(score(80), BANDS)).toBe(4);
+    expect(getStarRating(score(90), BANDS)).toBe(5);
+  });
+
+  it('does not award a star just below a band threshold', () => {
+    expect(getStarRating(score(39), BANDS)).toBe(1);
+    expect(getStarRating(score(59), BANDS)).toBe(2);
+    expect(getStarRating(score(79), BANDS)).toBe(3);
+    expect(getStarRating(score(89), BANDS)).toBe(4);
+  });
+
+  it('returns 5 stars for any accuracy at or above the top band', () => {
+    expect(getStarRating(score(100), BANDS)).toBe(5);
   });
 });

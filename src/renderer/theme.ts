@@ -20,7 +20,7 @@ export const themedark = {
     textDimmer: '#5f5a4e',
 
     star: 'rgb(232, 183, 58)',
-    starGradient: '',
+    starPerfect: '#d8dde6',
 
     accent: '#ff5a3c',
     accentHover: '#ff6a4d',
@@ -78,6 +78,7 @@ export const themedark = {
     frame:
       '0 40px 90px -30px rgba(40,30,10,0.55), 0 0 0 1px rgba(255,255,255,0.04)',
     star: 'drop-shadow(rgba(232, 183, 58, 0.45) 0px 3px 8px)',
+    starPerfect: 'drop-shadow(0 3px 10px rgba(196,210,230,0.55))',
     panel:
       '0 40px 90px -30px rgba(40,30,10,0.55), 0 0 0 1px rgba(255,255,255,0.05)',
     accentButton:

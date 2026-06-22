@@ -21,7 +21,7 @@ import { Mode } from './SongFilter';
 import { SongMenu } from './SongMenu';
 import themedark from '../theme';
 import { Difficulty } from 'scan-chart';
-import { getStarRating } from '../views/utils';
+import { calculateAccuracy, getStarRating } from '../views/utils';
 
 function DifficultyRing({ value }: { value: number }) {
   const size = 44;
@@ -122,6 +122,7 @@ export function SongListItem({
       ? {
           difficulty: result.difficulty,
           starRating: getStarRating(result.score),
+          accuracy: calculateAccuracy(result.score),
         }
       : null;
   }, [scoreData]);
@@ -253,23 +254,25 @@ export function SongListItem({
             )}
 
             <div className="flex gap-1 items-center">
-              {times(5, (num) => (
-                <FontAwesomeIcon
-                  key={num}
-                  icon={
-                    score && num < score.starRating
-                      ? faStarSolid
-                      : faStarRegular
-                  }
-                  size="xs"
-                  style={{
-                    color:
-                      score && num < score.starRating
+              {times(5, (num) => {
+                const isFilled = score && num < score.starRating;
+                const isPerfect = score && score.accuracy === 1;
+
+                return (
+                  <FontAwesomeIcon
+                    key={num}
+                    icon={isFilled ? faStarSolid : faStarRegular}
+                    size="xs"
+                    style={{
+                      color: isPerfect
+                        ? themedark.color.starPerfect
+                        : isFilled
                         ? themedark.color.star
                         : themedark.color.textDim,
-                  }}
-                />
-              ))}
+                    }}
+                  />
+                );
+              })}
             </div>
           </div>
 
