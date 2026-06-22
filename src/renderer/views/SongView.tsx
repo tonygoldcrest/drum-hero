@@ -112,6 +112,7 @@ export function SongView() {
     renderData,
     chart,
     onHitRef,
+    isPlaying,
   );
 
   useEffect(() => {

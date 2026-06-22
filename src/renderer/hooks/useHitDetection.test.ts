@@ -52,13 +52,14 @@ interface Props {
   device: MidiDevice | null;
   mapping: MidiMapping;
   renderData: RenderData[];
+  isPlaying?: boolean;
 }
 
 function setup(initial: Props) {
   const onHit = vi.fn<HitHandler>();
   const onHitRef: RefObject<HitHandler | null> = { current: onHit };
   const view = renderHook(
-    ({ currentTick, device, mapping, renderData }: Props) =>
+    ({ currentTick, device, mapping, renderData, isPlaying = true }: Props) =>
       useHitDetection(
         currentTick,
         device,
@@ -66,6 +67,7 @@ function setup(initial: Props) {
         renderData,
         CHART,
         onHitRef,
+        isPlaying,
       ),
     { initialProps: initial },
   );
@@ -366,5 +368,49 @@ describe('useHitDetection', () => {
 
     expect(result.current.hitKeys.current.size).toBe(0);
     expect(result.current.incorrectHitCount.current).toBe(1);
+  });
+
+  it('ignores midi hits when not playing', () => {
+    const note = fakeNote(['c/5']);
+    const { result } = setup({
+      currentTick: 480,
+      device: DEVICE,
+      mapping: { snare: [38] },
+      renderData: [measure([rendered(480, note)])],
+      isPlaying: false,
+    });
+
+    noteOn(38);
+
+    expect(result.current.hitKeys.current.size).toBe(0);
+    expect(result.current.incorrectHitCount.current).toBe(0);
+  });
+
+  it('resumes registering hits after isPlaying transitions to true', () => {
+    const note = fakeNote(['c/5']);
+    const { result, rerender } = setup({
+      currentTick: 480,
+      device: DEVICE,
+      mapping: { snare: [38] },
+      renderData: [measure([rendered(480, note)])],
+      isPlaying: false,
+    });
+
+    noteOn(38);
+    expect(result.current.hitKeys.current.size).toBe(0);
+
+    act(() =>
+      rerender({
+        currentTick: 480,
+        device: DEVICE,
+        mapping: { snare: [38] },
+        renderData: [measure([rendered(480, note)])],
+        isPlaying: true,
+      }),
+    );
+
+    noteOn(38);
+    expect(result.current.hitKeys.current.has('480:c/5')).toBe(true);
+    expect(result.current.incorrectHitCount.current).toBe(0);
   });
 });

@@ -38,6 +38,7 @@ export function useHitDetection(
   renderData: RenderData[],
   chart: ParsedChart | null,
   onHitRef: RefObject<HitHandler | null>,
+  isPlaying: boolean,
 ): HitDetectionResult {
   const hitKeysRef = useRef<Set<string>>(new Set());
   const incorrectHitCountRef = useRef<number>(0);
@@ -45,7 +46,9 @@ export function useHitDetection(
   const chartRef = useRef(chart);
   const currentTickRef = useRef(currentTick);
   const midiMappingRef = useRef(midiMapping);
+  const isPlayingRef = useRef(isPlaying);
 
+  isPlayingRef.current = isPlaying;
   midiMappingRef.current = midiMapping;
 
   useEffect(() => {
@@ -82,7 +85,11 @@ export function useHitDetection(
     return window.electron.ipcRenderer.on<MidiMessage>(
       'listen-midi',
       ({ type, note, velocity }) => {
-        if (type !== MidiMessageType.NoteOn || velocity === 0) {
+        if (
+          type !== MidiMessageType.NoteOn ||
+          velocity === 0 ||
+          !isPlayingRef.current
+        ) {
           return;
         }
 
