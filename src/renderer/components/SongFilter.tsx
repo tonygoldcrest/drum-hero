@@ -59,6 +59,7 @@ export function SongFilter({
                   className="grow"
                   type={mode === option.value ? 'primary' : 'default'}
                   icon={option.icon}
+                  data-testid={`mode-${option.value}`}
                   onClick={() => onChangeMode(option.value)}
                 ></Button>
               ))}

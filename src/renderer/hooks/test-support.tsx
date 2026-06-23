@@ -66,6 +66,28 @@ export function installIpcMock(): IpcMock {
   };
 }
 
+export function installLocalStorage() {
+  const store = new Map<string, string>();
+
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (key: string) => (store.has(key) ? store.get(key)! : null),
+      setItem: (key: string, value: string) => {
+        store.set(key, String(value));
+      },
+      removeItem: (key: string) => {
+        store.delete(key);
+      },
+      clear: () => store.clear(),
+      key: (index: number) => [...store.keys()][index] ?? null,
+      get length() {
+        return store.size;
+      },
+    },
+  });
+}
+
 export interface NotificationMock {
   error: ReturnType<typeof vi.fn>;
   success: ReturnType<typeof vi.fn>;

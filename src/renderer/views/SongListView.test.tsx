@@ -1,0 +1,363 @@
+import { ReactNode } from 'react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { SongData } from '../../types';
+import { AppProvider } from '../context/AppContext';
+import {
+  getNotification,
+  installIpcMock,
+  installLocalStorage,
+  IpcMock,
+  NotificationMock,
+  resetNotification,
+} from '../hooks/test-support';
+import { SongListView } from './SongListView';
+
+vi.mock('antd', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('antd')>();
+
+  return {
+    ...actual,
+    App: Object.assign({}, actual.App, {
+      useApp: () => ({ notification: getNotification() }),
+    }),
+  };
+});
+
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: ({ count }: { count: number }) => ({
+    getTotalSize: () => count * 85,
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, index) => ({
+        index,
+        key: index,
+        start: index * 85,
+        size: 85,
+      })),
+    measureElement: () => {},
+    options: { scrollMargin: 0 },
+  }),
+}));
+
+const online = vi.hoisted(() => ({
+  results: [] as SongData[],
+  total: undefined as number | undefined,
+  loading: false,
+  loadMore: vi.fn(),
+  calls: [] as { active: boolean; search: string }[],
+}));
+
+vi.mock('../hooks/useOnlineSearch', () => ({
+  useOnlineSearch: (active: boolean, search: string) => {
+    online.calls.push({ active, search });
+
+    return {
+      results: online.results,
+      total: online.total,
+      loading: online.loading,
+      loadMore: online.loadMore,
+    };
+  },
+}));
+
+let ipc: IpcMock;
+let notification: NotificationMock;
+
+function makeSong(id: string, extra: Partial<SongData> = {}): SongData {
+  return {
+    id,
+    dir: `/songs/${id}`,
+    albumCover: null,
+    name: `Name ${id}`,
+    artist: `Artist ${id}`,
+    charter: `Charter ${id}`,
+    diff_drums: '3',
+    format: 'mid',
+    audio: [{ src: 'song.ogg', name: 'song' }],
+    ...extra,
+  } as SongData;
+}
+
+function wrapper({ children }: { children: ReactNode }) {
+  return (
+    <AppProvider>
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route path="/" element={children}>
+            <Route
+              path=":id"
+              element={<div data-testid="song-view-stub">song view</div>}
+            />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    </AppProvider>
+  );
+}
+
+function renderView() {
+  return render(<SongListView />, { wrapper });
+}
+
+function emit(channel: string, ...args: unknown[]) {
+  act(() => {
+    ipc.emit(channel, ...args);
+  });
+}
+
+function loadSongs(
+  songs: SongData[],
+  lastOpenedPath: string | null = '/music',
+) {
+  emit('load-song-list', { songs, lastOpenedPath });
+}
+
+function setStemTools(status: 'ready' | 'download' | 'unsupported') {
+  emit('check-stem-tools', status);
+}
+
+function row(id: string) {
+  return within(screen.getByTestId(`song-item-${id}`));
+}
+
+beforeEach(() => {
+  installLocalStorage();
+  ipc = installIpcMock();
+  notification = resetNotification();
+  online.results = [];
+  online.total = undefined;
+  online.loading = false;
+  online.loadMore = vi.fn();
+  online.calls = [];
+});
+
+describe('SongListView — loading', () => {
+  it('requests the song list and stem-tool status on mount', () => {
+    renderView();
+
+    const channels = ipc.sent.map((s) => s.channel);
+
+    expect(channels).toContain('load-song-list');
+    expect(channels).toContain('check-stem-tools');
+  });
+
+  it('renders the songs returned by the backend', () => {
+    renderView();
+
+    loadSongs([makeSong('a'), makeSong('b')]);
+
+    expect(screen.getByText('Name a')).toBeInTheDocument();
+    expect(screen.getByText('Name b')).toBeInTheDocument();
+    expect(screen.getByText('2 results')).toBeInTheDocument();
+  });
+
+  it('shows the empty state when no songs are returned', () => {
+    renderView();
+
+    loadSongs([]);
+
+    expect(screen.getByText('No songs found.')).toBeInTheDocument();
+    expect(screen.getByText('Select folder')).toBeInTheDocument();
+  });
+
+  it('repopulates the list when the backend rescans the folder', () => {
+    renderView();
+
+    loadSongs([makeSong('a')]);
+    expect(screen.getByText('Name a')).toBeInTheDocument();
+
+    emit('rescan-songs', {
+      songs: [makeSong('c')],
+      lastOpenedPath: '/other',
+    });
+
+    expect(screen.queryByText('Name a')).not.toBeInTheDocument();
+    expect(screen.getByText('Name c')).toBeInTheDocument();
+  });
+});
+
+describe('SongListView — filtering and sorting', () => {
+  it('fuzzy-filters the local list by name', () => {
+    renderView();
+
+    loadSongs([
+      makeSong('a', { name: 'Master of Puppets' }),
+      makeSong('b', { name: 'Enter Sandman' }),
+    ]);
+
+    fireEvent.change(screen.getByPlaceholderText('Enter song name'), {
+      target: { value: 'puppets' },
+    });
+
+    expect(screen.getByText('Master of Puppets')).toBeInTheDocument();
+    expect(screen.queryByText('Enter Sandman')).not.toBeInTheDocument();
+  });
+
+  it('reorders the list when a sort option is chosen', () => {
+    renderView();
+
+    loadSongs([
+      makeSong('a', { name: 'Charlie' }),
+      makeSong('b', { name: 'Alpha' }),
+    ]);
+
+    fireEvent.click(screen.getByText('Name').closest('button')!);
+
+    const rendered = screen
+      .getAllByText(/Charlie|Alpha/)
+      .map((el) => el.textContent);
+
+    expect(rendered).toEqual(['Alpha', 'Charlie']);
+  });
+});
+
+describe('SongListView — liking', () => {
+  it('toggles a like and notifies the backend', () => {
+    renderView();
+
+    loadSongs([makeSong('a', { liked: false })]);
+
+    fireEvent.click(row('a').getByTestId('like-toggle'));
+
+    expect(ipc.sent).toContainEqual({
+      channel: 'like-song',
+      args: ['a', true],
+    });
+  });
+});
+
+describe('SongListView — navigation', () => {
+  it('opens the song view when a local song row is clicked', () => {
+    renderView();
+
+    loadSongs([makeSong('a')]);
+
+    fireEvent.click(screen.getByText('Name a'));
+
+    expect(screen.getByTestId('song-view-stub')).toBeInTheDocument();
+  });
+});
+
+describe('SongListView — stem splitting', () => {
+  it('queues a split, shows progress, then reports success', () => {
+    renderView();
+
+    loadSongs([makeSong('a')]);
+    setStemTools('ready');
+
+    fireEvent.click(row('a').getByTestId('song-menu-trigger'));
+    fireEvent.click(screen.getByText('Split stems'));
+
+    expect(ipc.sent).toContainEqual({ channel: 'split-song', args: ['a'] });
+    expect(notification.info).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Processing queue')).toBeInTheDocument();
+
+    emit('split-song', { id: 'a', progress: 50 });
+
+    const split = makeSong('a', { name: 'Name a', audio: [] });
+
+    emit('split-song', { id: 'a', success: true, song: split });
+
+    expect(notification.success).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Processing queue')).not.toBeInTheDocument();
+  });
+
+  it('reports a failed split', () => {
+    renderView();
+
+    loadSongs([makeSong('a')]);
+    setStemTools('ready');
+
+    fireEvent.click(row('a').getByTestId('song-menu-trigger'));
+    fireEvent.click(screen.getByText('Split stems'));
+
+    emit('split-song', { id: 'a', success: false, error: 'boom' });
+
+    expect(notification.error).toHaveBeenCalledTimes(1);
+    expect(notification.error.mock.calls[0][0]).toMatchObject({
+      description: 'boom',
+    });
+  });
+});
+
+describe('SongListView — online mode', () => {
+  it('activates online search and shows the results when switched', () => {
+    online.results = [makeSong('x'), makeSong('y')];
+    online.total = 2;
+
+    renderView();
+    loadSongs([]);
+
+    fireEvent.click(screen.getByTestId('mode-online'));
+
+    expect(online.calls.at(-1)).toMatchObject({ active: true });
+    expect(screen.getByText('Name x')).toBeInTheDocument();
+    expect(screen.getByText('Name y')).toBeInTheDocument();
+    expect(screen.getByText('2 results')).toBeInTheDocument();
+  });
+
+  it('downloads an online song and marks it as downloaded', () => {
+    online.results = [makeSong('x')];
+
+    renderView();
+    loadSongs([], '/music');
+
+    fireEvent.click(screen.getByTestId('mode-online'));
+    fireEvent.click(row('x').getByTestId('download-button'));
+
+    expect(ipc.sent).toContainEqual({
+      channel: 'download-song',
+      args: [
+        {
+          url: '/songs/x',
+          md5: 'x',
+          name: 'Name x',
+          artist: 'Artist x',
+          charter: 'Charter x',
+        },
+      ],
+    });
+
+    emit('download-song', { success: true, md5: 'x', song: makeSong('x') });
+
+    expect(row('x').getByTestId('downloaded-indicator')).toBeInTheDocument();
+  });
+
+  it('disables downloads until a library folder is selected', () => {
+    online.results = [makeSong('x')];
+
+    renderView();
+    loadSongs([], null);
+
+    fireEvent.click(screen.getByTestId('mode-online'));
+
+    expect(row('x').getByTestId('download-button')).toBeDisabled();
+  });
+});
+
+describe('SongListView — settings', () => {
+  it('rescans the folder from the settings menu', () => {
+    renderView();
+    loadSongs([makeSong('a')], '/music');
+
+    fireEvent.click(screen.getByTestId('settings-trigger'));
+    fireEvent.click(screen.getByTestId('rescan-folder'));
+
+    expect(ipc.sent).toContainEqual({
+      channel: 'rescan-songs',
+      args: [false],
+    });
+  });
+
+  it('offers the stem-splitter download when tools are missing', () => {
+    renderView();
+    loadSongs([makeSong('a')]);
+    setStemTools('download');
+
+    fireEvent.click(screen.getByTestId('settings-trigger'));
+    fireEvent.click(screen.getByText(/Get stem splitter/));
+
+    expect(ipc.sent.map((s) => s.channel)).toContain('download-stem-tools');
+  });
+});

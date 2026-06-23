@@ -97,6 +97,7 @@ export const SettingsButton = memo(function SettingsButton({
         icon={<FontAwesomeIcon icon={faCog} />}
         onClick={toggle}
         size="large"
+        data-testid="settings-trigger"
         style={{ anchorName: '--settings-trigger' } as CSSProperties}
       />
 
@@ -140,6 +141,7 @@ export const SettingsButton = memo(function SettingsButton({
               {currentPath ? (
                 <Button
                   icon={<FontAwesomeIcon icon={faArrowsRotate} />}
+                  data-testid="rescan-folder"
                   onClick={() => {
                     window.electron.ipcRenderer.sendMessage(
                       'rescan-songs',
@@ -185,6 +187,7 @@ export const SettingsButton = memo(function SettingsButton({
                     key={d}
                     className="grow"
                     type={difficulty === d ? 'primary' : 'default'}
+                    data-testid={`difficulty-${d}`}
                     onClick={() => onChangeDifficulty?.(d)}
                   >
                     {d}

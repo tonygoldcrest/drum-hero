@@ -56,6 +56,7 @@ export const ScoreModal = memo(function ScoreModal({
   return (
     <div
       ref={backdropRef}
+      data-testid="score-modal"
       className={cn('fixed w-full h-full backdrop-blur-xs bg-transparent', {
         flex: isOpen,
       })}

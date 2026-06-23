@@ -63,6 +63,7 @@ export function SongMenu({
     <>
       <button
         ref={triggerRef}
+        data-testid="song-menu-trigger"
         className={cn(
           'bg-transparent p-0 border-0 cursor-pointer hover:text-text-faint mt-auto text-text-dim w-7',
         )}

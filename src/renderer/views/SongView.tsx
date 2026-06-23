@@ -143,6 +143,7 @@ export function SongView() {
       >
         <Button
           icon={<FontAwesomeIcon icon={faArrowLeft} />}
+          data-testid="back-button"
           onClick={() => {
             setIsPlaying(false);
             navigate('/');
@@ -154,6 +155,7 @@ export function SongView() {
           type="primary"
           icon={<FontAwesomeIcon icon={isPlaying ? faPause : faPlay} />}
           loading={audioLoading}
+          data-testid="play-toggle"
           onClick={() => {
             setIsPlaying(!isPlaying);
           }}

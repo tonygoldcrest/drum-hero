@@ -140,6 +140,7 @@ export function SongListItem({
           />
 
           <button
+            data-testid="like-toggle"
             className={cn(
               'bg-transparent p-0 border-0 cursor-pointer hover:text-accent-hover mt-auto',
               liked ? 'text-accent' : 'text-text-dim',
@@ -161,6 +162,7 @@ export function SongListItem({
         <Button
           icon={<FontAwesomeIcon icon={faDownload} />}
           disabled={downloadingDisabled}
+          data-testid="download-button"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -187,6 +189,9 @@ export function SongListItem({
         size="xl"
         icon={downloading ? faSpinner : faCheck}
         spin={downloading}
+        data-testid={
+          downloading ? 'downloading-indicator' : 'downloaded-indicator'
+        }
       />
     );
   }, [
@@ -206,7 +211,7 @@ export function SongListItem({
   ]);
 
   return (
-    <div className="w-full">
+    <div className="w-full" data-testid={`song-item-${id}`}>
       <div
         onClick={() => {
           if (mode === 'local') {
