@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { App } from 'antd';
 import { AudioPlayer } from '../services/audio-player/player';
 import { TrackConfig } from '../services/audio-player/types';
+import { TimeStore } from '../services/time-store';
 
 interface AudioPlayerResult {
   audioPlayer: AudioPlayer | null;
   isPlaying: boolean;
   setIsPlaying: (playing: boolean) => void;
-  currentTime: number;
+  timeStore: TimeStore;
 }
 
 export function useAudioPlayer(
@@ -18,7 +19,7 @@ export function useAudioPlayer(
   const { notification } = App.useApp();
   const [audioPlayer, setAudioPlayer] = useState<AudioPlayer | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
+  const [timeStore] = useState(() => new TimeStore());
   const onEndedRef = useRef(onEnded);
 
   onEndedRef.current = onEnded;
@@ -50,7 +51,7 @@ export function useAudioPlayer(
     }
 
     let rafId = requestAnimationFrame(function poll() {
-      setCurrentTime(audioPlayer.currentTime);
+      timeStore.set(audioPlayer.currentTime);
       rafId = requestAnimationFrame(poll);
     });
 
@@ -63,7 +64,7 @@ export function useAudioPlayer(
         audioPlayer.destroy();
       }
     };
-  }, [audioPlayer, isDev]);
+  }, [audioPlayer, isDev, timeStore]);
   useEffect(() => {
     if (audioPlayer === null) {
       return;
@@ -78,5 +79,5 @@ export function useAudioPlayer(
     }
   }, [audioPlayer, isPlaying]);
 
-  return { audioPlayer, isPlaying, setIsPlaying, currentTime };
+  return { audioPlayer, isPlaying, setIsPlaying, timeStore };
 }

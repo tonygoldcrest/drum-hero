@@ -1,5 +1,6 @@
 import {
   ReactNode,
+  memo,
   useEffect,
   useRef,
   type RefObject,
@@ -35,7 +36,7 @@ interface Props {
   onDownloadStemTools?: () => void;
 }
 
-export function SettingsButton({
+export const SettingsButton = memo(function SettingsButton({
   difficulty,
   onChangeDifficulty,
   volumeSliders,
@@ -256,4 +257,4 @@ export function SettingsButton({
       </div>
     </>
   );
-}
+});

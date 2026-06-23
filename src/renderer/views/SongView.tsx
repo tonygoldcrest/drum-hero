@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, Layout } from 'antd';
 import { Content } from 'antd/es/layout/layout';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Playback } from '../components/Playback';
 import { SettingsButton } from '../components/SettingsButton';
-import { SheetMusic } from '../components/SheetMusic/SheetMusic';
+import { SongSheet } from '../components/SongSheet';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowLeft,
@@ -16,13 +16,12 @@ import { Difficulty } from 'scan-chart';
 import { useSongLoader } from '../hooks/useSongLoader';
 import { useAudioPlayer } from '../hooks/useAudioPlayer';
 import { useVolumeControls } from '../hooks/useVolumeControls';
-import { secondsToTicks, ticksToSeconds } from './utils';
+import { calculateAccuracy, ticksToSeconds } from './utils';
 import { useSheetMusic } from '../hooks/useSheetMusic';
-import { usePlayhead } from '../hooks/usePlayhead';
-import { useHitDetection } from '../hooks/useHitDetection';
-import { HitHandler, useNoteDecoration } from '../hooks/useNoteDecoration';
+import { HitDetectionResult } from '../hooks/useHitDetection';
 import { ScoreModal } from '../components/ScoreModal';
 import { ScoreData } from '../../types';
+import { Measure } from '../../chart-parser/types';
 
 export function SongView() {
   const {
@@ -40,13 +39,14 @@ export function SongView() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { fileData, format, songData, trackData } = useSongLoader(id);
-  const { audioPlayer, isPlaying, setIsPlaying, currentTime } = useAudioPlayer(
+  const scoreRef = useRef<HitDetectionResult | undefined>(undefined);
+  const { audioPlayer, isPlaying, setIsPlaying, timeStore } = useAudioPlayer(
     trackData,
     isDev,
     () => {
       const score = {
-        hitNotes: hitKeys.current.size,
-        falseHits: incorrectHitCount.current,
+        hitNotes: scoreRef.current?.hitKeys.current.size ?? 0,
+        falseHits: scoreRef.current?.incorrectHitCount.current ?? 0,
         totalNotes: renderData
           .flatMap((rd) => rd.measure.notes)
           .filter((n) => !n.isRest)
@@ -56,9 +56,12 @@ export function SongView() {
       setScoreData(score);
       setIsScoreModalOpen(true);
 
-      const previousScore = songData?.scoreData?.[activeDifficulty] ?? 0;
+      const previousScore = songData?.scoreData?.[activeDifficulty];
+      const isHighScore =
+        !previousScore ||
+        calculateAccuracy(score) > calculateAccuracy(previousScore);
 
-      if (id && score > previousScore) {
+      if (id && isHighScore) {
         window.electron.ipcRenderer.sendMessage('update-song', {
           id,
           scoreData: { [activeDifficulty]: score },
@@ -86,34 +89,6 @@ export function SongView() {
     enableColors,
   });
   const delaySeconds = (Number(songData?.delay) || 0) / 1000;
-  const chartTime = currentTime - delaySeconds;
-  const currentTick = useMemo(
-    () =>
-      chart ? secondsToTicks(chartTime, chart.resolution, chart.tempos) : null,
-    [chartTime, chart],
-  );
-  const {
-    highlightedMeasureIndex,
-    cursorPosition,
-    activeNoteInfo,
-    highlightsRef,
-  } = usePlayhead({
-    chart,
-    currentTime: chartTime,
-    currentTick,
-    renderData,
-    playheadStyle,
-  });
-  const onHitRef = useRef<HitHandler | null>(null);
-  const { hitKeys, incorrectHitCount } = useHitDetection(
-    currentTick,
-    selectedDevice,
-    midiMapping,
-    renderData,
-    chart,
-    onHitRef,
-    isPlaying,
-  );
 
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage('prevent-sleep');
@@ -130,26 +105,34 @@ export function SongView() {
     });
   }, []);
 
-  useNoteDecoration(
-    activeNoteInfo,
-    playheadStyle,
-    renderData,
-    progressColoring,
-    hitKeys,
-    onHitRef,
+  const onSelectMeasure = useCallback(
+    (measure: Measure) => {
+      if (!chart || !audioPlayer) {
+        return;
+      }
+
+      audioPlayer.start(
+        ticksToSeconds(measure.startTick, chart.resolution, chart.tempos) +
+          delaySeconds,
+      );
+      setIsPlaying(true);
+    },
+    [chart, audioPlayer, delaySeconds, setIsPlaying],
   );
+  const onNextSong = useCallback(() => {
+    setIsScoreModalOpen(false);
+    navigate('/');
+  }, [navigate]);
+  const onRetry = useCallback(() => {
+    setIsScoreModalOpen(false);
+  }, []);
 
   return (
     <Layout className="h-full pointer-events-auto">
       <ScoreModal
         isOpen={isScoreModalOpen}
-        onNextSong={() => {
-          setIsScoreModalOpen(false);
-          navigate('/');
-        }}
-        onRetry={() => {
-          setIsScoreModalOpen(false);
-        }}
+        onNextSong={onNextSong}
+        onRetry={onRetry}
         songData={songData}
         difficulty={activeDifficulty}
         scoreData={scoreData}
@@ -191,7 +174,7 @@ export function SongView() {
         </div>
 
         <Playback
-          currentTime={currentTime}
+          timeStore={timeStore}
           disabled={!audioPlayer}
           duration={audioPlayer?.duration ?? 0}
           isDev={isDev}
@@ -216,29 +199,21 @@ export function SongView() {
 
       <Content className="p-6 m-0 overflow-auto flex flex-col items-center font-display text-ink">
         {songData && chart && parsedMidi && (
-          <SheetMusic
-            songData={songData}
+          <SongSheet
+            chart={chart}
             renderData={renderData}
-            vexflowContainerRef={vexflowContainerRef}
-            highlightsRef={highlightsRef}
-            highlightedMeasureIndex={highlightedMeasureIndex}
-            cursorPosition={cursorPosition}
+            songData={songData}
+            timeStore={timeStore}
+            delaySeconds={delaySeconds}
             playheadStyle={playheadStyle}
+            progressColoring={progressColoring}
+            selectedDevice={selectedDevice}
+            midiMapping={midiMapping}
+            isPlaying={isPlaying}
             isDev={isDev}
-            onSelectMeasure={(measure) => {
-              if (!chart || !audioPlayer) {
-                return;
-              }
-
-              audioPlayer.start(
-                ticksToSeconds(
-                  measure.startTick,
-                  chart.resolution,
-                  chart.tempos,
-                ) + delaySeconds,
-              );
-              setIsPlaying(true);
-            }}
+            vexflowContainerRef={vexflowContainerRef}
+            onSelectMeasure={onSelectMeasure}
+            scoreRef={scoreRef}
           />
         )}
       </Content>

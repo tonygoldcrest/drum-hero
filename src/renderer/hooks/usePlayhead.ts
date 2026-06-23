@@ -17,6 +17,26 @@ export interface CursorPosition {
   height: number;
 }
 
+function findMeasureIndex(renderData: RenderData[], tick: number): number {
+  let lo = 0;
+  let hi = renderData.length - 1;
+
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const { measure } = renderData[mid];
+
+    if (tick < measure.startTick) {
+      hi = mid - 1;
+    } else if (tick >= measure.endTick) {
+      lo = mid + 1;
+    } else {
+      return mid;
+    }
+  }
+
+  return -1;
+}
+
 function getScrollParent(node: HTMLElement | null): HTMLElement | null {
   let el = node?.parentElement ?? null;
 
@@ -83,19 +103,19 @@ export function usePlayhead({
       height: stave.getHeight() + 30,
     };
   }, [playheadStyle, chart, currentTime, renderData, highlightedMeasureIndex]);
-  const activeNoteInfo = useMemo<ActiveNoteInfo | null>(() => {
+  const activeNoteIdx = useMemo(() => {
     if (
       playheadStyle === 'None' ||
       currentTick === null ||
       highlightedMeasureIndex < 0
     ) {
-      return null;
+      return -1;
     }
 
     const measureData = renderData[highlightedMeasureIndex];
 
     if (!measureData) {
-      return null;
+      return -1;
     }
 
     const { renderedNotes } = measureData;
@@ -109,34 +129,41 @@ export function usePlayhead({
       }
     }
 
-    if (noteIdx === -1) {
+    return noteIdx;
+  }, [playheadStyle, currentTick, renderData, highlightedMeasureIndex]);
+  const activeNoteInfo = useMemo<ActiveNoteInfo | null>(() => {
+    if (activeNoteIdx < 0 || highlightedMeasureIndex < 0) {
       return null;
     }
 
-    const noteSvgs = getNoteSvg(renderedNotes[noteIdx].note);
+    const measureData = renderData[highlightedMeasureIndex];
+
+    if (!measureData) {
+      return null;
+    }
+
+    const { renderedNotes } = measureData;
+    const noteSvgs = getNoteSvg(renderedNotes[activeNoteIdx].note);
 
     if (noteSvgs.length === 0) {
       return null;
     }
 
     return {
-      key: `${highlightedMeasureIndex}-${noteIdx}`,
+      key: `${highlightedMeasureIndex}-${activeNoteIdx}`,
       noteHeadEls: noteSvgs,
-      noteIdx,
+      noteIdx: activeNoteIdx,
       measureIdx: highlightedMeasureIndex,
       renderedNotes,
     };
-  }, [playheadStyle, currentTick, renderData, highlightedMeasureIndex]);
+  }, [activeNoteIdx, highlightedMeasureIndex, renderData]);
 
   useEffect(() => {
     if (currentTick === null) {
       return;
     }
 
-    const index = renderData.findIndex(
-      ({ measure }) =>
-        currentTick >= measure.startTick && currentTick < measure.endTick,
-    );
+    const index = findMeasureIndex(renderData, currentTick);
 
     if (index >= 0) {
       setHighlightedMeasureIndex(index);

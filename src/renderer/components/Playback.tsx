@@ -1,8 +1,10 @@
 import { Progress, Slider } from 'antd';
 import { formatTime } from '../util';
+import { TimeStore } from '../services/time-store';
+import { useThrottledCurrentTime } from '../hooks/useCurrentTime';
 
 export interface PlaybackProps {
-  currentTime: number;
+  timeStore: TimeStore;
   duration: number;
   disabled?: boolean;
   onChange: (value: number) => void;
@@ -10,12 +12,14 @@ export interface PlaybackProps {
 }
 
 export function Playback({
-  currentTime,
+  timeStore,
   duration,
   onChange,
   disabled,
   isDev,
 }: PlaybackProps) {
+  const currentTime = useThrottledCurrentTime(timeStore);
+
   return (
     <div className="flex items-center grow gap-5">
       <div className="text-xs text-text-muted">{formatTime(currentTime)}</div>

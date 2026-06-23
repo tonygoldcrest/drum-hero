@@ -1,4 +1,4 @@
-import { RefObject } from 'react';
+import { RefObject, useMemo } from 'react';
 import { cn } from '../../cn';
 import { PlayheadStyle } from '../../types';
 import { Measure, RenderData } from '../../../chart-parser/types';
@@ -28,36 +28,47 @@ export function SheetMusic({
   isDev,
   onSelectMeasure,
 }: SheetMusicProps) {
-  const measureHighlights = renderData.map(({ measure, stave }, index) => {
-    const highlighted =
-      playheadStyle === 'Measure' && index === highlightedMeasureIndex;
+  const measureHighlights = useMemo(
+    () =>
+      renderData.map(({ measure, stave }, index) => {
+        const highlighted =
+          playheadStyle === 'Measure' && index === highlightedMeasureIndex;
 
-    return (
-      <div
-        key={index}
-        ref={highlightsRef[index]}
-        style={{
-          top: stave.getY(),
-          left: stave.getX() - 5,
-          width: stave.getWidth() + 10,
-          height: stave.getHeight() + 30,
-        }}
-        className={cn(
-          'absolute z-[-3] rounded-[11px] border-0 bg-transparent',
-          highlighted && 'bg-accent-soft-bg border-2 border-accent',
-          isDev &&
-            'cursor-pointer hover:bg-accent-soft-bg hover:shadow-accent-soft hover:border hover:border-accent-soft-border hover:z-[-1]',
-        )}
-        onClick={() => {
-          if (!isDev) {
-            return;
-          }
+        return (
+          <div
+            key={index}
+            ref={highlightsRef[index]}
+            style={{
+              top: stave.getY(),
+              left: stave.getX() - 5,
+              width: stave.getWidth() + 10,
+              height: stave.getHeight() + 30,
+            }}
+            className={cn(
+              'absolute z-[-3] rounded-[11px] border-0 bg-transparent',
+              highlighted && 'bg-accent-soft-bg border-2 border-accent',
+              isDev &&
+                'cursor-pointer hover:bg-accent-soft-bg hover:shadow-accent-soft hover:border hover:border-accent-soft-border hover:z-[-1]',
+            )}
+            onClick={() => {
+              if (!isDev) {
+                return;
+              }
 
-          onSelectMeasure(measure);
-        }}
-      />
-    );
-  });
+              onSelectMeasure(measure);
+            }}
+          />
+        );
+      }),
+    [
+      renderData,
+      highlightsRef,
+      highlightedMeasureIndex,
+      playheadStyle,
+      isDev,
+      onSelectMeasure,
+    ],
+  );
 
   return (
     <div className="flex flex-col items-center min-w-max bg-paper rounded-[11px] p-10">
@@ -87,7 +98,7 @@ export function SheetMusic({
               className="absolute w-3 h-3 bg-accent left-1/2 rounded-[3px]"
               style={{ transform: 'translateX(-50%) rotate(45deg)' }}
             />
-            <div className="absolute w-1 bg-accent h-full rounded-[3px] left-1/2 -translate-x-1/2" />
+            <div className="absolute w-0.75 bg-accent h-full rounded-[3px] left-1/2 -translate-x-1/2" />
           </div>
         )}
       </div>

@@ -1,5 +1,5 @@
 import { Button, Divider } from 'antd';
-import { useEffect, useMemo, useRef } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import { cn } from '../cn';
 import { ScoreData, SongData } from '../../types';
 import { Difficulty } from 'scan-chart';
@@ -20,7 +20,7 @@ type Props = {
   scoreData?: ScoreData;
 };
 
-export function ScoreModal({
+export const ScoreModal = memo(function ScoreModal({
   isOpen,
   onRetry,
   onNextSong,
@@ -164,4 +164,4 @@ export function ScoreModal({
       </div>
     </div>
   );
-}
+});

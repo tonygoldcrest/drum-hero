@@ -160,7 +160,7 @@ describe('useAudioPlayer', () => {
       vi.advanceTimersByTime(20);
     });
 
-    expect(result.current.currentTime).toBe(7);
+    expect(result.current.timeStore.get()).toBe(7);
   });
 
   it('starts playback when not yet initialised', async () => {
@@ -230,6 +230,6 @@ describe('useAudioPlayer', () => {
       vi.advanceTimersByTime(100);
     });
 
-    expect(result.current.currentTime).not.toBe(99);
+    expect(result.current.timeStore.get()).not.toBe(99);
   });
 });
