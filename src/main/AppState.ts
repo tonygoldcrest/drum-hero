@@ -10,9 +10,8 @@ import {
   powerSaveBlocker,
 } from 'electron';
 import Store from 'electron-store';
-import fs from 'fs';
 import MenuBuilder from './menu';
-import { resolveHtmlPath, parseAndSaveSongs } from './util';
+import { resolveHtmlPath } from './util';
 import { AppUpdater } from './AppUpdater';
 import { loadSong } from './ipc/loadSong';
 import { loadSongList } from './ipc/loadSongList';
@@ -22,6 +21,7 @@ import { downloadStemTools } from './ipc/downloadStemTools';
 import { splitSong, cancelSplit } from './ipc/splitSong';
 import { listenMidi, loadMidiDeviceList, stopListenMidi } from './ipc/midi';
 import { updateSong } from './ipc/updateSong';
+import { rescanSongs } from './ipc/rescanSongs';
 
 class AppState {
   private static instance: AppState;
@@ -87,6 +87,7 @@ class AppState {
 
     ipcMain.on('load-song', loadSong);
     ipcMain.on('load-song-list', loadSongList);
+    ipcMain.on('rescan-songs', rescanSongs);
     ipcMain.on('download-song', downloadSong);
 
     ipcMain.on('check-stem-tools', checkStemTools);
@@ -102,19 +103,6 @@ class AppState {
 
     ipcMain.on('open-song-directory', (_event, dir: string) => {
       shell.openPath(dir);
-    });
-    ipcMain.on('rescan-songs', async (event) => {
-      await parseAndSaveSongs((songs) => {
-        const lastOpenedPath = this.store.get('lastOpenedPath') as string;
-
-        event.reply('rescan-songs', {
-          songs: Object.values(songs).map((s) => ({
-            ...s,
-            updatedAt: fs.statSync(s.dir).mtime.toISOString(),
-          })),
-          lastOpenedPath,
-        });
-      });
     });
     ipcMain.on('check-dev', (event) => {
       event.reply('check-dev', isDebug);

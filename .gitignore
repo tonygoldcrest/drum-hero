@@ -17,6 +17,7 @@ node_modules
 
 .yarn/install-state.gz
 
+notes.txt
 # OSX
 .DS_Store
 

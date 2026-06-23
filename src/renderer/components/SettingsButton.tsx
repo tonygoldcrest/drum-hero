@@ -11,6 +11,7 @@ import { useLocation } from 'react-router-dom';
 import { Button, Divider, Progress, Switch } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
+  faArrowsRotate,
   faCog,
   faDownload,
   faDrum,
@@ -125,15 +126,29 @@ export const SettingsButton = memo(function SettingsButton({
       >
         {page === 'song-list' && (
           <>
-            <Button
-              icon={<FontAwesomeIcon icon={faFolder} />}
-              onClick={() => {
-                window.electron.ipcRenderer.sendMessage('rescan-songs');
-              }}
-              title={currentPath ?? undefined}
-            >
-              {currentPath ? currentPath.split('/').pop() : 'Select folder'}
-            </Button>
+            <div className="flex gap-2 grow">
+              <Button
+                icon={<FontAwesomeIcon icon={faFolder} />}
+                onClick={() => {
+                  window.electron.ipcRenderer.sendMessage('rescan-songs');
+                }}
+                title={currentPath ?? undefined}
+                className="grow"
+              >
+                {currentPath ? currentPath.split('/').pop() : 'Select folder'}
+              </Button>
+              {currentPath ? (
+                <Button
+                  icon={<FontAwesomeIcon icon={faArrowsRotate} />}
+                  onClick={() => {
+                    window.electron.ipcRenderer.sendMessage(
+                      'rescan-songs',
+                      false,
+                    );
+                  }}
+                />
+              ) : null}
+            </div>
             {stemToolsStatus === 'download' && (
               <Button
                 icon={<FontAwesomeIcon icon={faDownload} />}
