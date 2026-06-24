@@ -89,7 +89,10 @@ export class AudioPlayer {
 
     const latency = this.context.state === 'running' ? this.outputLatency : 0;
 
-    return this.context.currentTime - this.startedAt + this.offset - latency;
+    return Math.max(
+      this.offset,
+      this.context.currentTime - this.startedAt + this.offset - latency,
+    );
   }
 
   destroy() {
