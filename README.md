@@ -4,7 +4,8 @@ A drum sightreading game with sheet music and thousands of songs.
 
 <h1 align="center">
   <a href="https://sightkick.dev">Guide</a> |
-  <a href="https://github.com/tonygoldcrest/sightkick/releases">Download</a>
+  <a href="https://github.com/tonygoldcrest/sightkick/releases">Download</a> |
+  <a href="https://discord.gg/kwBx9VZt3">Discord</a>
 </h1>
 
 <img width="1478" height="880" alt="image" src="https://github.com/user-attachments/assets/ca8fe524-b6b2-4d46-8bc5-db2970ef081d" />

@@ -57,6 +57,10 @@ export class AudioPlayer {
 
     this.offset = offset;
 
+    if (this.context.state === 'suspended') {
+      this.context.resume();
+    }
+
     const time = this.context.currentTime;
 
     this.startedAt = time;
@@ -74,10 +78,6 @@ export class AudioPlayer {
     this.context.suspend();
   }
 
-  resume() {
-    this.context.resume();
-  }
-
   get outputLatency() {
     return this.context.outputLatency || this.context.baseLatency || 0;
   }
@@ -87,12 +87,9 @@ export class AudioPlayer {
       return 0;
     }
 
-    return (
-      this.context.currentTime -
-      this.startedAt +
-      this.offset -
-      this.outputLatency
-    );
+    const latency = this.context.state === 'running' ? this.outputLatency : 0;
+
+    return this.context.currentTime - this.startedAt + this.offset - latency;
   }
 
   destroy() {

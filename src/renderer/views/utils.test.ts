@@ -1,12 +1,14 @@
 import { StaveNote } from 'vexflow';
 import { describe, expect, it } from 'vitest';
 import {
+  Measure,
   ParsedChart,
   RenderData,
   RenderedNote,
 } from '../../chart-parser/types';
 import {
   calculateAccuracy,
+  getCountIn,
   getCursorX,
   getNoteSvg,
   getStarRating,
@@ -306,5 +308,74 @@ describe('getStarRating', () => {
 
   it('returns 5 stars for any accuracy at or above the top band', () => {
     expect(getStarRating(score(100), BANDS)).toBe(5);
+  });
+});
+
+describe('getCountIn', () => {
+  const RES = 480;
+  const tempos120 = [tempo(0, 120, 0)];
+
+  function measure(
+    startTick: number,
+    endTick: number,
+    timeSig: [number, number],
+  ): Measure {
+    return { startTick, endTick, timeSig } as unknown as Measure;
+  }
+
+  it('counts the time signature numerator over one measure', () => {
+    const m = measure(0, 1920, [4, 4]);
+    const { beats, beatMs } = getCountIn(0, [m], {
+      resolution: RES,
+      tempos: tempos120,
+    });
+
+    expect(beats).toBe(4);
+    expect(beatMs).toBeCloseTo(500);
+  });
+
+  it('counts 3 beats in 3/4', () => {
+    const m = measure(0, 1440, [3, 4]);
+
+    expect(getCountIn(0, [m], { resolution: RES, tempos: tempos120 })).toEqual({
+      beats: 3,
+      beatMs: 500,
+    });
+  });
+
+  it('counts 6 eighth-note beats in 6/8', () => {
+    const m = measure(0, 1440, [6, 8]);
+
+    expect(getCountIn(0, [m], { resolution: RES, tempos: tempos120 })).toEqual({
+      beats: 6,
+      beatMs: 250,
+    });
+  });
+
+  it('respects the tempo when deriving beat duration', () => {
+    const m = measure(0, 1920, [4, 4]);
+    const tempos60 = [tempo(0, 60, 0)];
+    const { beats, beatMs } = getCountIn(0, [m], {
+      resolution: RES,
+      tempos: tempos60,
+    });
+
+    expect(beats).toBe(4);
+    expect(beatMs).toBeCloseTo(1000);
+  });
+
+  it('picks the measure containing the start tick', () => {
+    const measures = [measure(0, 1920, [4, 4]), measure(1920, 3360, [3, 4])];
+
+    expect(
+      getCountIn(2000, measures, { resolution: RES, tempos: tempos120 }),
+    ).toEqual({ beats: 3, beatMs: 500 });
+  });
+
+  it('falls back to 4 beats at 120 BPM when there are no measures', () => {
+    expect(getCountIn(0, [], { resolution: RES, tempos: tempos120 })).toEqual({
+      beats: 4,
+      beatMs: 500,
+    });
   });
 });

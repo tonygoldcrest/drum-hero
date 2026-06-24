@@ -19,6 +19,8 @@ interface AppContextValue {
   setShowBarNumbers: (v: boolean) => void;
   progressColoring: boolean;
   setProgressColoring: (v: boolean) => void;
+  countIn: boolean;
+  setCountIn: (v: boolean) => void;
   currentPath: string | null;
   setCurrentPath: (p: string | null) => void;
   selectedDevice: MidiDevice | null;
@@ -39,6 +41,7 @@ const EMPTY_MIDI_MAPPING: MidiMapping = {
   tom1: [],
   tom2: [],
   tom3: [],
+  pause: [],
 };
 const KIT_ELEMENTS = Object.keys(EMPTY_MIDI_MAPPING) as (keyof MidiMapping)[];
 
@@ -81,6 +84,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     'settings.progressColoring',
     true,
   );
+  const [countIn, setCountIn] = usePersisted('settings.countIn', true);
   const [currentPath, setCurrentPath] = useState<string | null>(null);
   const [selectedDevice, setSelectedDevice] = usePersisted<MidiDevice | null>(
     'settings.selectedDevice',
@@ -175,6 +179,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setShowBarNumbers,
         progressColoring,
         setProgressColoring,
+        countIn,
+        setCountIn,
         currentPath,
         setCurrentPath,
         selectedDevice,

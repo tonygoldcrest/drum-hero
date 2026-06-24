@@ -129,7 +129,6 @@ async function loadSong(song: SongData = makeSong()) {
 
   await act(async () => {
     ipc.emit('load-song', response);
-    // Let the mocked AudioPlayer.ready promise settle.
     await Promise.resolve();
     await Promise.resolve();
   });
@@ -183,21 +182,82 @@ describe('SongView — loading', () => {
 });
 
 describe('SongView — playback', () => {
-  it('starts and pauses the audio player from the play button', async () => {
+  async function runCountIn() {
+    for (let i = 0; i < 4; i += 1) {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+    }
+  }
+
+  it('counts in before starting, then pauses, from the play button', async () => {
+    vi.useFakeTimers();
+
+    try {
+      renderView();
+      await loadSong();
+
+      const [player] = await getInstances();
+      const start = (player as unknown as { start: ReturnType<typeof vi.fn> })
+        .start;
+
+      fireEvent.click(screen.getByTestId('play-toggle'));
+
+      expect(start).not.toHaveBeenCalled();
+      expect(screen.getByText('1')).toBeInTheDocument();
+
+      await runCountIn();
+
+      expect(start).toHaveBeenCalledTimes(1);
+
+      fireEvent.click(screen.getByTestId('play-toggle'));
+      expect(
+        (player as unknown as { pause: ReturnType<typeof vi.fn> }).pause,
+      ).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('cancels the count-in when the play button is pressed again', async () => {
+    vi.useFakeTimers();
+
+    try {
+      renderView();
+      await loadSong();
+
+      const [player] = await getInstances();
+      const start = (player as unknown as { start: ReturnType<typeof vi.fn> })
+        .start;
+
+      fireEvent.click(screen.getByTestId('play-toggle'));
+      expect(screen.getByText('1')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('play-toggle'));
+
+      await runCountIn();
+
+      expect(start).not.toHaveBeenCalled();
+      expect(screen.queryByText('1')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('starts immediately when the count-in is disabled in settings', async () => {
+    localStorage.setItem('settings.countIn', 'false');
+
     renderView();
     await loadSong();
 
     const [player] = await getInstances();
+    const start = (player as unknown as { start: ReturnType<typeof vi.fn> })
+      .start;
 
     fireEvent.click(screen.getByTestId('play-toggle'));
-    expect(
-      (player as unknown as { start: ReturnType<typeof vi.fn> }).start,
-    ).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByTestId('play-toggle'));
-    expect(
-      (player as unknown as { pause: ReturnType<typeof vi.fn> }).pause,
-    ).toHaveBeenCalledTimes(1);
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('1')).not.toBeInTheDocument();
   });
 
   it('navigates back to the song list', async () => {

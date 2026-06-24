@@ -1,9 +1,14 @@
+import { useState } from 'react';
 import { Spin } from 'antd';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { SongFilter } from '../components/SongFilter';
 import { SongList } from '../components/SongList';
 import { SettingsButton } from '../components/SettingsButton';
-import { SortButton } from '../components/SortButton';
+import {
+  SortButton,
+  SORT_OPTIONS,
+  DIRECTIONAL_KEYS,
+} from '../components/SortButton';
 import { SplittingQueue } from '../components/SplittingQueue';
 import { EmptySongState } from '../components/EmptySongState';
 import { useApp } from '../context/AppContext';
@@ -11,9 +16,11 @@ import { useStemTools } from '../hooks/useStemTools';
 import { useSongList } from '../hooks/useSongList';
 import { useDownload } from '../hooks/useDownload';
 import { useSongFilter } from '../hooks/useSongFilter';
+import { useDrumControls } from '../hooks/useDrumControls';
 
 export function SongListView() {
-  const { currentPath } = useApp();
+  const { currentPath, selectedDevice, midiMapping } = useApp();
+  const navigate = useNavigate();
   const { stemToolsStatus, stemToolsLoading, downloadPercent, download } =
     useStemTools();
   const {
@@ -41,6 +48,136 @@ export function SongListView() {
     onlineResults,
     addSong,
   );
+  const [focusedSongIndex, setFocusedSongIndex] = useState<number | undefined>(
+    undefined,
+  );
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const [focusedSortIndex, setFocusedSortIndex] = useState(0);
+  const sortAvailable = mode !== 'online';
+  const [prevFilteredSongList, setPrevFilteredSongList] =
+    useState(filteredSongList);
+  const [prevSortAvailable, setPrevSortAvailable] = useState(sortAvailable);
+
+  if (filteredSongList !== prevFilteredSongList) {
+    setPrevFilteredSongList(filteredSongList);
+    setFocusedSongIndex(undefined);
+  }
+
+  if (sortAvailable !== prevSortAvailable) {
+    setPrevSortAvailable(sortAvailable);
+
+    if (!sortAvailable) {
+      setIsSortOpen(false);
+    }
+  }
+
+  const applyFocusedSort = (index: number) => {
+    const { key } = SORT_OPTIONS[index];
+
+    if (key === 'favorite') {
+      setSort({ key: 'favorite', direction: 'asc' });
+
+      return;
+    }
+
+    setSort({
+      key,
+      direction: sort.key === key ? sort.direction : 'asc',
+    });
+  };
+  const moveSortFocus = (delta: number) => {
+    const next =
+      (focusedSortIndex + delta + SORT_OPTIONS.length) % SORT_OPTIONS.length;
+
+    setFocusedSortIndex(next);
+    applyFocusedSort(next);
+  };
+  const toggleFocusedSortDirection = () => {
+    const { key } = SORT_OPTIONS[focusedSortIndex];
+
+    if (!DIRECTIONAL_KEYS.includes(key)) {
+      return;
+    }
+
+    setSort({
+      key,
+      direction: sort.direction === 'asc' ? 'desc' : 'asc',
+    });
+  };
+  const openSort = () => {
+    if (!sortAvailable) {
+      return;
+    }
+
+    const currentIndex = SORT_OPTIONS.findIndex(
+      (option) => option.key === sort.key,
+    );
+
+    setFocusedSortIndex(currentIndex === -1 ? 0 : currentIndex);
+    setIsSortOpen(true);
+  };
+
+  useDrumControls(
+    selectedDevice,
+    midiMapping,
+    isSortOpen
+      ? {
+          tom1: () => moveSortFocus(-1),
+          tom2: () => moveSortFocus(1),
+          tom3: toggleFocusedSortDirection,
+          snare: () => setIsSortOpen(false),
+        }
+      : {
+          tom1: () =>
+            setFocusedSongIndex((index) => {
+              if (filteredSongList.length === 0) {
+                return 0;
+              }
+
+              if (index === undefined) {
+                return filteredSongList.length - 1;
+              }
+
+              return (
+                (index - 1 + filteredSongList.length) % filteredSongList.length
+              );
+            }),
+          tom2: () =>
+            setFocusedSongIndex((index) => {
+              if (filteredSongList.length === 0) {
+                return 0;
+              }
+
+              if (index === undefined) {
+                return 0;
+              }
+
+              return (index + 1) % filteredSongList.length;
+            }),
+          tom3: () => {
+            if (!focusedSongIndex) {
+              return;
+            }
+
+            const song = filteredSongList[focusedSongIndex];
+
+            if (!song) {
+              return;
+            }
+
+            if (mode === 'local') {
+              navigate(`/${song.id}`);
+            } else if (
+              mode === 'online' &&
+              !songList.find(({ id }) => song.id === id)
+            ) {
+              handleDownload(song.id);
+            }
+          },
+          kick: openSort,
+          ride: () => setMode(mode === 'online' ? 'local' : 'online'),
+        },
+  );
 
   return (
     <div className="h-screen flex flex-col bg-bg">
@@ -60,8 +197,14 @@ export function SongListView() {
             mode={mode}
             onChangeMode={setMode}
           />
-          {mode !== 'online' && (
-            <SortButton sort={sort} onSortChange={setSort} />
+          {sortAvailable && (
+            <SortButton
+              sort={sort}
+              onSortChange={setSort}
+              isOpen={isSortOpen}
+              onOpenChange={setIsSortOpen}
+              focusedIndex={isSortOpen ? focusedSortIndex : undefined}
+            />
           )}
           <SettingsButton
             page="song-list"
@@ -99,6 +242,7 @@ export function SongListView() {
               onDownload={handleDownload}
               onLikeChange={handleLikeChange}
               onLoadMore={mode === 'online' ? loadMore : undefined}
+              focusedIndex={!isSortOpen ? focusedSongIndex : undefined}
             />
           ) : (
             <EmptySongState mode={mode} />

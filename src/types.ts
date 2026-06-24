@@ -112,6 +112,7 @@ export interface MidiMapping {
   tom1?: number[];
   tom2?: number[];
   tom3?: number[];
+  pause?: number[];
 }
 
 export type IpcUpdateSongPayload = Pick<SongData, 'id'> &

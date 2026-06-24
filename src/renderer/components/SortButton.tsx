@@ -1,10 +1,4 @@
-import {
-  useRef,
-  useState,
-  useEffect,
-  type CSSProperties,
-  type RefObject,
-} from 'react';
+import { useRef, useEffect, type CSSProperties, type RefObject } from 'react';
 import { Button } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -29,45 +23,55 @@ export interface SortState {
 interface Props {
   sort: SortState;
   onSortChange: (sort: SortState) => void;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  focusedIndex?: number;
 }
 
-const DIRECTIONAL_KEYS: SortKey[] = ['name', 'lastAdded', 'difficulty'];
+export const DIRECTIONAL_KEYS: SortKey[] = ['name', 'lastAdded', 'difficulty'];
 
-export function SortButton({ sort, onSortChange }: Props) {
+export const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'name', label: 'Name' },
+  { key: 'favorite', label: 'Favorite' },
+  { key: 'lastAdded', label: 'Last added' },
+  { key: 'difficulty', label: 'Difficulty' },
+];
+
+export function SortButton({
+  sort,
+  onSortChange,
+  isOpen,
+  onOpenChange,
+  focusedIndex,
+}: Props) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const { pathname } = useLocation();
-  const [prevPathname, setPrevPathname] = useState(pathname);
-
-  if (pathname !== prevPathname) {
-    setPrevPathname(pathname);
-    setIsPopoverOpen(false);
-  }
 
   useEffect(() => {
-    popoverRef.current?.hidePopover();
-  }, [pathname]);
-  usePopoverOutsideClick(isPopoverOpen, popoverRef, triggerRef, () => {
-    popoverRef.current?.hidePopover();
-    setIsPopoverOpen(false);
-  });
-
-  const toggle = () => {
     const el = popoverRef.current;
 
     if (!el) {
       return;
     }
 
-    if (el.matches(':popover-open')) {
+    if (isOpen) {
+      if (!el.matches(':popover-open')) {
+        el.showPopover();
+      }
+    } else if (el.matches(':popover-open')) {
       el.hidePopover();
-      setIsPopoverOpen(false);
-    } else {
-      el.showPopover();
-      setIsPopoverOpen(true);
     }
-  };
+  }, [isOpen]);
+
+  useEffect(() => {
+    onOpenChange(false);
+  }, [pathname, onOpenChange]);
+
+  usePopoverOutsideClick(isOpen, popoverRef, triggerRef, () => {
+    onOpenChange(false);
+  });
+
   const handleClick = (key: SortKey) => {
     if (key === 'favorite') {
       onSortChange({
@@ -98,19 +102,13 @@ export function SortButton({ sort, onSortChange }: Props) {
 
     return faArrowUp;
   };
-  const options: { key: SortKey; label: string }[] = [
-    { key: 'name', label: 'Name' },
-    { key: 'favorite', label: 'Favorite' },
-    { key: 'lastAdded', label: 'Last added' },
-    { key: 'difficulty', label: 'Difficulty' },
-  ];
 
   return (
     <>
       <Button
         ref={triggerRef as RefObject<HTMLButtonElement>}
         icon={<FontAwesomeIcon icon={faSort} />}
-        onClick={toggle}
+        onClick={() => onOpenChange(!isOpen)}
         size="large"
         style={{ anchorName: '--sort-trigger' } as CSSProperties}
       />
@@ -119,7 +117,7 @@ export function SortButton({ sort, onSortChange }: Props) {
         popover="manual"
         className={cn(
           'border border-border p-3 rounded-xl shadow-panel font-ui fixed min-w-44 inset-[unset] m-[unset] gap-2',
-          { 'flex flex-col': isPopoverOpen },
+          { 'flex flex-col': isOpen },
         )}
         style={
           {
@@ -130,7 +128,7 @@ export function SortButton({ sort, onSortChange }: Props) {
           } as CSSProperties
         }
       >
-        {options.map(({ key, label }) => {
+        {SORT_OPTIONS.map(({ key, label }, index) => {
           const icon = key === 'favorite' ? faHeart : dirIcon(key)!;
 
           return (
@@ -138,7 +136,9 @@ export function SortButton({ sort, onSortChange }: Props) {
               key={key}
               type={sort.key === key ? 'primary' : 'default'}
               onClick={() => handleClick(key)}
-              className="justify-start"
+              className={cn('justify-start', {
+                'outline outline-2 outline-accent': index === focusedIndex,
+              })}
             >
               <div className="flex justify-between w-full items-center">
                 <div>{label}</div>

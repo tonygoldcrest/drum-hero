@@ -85,6 +85,7 @@ export interface SongListItemProps {
   mode: Mode;
   downloadingDisabled: boolean;
   stemToolsStatus: StemToolsStatus;
+  focused?: boolean;
 }
 
 export function SongListItem({
@@ -109,6 +110,7 @@ export function SongListItem({
   mode,
   downloadingDisabled,
   stemToolsStatus,
+  focused,
 }: SongListItemProps) {
   const navigate = useNavigate();
   const score = useMemo(() => {
@@ -211,80 +213,81 @@ export function SongListItem({
   ]);
 
   return (
-    <div className="w-full" data-testid={`song-item-${id}`}>
-      <div
-        onClick={() => {
-          if (mode === 'local') {
-            navigate(`/${id}`);
-          }
-        }}
-        className={cn(
-          'w-full flex border border-border-soft p-2 no-underline bg-surface rounded-[11px] transition-all duration-100 ease-in-out cursor-default',
-          {
-            'hover:bg-accent-soft-bg hover:border-accent-soft-border cursor-pointer':
-              mode === 'local',
-          },
-        )}
-      >
-        <div className="flex items-center">
-          <img
-            src={albumCover ?? appIcon}
-            onError={(e) => {
-              e.currentTarget.src = appIcon;
-            }}
-            className="h-15 w-auto object-contain aspect-square rounded-[11px] shadow-frame"
-          />
+    <div
+      onClick={() => {
+        if (mode === 'local') {
+          navigate(`/${id}`);
+        }
+      }}
+      data-testid={`song-item-${id}`}
+      className={cn(
+        'flex border border-border-soft grow no-underline bg-surface rounded-[11px] transition-all duration-100 ease-in-out cursor-default p-2',
+        {
+          'hover:bg-accent-soft-bg hover:border-accent-soft-border cursor-pointer':
+            mode === 'local',
+          'bg-accent-soft-bg border-accent-soft-border outline-2 outline-accent':
+            focused,
+        },
+      )}
+    >
+      <div className="flex items-center">
+        <img
+          src={albumCover ?? appIcon}
+          onError={(e) => {
+            e.currentTarget.src = appIcon;
+          }}
+          className="h-15 w-auto object-contain aspect-square rounded-lg shadow-frame"
+        />
 
-          <div className="ml-2">
-            <div className="text-[18px] font-bold mb-1 text-text-body font-display">
-              {name}
-            </div>
-            <div className="text-text-muted font-ui text-sm">{artist}</div>
+        <div className="ml-2">
+          <div className="text-[18px] font-bold mb-1 text-text-body font-display">
+            {name}
           </div>
+          <div className="text-text-muted font-ui text-sm">{artist}</div>
         </div>
+      </div>
 
-        <div className="flex ml-auto items-center gap-5">
-          {charter && (
-            <div className="flex items-end flex-col">
-              <div className="text-text-dim text-xs">charter</div>
-              <div className="text-text-muted text-sm mt-1">
-                {charter.replace(/<\S+?>/g, '')}
-              </div>
+      <div className="flex ml-auto items-center gap-5">
+        {charter && (
+          <div className="flex items-end flex-col">
+            <div className="text-text-dim text-xs">charter</div>
+            <div className="text-text-muted text-sm mt-1">
+              {charter.replace(/<\S+?>/g, '')}
             </div>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-1 items-center">
+          {score && (
+            <div className="text-xs text-text-dim">{score.difficulty}</div>
           )}
 
-          <div className="flex flex-col gap-1 items-center">
-            {score && (
-              <div className="text-xs text-text-dim">{score.difficulty}</div>
-            )}
+          <div className="flex gap-1 items-center">
+            {times(5, (num) => {
+              const isFilled = score && num < score.starRating;
+              const isPerfect = score && score.accuracy === 1;
 
-            <div className="flex gap-1 items-center">
-              {times(5, (num) => {
-                const isFilled = score && num < score.starRating;
-                const isPerfect = score && score.accuracy === 1;
-
-                return (
-                  <FontAwesomeIcon
-                    key={num}
-                    icon={isFilled ? faStarSolid : faStarRegular}
-                    size="xs"
-                    style={{
-                      color: isPerfect
-                        ? themedark.color.starPerfect
-                        : isFilled
-                        ? themedark.color.star
-                        : themedark.color.textDim,
-                    }}
-                  />
-                );
-              })}
-            </div>
+              return (
+                <FontAwesomeIcon
+                  key={num}
+                  icon={isFilled ? faStarSolid : faStarRegular}
+                  size="xs"
+                  style={{
+                    color: isPerfect
+                      ? themedark.color.starPerfect
+                      : isFilled
+                      ? themedark.color.star
+                      : themedark.color.textDim,
+                  }}
+                />
+              );
+            })}
           </div>
-
-          {diff_drums && <DifficultyRing value={Number(diff_drums)} />}
-
-          {indicator}
         </div>
+
+        {diff_drums && <DifficultyRing value={Number(diff_drums)} />}
+
+        {indicator}
       </div>
     </div>
   );

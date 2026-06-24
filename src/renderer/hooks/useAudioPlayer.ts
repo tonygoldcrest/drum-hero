@@ -2,37 +2,31 @@ import { useEffect, useRef, useState } from 'react';
 import { App } from 'antd';
 import { AudioPlayer } from '../services/audio-player/player';
 import { TrackConfig } from '../services/audio-player/types';
-import { TimeStore } from '../services/time-store';
-
-interface AudioPlayerResult {
-  audioPlayer: AudioPlayer | null;
-  isPlaying: boolean;
-  setIsPlaying: (playing: boolean) => void;
-  timeStore: TimeStore;
-}
 
 export function useAudioPlayer(
   trackData: TrackConfig[],
   isDev: boolean,
   onEnded: () => void,
-): AudioPlayerResult {
+): AudioPlayer | null {
   const { notification } = App.useApp();
   const [audioPlayer, setAudioPlayer] = useState<AudioPlayer | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [timeStore] = useState(() => new TimeStore());
   const onEndedRef = useRef(onEnded);
+  const isDevRef = useRef(isDev);
 
-  onEndedRef.current = onEnded;
+  useEffect(() => {
+    onEndedRef.current = onEnded;
+  }, [onEnded]);
+
+  useEffect(() => {
+    isDevRef.current = isDev;
+  }, [isDev]);
 
   useEffect(() => {
     if (trackData.length === 0) {
-      return;
+      return undefined;
     }
 
-    const player = new AudioPlayer(trackData, () => {
-      setIsPlaying(false);
-      onEndedRef.current?.();
-    });
+    const player = new AudioPlayer(trackData, () => onEndedRef.current());
 
     player.ready
       .then(() => setAudioPlayer(player))
@@ -44,40 +38,17 @@ export function useAudioPlayer(
           placement: 'bottomRight',
         });
       });
-  }, [trackData, notification]);
-  useEffect(() => {
-    if (audioPlayer === null) {
-      return undefined;
-    }
-
-    let rafId = requestAnimationFrame(function poll() {
-      timeStore.set(audioPlayer.currentTime);
-      rafId = requestAnimationFrame(poll);
-    });
 
     return () => {
-      cancelAnimationFrame(rafId);
-
-      if (isDev) {
-        audioPlayer.stop();
+      if (isDevRef.current) {
+        player.stop();
       } else {
-        audioPlayer.destroy();
+        player.destroy();
       }
+
+      setAudioPlayer(null);
     };
-  }, [audioPlayer, isDev, timeStore]);
-  useEffect(() => {
-    if (audioPlayer === null) {
-      return;
-    }
+  }, [trackData, notification]);
 
-    if (isPlaying && !audioPlayer.isInitialised) {
-      audioPlayer.start();
-    } else if (isPlaying) {
-      audioPlayer.resume();
-    } else if (!isPlaying && audioPlayer.isInitialised) {
-      audioPlayer.pause();
-    }
-  }, [audioPlayer, isPlaying]);
-
-  return { audioPlayer, isPlaying, setIsPlaying, timeStore };
+  return audioPlayer;
 }

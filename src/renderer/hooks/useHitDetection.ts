@@ -9,7 +9,7 @@ import {
 import { secondsToTicks, ticksToSeconds } from '../views/utils';
 import { HitHandler } from './useNoteDecoration';
 
-const MIDI_MAPPING_TO_KEYS: Record<keyof MidiMapping, string[]> = {
+const MIDI_MAPPING_TO_KEYS: Partial<Record<keyof MidiMapping, string[]>> = {
   kick: ['f/4', 'e/4'],
   snare: ['c/5'],
   hihat: ['g/5'],
@@ -101,14 +101,16 @@ export function useHitDetection(
         const mapping = midiMappingRef.current;
         const hitElements = (
           Object.keys(mapping) as (keyof MidiMapping)[]
-        ).filter((key) => mapping[key]?.includes(note));
+        ).filter(
+          (key) => MIDI_MAPPING_TO_KEYS[key] && mapping[key]?.includes(note),
+        );
 
         if (hitElements.length === 0) {
           return;
         }
 
         const expectedPrefixes = new Set(
-          hitElements.flatMap((el) => MIDI_MAPPING_TO_KEYS[el]),
+          hitElements.flatMap((el) => MIDI_MAPPING_TO_KEYS[el] ?? []),
         );
         const tick = currentTickRef.current;
         const chartData = chartRef.current;

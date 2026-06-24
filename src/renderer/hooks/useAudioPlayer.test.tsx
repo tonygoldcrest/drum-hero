@@ -38,8 +38,6 @@ vi.mock('../services/audio-player/player', () => {
       this.isInitialised = true;
     });
 
-    resume = vi.fn();
-
     pause = vi.fn();
 
     stop = vi.fn(() => {
@@ -67,7 +65,6 @@ type MockPlayer = {
   isInitialised: boolean;
   onEnded: () => void;
   start: ReturnType<typeof vi.fn>;
-  resume: ReturnType<typeof vi.fn>;
   pause: ReturnType<typeof vi.fn>;
   stop: ReturnType<typeof vi.fn>;
   destroy: ReturnType<typeof vi.fn>;
@@ -130,13 +127,13 @@ describe('useAudioPlayer', () => {
     const Cls = await getPlayerClass();
 
     expect(Cls.instances).toHaveLength(0);
-    expect(result.current.audioPlayer).toBeNull();
+    expect(result.current).toBeNull();
   });
 
   it('exposes the player once it is ready', async () => {
     const { result } = await load(TRACKS);
 
-    expect(result.current.audioPlayer).not.toBeNull();
+    expect(result.current).not.toBeNull();
   });
 
   it('notifies and stays null when loading fails', async () => {
@@ -146,56 +143,19 @@ describe('useAudioPlayer', () => {
 
     const { result } = await load(TRACKS);
 
-    expect(result.current.audioPlayer).toBeNull();
+    expect(result.current).toBeNull();
     expect(notification.error).toHaveBeenCalledTimes(1);
   });
 
-  it('polls the current playback position', async () => {
-    const { result } = await load(TRACKS);
-    const Cls = await getPlayerClass();
-
-    Cls.instances[0].currentTime = 7;
-
-    act(() => {
-      vi.advanceTimersByTime(20);
-    });
-
-    expect(result.current.timeStore.get()).toBe(7);
-  });
-
-  it('starts playback when not yet initialised', async () => {
-    const { result } = await load(TRACKS);
-    const Cls = await getPlayerClass();
-
-    act(() => result.current.setIsPlaying(true));
-
-    expect(Cls.instances[0].start).toHaveBeenCalledTimes(1);
-    expect(Cls.instances[0].resume).not.toHaveBeenCalled();
-  });
-
-  it('pauses then resumes an already initialised player', async () => {
-    const { result } = await load(TRACKS);
-    const Cls = await getPlayerClass();
-
-    act(() => result.current.setIsPlaying(true));
-    act(() => result.current.setIsPlaying(false));
-    expect(Cls.instances[0].pause).toHaveBeenCalledTimes(1);
-
-    act(() => result.current.setIsPlaying(true));
-    expect(Cls.instances[0].resume).toHaveBeenCalledTimes(1);
-  });
-
-  it('flips isPlaying back and fires onEnded when the player reports it ended', async () => {
+  it('forwards the ended callback from the player', async () => {
     const onEnded = vi.fn();
-    const { result } = await load(TRACKS, false, onEnded);
-    const Cls = await getPlayerClass();
 
-    act(() => result.current.setIsPlaying(true));
-    expect(result.current.isPlaying).toBe(true);
+    await load(TRACKS, false, onEnded);
+
+    const Cls = await getPlayerClass();
 
     act(() => Cls.instances[0].onEnded());
 
-    expect(result.current.isPlaying).toBe(false);
     expect(onEnded).toHaveBeenCalledTimes(1);
   });
 
@@ -217,19 +177,5 @@ describe('useAudioPlayer', () => {
 
     expect(Cls.instances[0].stop).toHaveBeenCalledTimes(1);
     expect(Cls.instances[0].destroy).not.toHaveBeenCalled();
-  });
-
-  it('stops polling after unmount', async () => {
-    const { result, unmount } = await load(TRACKS);
-    const Cls = await getPlayerClass();
-
-    unmount();
-    Cls.instances[0].currentTime = 99;
-
-    act(() => {
-      vi.advanceTimersByTime(100);
-    });
-
-    expect(result.current.timeStore.get()).not.toBe(99);
   });
 });

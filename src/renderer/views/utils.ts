@@ -1,6 +1,6 @@
 import { clamp } from 'es-toolkit';
 import { StaveNote } from 'vexflow';
-import { ParsedChart, RenderData } from '../../chart-parser/types';
+import { Measure, ParsedChart, RenderData } from '../../chart-parser/types';
 import { ScoreData } from '../../types';
 
 export const HIT_NOTE_COLOR = '#00000000';
@@ -48,6 +48,34 @@ export function secondsToTicks(
   const ticksPerMs = (tempo.beatsPerMinute * resolution) / 60000;
 
   return Math.round(tempo.tick + deltaMs * ticksPerMs);
+}
+
+export interface CountIn {
+  beats: number;
+  beatMs: number;
+}
+
+const DEFAULT_COUNT_IN: CountIn = { beats: 4, beatMs: 500 };
+
+export function getCountIn(
+  startTick: number,
+  measures: Measure[],
+  chart: Pick<ParsedChart, 'resolution' | 'tempos'>,
+): CountIn {
+  const measure =
+    measures.find((m) => startTick >= m.startTick && startTick < m.endTick) ??
+    measures[0];
+
+  if (!measure) {
+    return DEFAULT_COUNT_IN;
+  }
+
+  const beats = measure.timeSig[0];
+  const measureSeconds =
+    ticksToSeconds(measure.endTick, chart.resolution, chart.tempos) -
+    ticksToSeconds(measure.startTick, chart.resolution, chart.tempos);
+
+  return { beats, beatMs: (measureSeconds * 1000) / beats };
 }
 
 export function getCursorX(

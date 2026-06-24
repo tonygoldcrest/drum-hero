@@ -19,6 +19,7 @@ export interface SongListProps {
   mode: Mode;
   downloadingDisabled: boolean;
   stemToolsStatus: StemToolsStatus;
+  focusedIndex?: number;
 }
 
 const LOAD_MORE_THRESHOLD = 2;
@@ -37,6 +38,7 @@ export function SongList({
   onSplit,
   onLoadMore,
   stemToolsStatus,
+  focusedIndex,
 }: SongListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -50,6 +52,13 @@ export function SongList({
     getScrollElement: () => parentRef.current,
     estimateSize: () => 85,
   });
+
+  useEffect(() => {
+    if (focusedIndex !== undefined && focusedIndex >= 0) {
+      rowVirtualizer.scrollToIndex(focusedIndex, { align: 'auto' });
+    }
+  }, [focusedIndex, rowVirtualizer]);
+
   const virtualItems = rowVirtualizer.getVirtualItems();
   const lastVirtualIndex = virtualItems[virtualItems.length - 1]?.index;
   const stableLoadMore = useCallback(() => onLoadMore?.(), [onLoadMore]);
@@ -80,7 +89,7 @@ export function SongList({
               ref={rowVirtualizer.measureElement}
               key={songData.id}
               data-index={virtualItem.index}
-              className="absolute top-0 left-0 w-full flex items-center"
+              className="absolute top-0 left-0 w-full flex px-2 py-1"
               style={{
                 transform: `translateY(${
                   virtualItem.start - rowVirtualizer.options.scrollMargin
@@ -99,6 +108,7 @@ export function SongList({
                 mode={mode}
                 downloadingDisabled={downloadingDisabled}
                 stemToolsStatus={stemToolsStatus}
+                focused={virtualItem.index === focusedIndex}
               />
             </div>
           );

@@ -29,6 +29,7 @@ interface Props {
   volumeSliders?: ReactNode[];
   difficulties?: Difficulty[];
   difficulty?: Difficulty;
+  difficultyDisabled?: boolean;
   onChangeDifficulty?: (difficulty: Difficulty) => void;
   page: 'song-list' | 'song-view';
   stemToolsStatus?: StemToolsStatus;
@@ -39,6 +40,7 @@ interface Props {
 
 export const SettingsButton = memo(function Settings({
   difficulty,
+  difficultyDisabled,
   onChangeDifficulty,
   volumeSliders,
   difficulties,
@@ -57,6 +59,8 @@ export const SettingsButton = memo(function Settings({
     setShowBarNumbers,
     progressColoring,
     setProgressColoring,
+    countIn,
+    setCountIn,
     currentPath,
   } = useApp();
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -188,6 +192,7 @@ export const SettingsButton = memo(function Settings({
                     className="grow"
                     type={difficulty === d ? 'primary' : 'default'}
                     data-testid={`difficulty-${d}`}
+                    disabled={difficultyDisabled}
                     onClick={() => onChangeDifficulty?.(d)}
                   >
                     {d}
@@ -252,6 +257,17 @@ export const SettingsButton = memo(function Settings({
             onChange={setProgressColoring}
           />
         </div>
+        {page === 'song-view' && (
+          <>
+            <Divider />
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm text-text-muted whitespace-nowrap">
+                Count-in
+              </div>
+              <Switch size="small" checked={countIn} onChange={setCountIn} />
+            </div>
+          </>
+        )}
         {volumeSliders ? (
           <>
             <div className="flex items-center gap-3">

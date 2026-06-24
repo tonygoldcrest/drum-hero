@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button, Layout } from 'antd';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Button, Layout, Spin } from 'antd';
 import { Content } from 'antd/es/layout/layout';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Playback } from '../components/Playback';
@@ -14,14 +14,15 @@ import {
 import { useApp } from '../context/AppContext';
 import { Difficulty } from 'scan-chart';
 import { useSongLoader } from '../hooks/useSongLoader';
-import { useAudioPlayer } from '../hooks/useAudioPlayer';
+import { usePlayback } from '../hooks/usePlayback';
 import { useVolumeControls } from '../hooks/useVolumeControls';
-import { calculateAccuracy, ticksToSeconds } from './utils';
+import { calculateAccuracy } from './utils';
 import { useSheetMusic } from '../hooks/useSheetMusic';
 import { HitDetectionResult } from '../hooks/useHitDetection';
+import { useDrumControls } from '../hooks/useDrumControls';
 import { ScoreModal } from '../components/ScoreModal';
+import { CountIn } from '../components/CountIn';
 import { ScoreData } from '../../types';
-import { Measure } from '../../chart-parser/types';
 
 export function SongView() {
   const {
@@ -29,6 +30,7 @@ export function SongView() {
     enableColors,
     showBarNumbers,
     progressColoring,
+    countIn,
     selectedDevice,
     midiMapping,
   } = useApp();
@@ -57,10 +59,32 @@ export function SongView() {
     showBarNumbers,
     enableColors,
   });
-  const { audioPlayer, isPlaying, setIsPlaying, timeStore } = useAudioPlayer(
+  const measures = useMemo(
+    () => renderData.map((rd) => rd.measure),
+    [renderData],
+  );
+  const delaySeconds = (Number(songData?.delay) || 0) / 1000;
+  const {
+    audioPlayer,
+    timeStore,
+    isPlaying,
+    isCounting,
+    isStarted,
+    isEnded,
+    countInBeat,
+    play,
+    playFromTick,
+    pause,
+    cancel,
+    seekSeconds,
+  } = usePlayback({
     trackData,
+    chart,
+    measures,
+    delaySeconds,
+    countInEnabled: countIn,
     isDev,
-    () => {
+    onEnded: () => {
       const score = {
         hitNotes: scoreRef.current?.hitKeys.current.size ?? 0,
         falseHits: scoreRef.current?.incorrectHitCount.current ?? 0,
@@ -85,10 +109,60 @@ export function SongView() {
         });
       }
     },
-  );
+  });
   const { volumeSliders } = useVolumeControls(trackData, audioPlayer);
   const audioLoading = trackData.length > 0 && !audioPlayer;
-  const delaySeconds = (Number(songData?.delay) || 0) / 1000;
+  const isLoading = !songData || audioLoading;
+  const onNextSong = () => {
+    setIsScoreModalOpen(false);
+    navigate('/');
+  };
+  const onRetry = () => {
+    setIsScoreModalOpen(false);
+    playFromTick(0);
+  };
+
+  useDrumControls(
+    selectedDevice,
+    midiMapping,
+    {
+      tom3: () => {
+        if (audioPlayer && !isPlaying && !isEnded && !isCounting) {
+          play();
+
+          return;
+        }
+
+        if (isEnded && isScoreModalOpen) {
+          onNextSong();
+        }
+      },
+      pause: () => {
+        if (isCounting) {
+          cancel();
+
+          return;
+        }
+
+        if (!isEnded && isPlaying) {
+          pause();
+        }
+      },
+      snare: () => {
+        if (!isPlaying && !isEnded) {
+          cancel();
+          navigate('/');
+
+          return;
+        }
+
+        if (isEnded && isScoreModalOpen) {
+          onRetry();
+        }
+      },
+    },
+    !isLoading,
+  );
 
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage('prevent-sleep');
@@ -103,28 +177,6 @@ export function SongView() {
     window.electron.ipcRenderer.once('check-dev', (dev: boolean) => {
       setIsDev(dev);
     });
-  }, []);
-
-  const onSelectMeasure = useCallback(
-    (measure: Measure) => {
-      if (!chart || !audioPlayer) {
-        return;
-      }
-
-      audioPlayer.start(
-        ticksToSeconds(measure.startTick, chart.resolution, chart.tempos) +
-          delaySeconds,
-      );
-      setIsPlaying(true);
-    },
-    [chart, audioPlayer, delaySeconds, setIsPlaying],
-  );
-  const onNextSong = useCallback(() => {
-    setIsScoreModalOpen(false);
-    navigate('/');
-  }, [navigate]);
-  const onRetry = useCallback(() => {
-    setIsScoreModalOpen(false);
   }, []);
 
   return (
@@ -145,7 +197,8 @@ export function SongView() {
           icon={<FontAwesomeIcon icon={faArrowLeft} />}
           data-testid="back-button"
           onClick={() => {
-            setIsPlaying(false);
+            cancel();
+            pause();
             navigate('/');
           }}
           size="large"
@@ -157,7 +210,19 @@ export function SongView() {
           loading={audioLoading}
           data-testid="play-toggle"
           onClick={() => {
-            setIsPlaying(!isPlaying);
+            if (isCounting) {
+              cancel();
+
+              return;
+            }
+
+            if (isPlaying) {
+              pause();
+
+              return;
+            }
+
+            play();
           }}
           shape="circle"
           size="large"
@@ -185,9 +250,7 @@ export function SongView() {
               return;
             }
 
-            const time = (value / 100) * audioPlayer.duration;
-
-            audioPlayer.start(time);
+            seekSeconds((value / 100) * audioPlayer.duration);
           }}
         />
         <SettingsButton
@@ -196,29 +259,38 @@ export function SongView() {
           difficulties={difficulties}
           onChangeDifficulty={setDifficulty}
           difficulty={activeDifficulty}
+          difficultyDisabled={isStarted}
         />
       </div>
 
-      <Content className="p-6 m-0 overflow-auto flex flex-col items-center font-display text-ink">
-        {songData && chart && parsedMidi && (
-          <SongSheet
-            chart={chart}
-            renderData={renderData}
-            songData={songData}
-            timeStore={timeStore}
-            delaySeconds={delaySeconds}
-            playheadStyle={playheadStyle}
-            progressColoring={progressColoring}
-            selectedDevice={selectedDevice}
-            midiMapping={midiMapping}
-            isPlaying={isPlaying}
-            isDev={isDev}
-            vexflowContainerRef={vexflowContainerRef}
-            onSelectMeasure={onSelectMeasure}
-            scoreRef={scoreRef}
-          />
+      <div className="relative grow flex min-h-0">
+        <Content className="grow p-6 m-0 overflow-auto flex flex-col items-center font-display text-ink">
+          {songData && chart && parsedMidi && (
+            <SongSheet
+              chart={chart}
+              renderData={renderData}
+              songData={songData}
+              timeStore={timeStore}
+              delaySeconds={delaySeconds}
+              playheadStyle={playheadStyle}
+              progressColoring={progressColoring}
+              selectedDevice={selectedDevice}
+              midiMapping={midiMapping}
+              isPlaying={isPlaying}
+              isDev={isDev}
+              vexflowContainerRef={vexflowContainerRef}
+              onSelectMeasure={(measure) => playFromTick(measure.startTick)}
+              scoreRef={scoreRef}
+            />
+          )}
+        </Content>
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10 backdrop-blur-xs">
+            <Spin />
+          </div>
         )}
-      </Content>
+        <CountIn count={countInBeat} />
+      </div>
     </Layout>
   );
 }
