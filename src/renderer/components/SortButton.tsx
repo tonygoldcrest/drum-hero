@@ -38,10 +38,15 @@ export function SortButton({ sort, onSortChange }: Props) {
   const popoverRef = useRef<HTMLDivElement>(null);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const { pathname } = useLocation();
+  const [prevPathname, setPrevPathname] = useState(pathname);
+
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    setIsPopoverOpen(false);
+  }
 
   useEffect(() => {
     popoverRef.current?.hidePopover();
-    setIsPopoverOpen(false);
   }, [pathname]);
   usePopoverOutsideClick(isPopoverOpen, popoverRef, triggerRef, () => {
     popoverRef.current?.hidePopover();

@@ -18,7 +18,9 @@ export function useDownload(
   const downloadingRef = useRef<Set<string>>(new Set());
   const onSongAddedRef = useRef(onSongAdded);
 
-  onSongAddedRef.current = onSongAdded;
+  useEffect(() => {
+    onSongAddedRef.current = onSongAdded;
+  }, [onSongAdded]);
 
   useEffect(() => {
     return window.electron.ipcRenderer.on<DownloadReply>(

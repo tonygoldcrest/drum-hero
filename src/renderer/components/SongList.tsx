@@ -44,6 +44,7 @@ export function SongList({
     parentRef.current?.scrollTo(0, 0);
   }, [scrollKey]);
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const rowVirtualizer = useVirtualizer({
     count: songList.length,
     getScrollElement: () => parentRef.current,

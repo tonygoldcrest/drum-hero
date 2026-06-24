@@ -32,7 +32,7 @@ if (typeof HTMLElement.prototype.showPopover !== 'function') {
     }
 
     return originalMatches.call(this, selector);
-  };
+  } as typeof Element.prototype.matches;
 }
 
 if (typeof Element.prototype.scrollTo !== 'function') {

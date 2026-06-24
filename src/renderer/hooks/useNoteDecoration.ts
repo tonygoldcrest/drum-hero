@@ -52,8 +52,10 @@ export function useNoteDecoration(
   const enabledRef = useRef(enabled);
   const playheadStyleRef = useRef(playheadStyle);
 
-  enabledRef.current = enabled;
-  playheadStyleRef.current = playheadStyle;
+  useEffect(() => {
+    enabledRef.current = enabled;
+    playheadStyleRef.current = playheadStyle;
+  }, [enabled, playheadStyle]);
 
   useEffect(() => {
     filledElsRef.current.clear();

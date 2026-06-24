@@ -12,7 +12,8 @@
     "resolveJsonModule": true,
     "allowJs": true,
     "skipLibCheck": true,
-    "outDir": "out"
+    "outDir": "out",
+    "rootDir": "src"
   },
   "include": ["src", "assets/assets.d.ts"],
   "exclude": ["test", "release/build", "out", ".erb/dll"]

@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { App } from 'antd';
-import { debounce, uniqBy } from 'es-toolkit';
+import { uniqBy } from 'es-toolkit';
 import { SongData } from '../../types';
 
 type PageResult = { songs: SongData[]; total: number | undefined };
@@ -133,7 +133,7 @@ export function useOnlineSearch(active: boolean, search: string) {
         }
 
         setLoading(false);
-      } catch (err) {
+      } catch {
         if (controller.signal.aborted) {
           return;
         }
@@ -149,72 +149,86 @@ export function useOnlineSearch(active: boolean, search: string) {
     },
     [notification],
   );
-  const debouncedFetch = useMemo(
-    () =>
-      debounce(async (query: string) => {
-        abortRef.current?.abort();
+  const fetchFirstPages = useCallback(
+    async (query: string) => {
+      abortRef.current?.abort();
 
-        const controller = new AbortController();
+      const controller = new AbortController();
 
-        abortRef.current = controller;
+      abortRef.current = controller;
 
-        const getOrFetch = async (page: number): Promise<PageResult> => {
-          const cacheKey = `${query}:${page}`;
-          const cached = cache.current.get(cacheKey);
+      const getOrFetch = async (page: number): Promise<PageResult> => {
+        const cacheKey = `${query}:${page}`;
+        const cached = cache.current.get(cacheKey);
 
-          if (cached) {
-            return cached;
-          }
-
-          const r = await fetchEnchorePage(query, page, controller.signal);
-
-          cache.current.set(cacheKey, r);
-
-          return r;
-        };
-
-        try {
-          const [p1, p2] = await Promise.all([getOrFetch(1), getOrFetch(2)]);
-
-          if (controller.signal.aborted) {
-            return;
-          }
-
-          const combined = uniqBy([...p1.songs, ...p2.songs], (s) => s.id);
-          const pageTotal = p1.total ?? p2.total;
-
-          pageRef.current = 2;
-          setResults(() => {
-            setHasMore(
-              pageTotal !== undefined
-                ? combined.length < pageTotal
-                : p2.songs.length > 0,
-            );
-
-            return combined;
-          });
-
-          if (pageTotal !== undefined) {
-            setTotal(pageTotal);
-          }
-
-          setLoading(false);
-        } catch (err) {
-          if (controller.signal.aborted) {
-            return;
-          }
-
-          notification.error({
-            message: 'Search failed',
-            description:
-              'Unable to fetch songs from Encore. Please check your connection.',
-            placement: 'bottomRight',
-          });
-          setLoading(false);
+        if (cached) {
+          return cached;
         }
-      }, 300),
+
+        const r = await fetchEnchorePage(query, page, controller.signal);
+
+        cache.current.set(cacheKey, r);
+
+        return r;
+      };
+
+      try {
+        const [p1, p2] = await Promise.all([getOrFetch(1), getOrFetch(2)]);
+
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        const combined = uniqBy([...p1.songs, ...p2.songs], (s) => s.id);
+        const pageTotal = p1.total ?? p2.total;
+
+        pageRef.current = 2;
+        setResults(() => {
+          setHasMore(
+            pageTotal !== undefined
+              ? combined.length < pageTotal
+              : p2.songs.length > 0,
+          );
+
+          return combined;
+        });
+
+        if (pageTotal !== undefined) {
+          setTotal(pageTotal);
+        }
+
+        setLoading(false);
+      } catch {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        notification.error({
+          message: 'Search failed',
+          description:
+            'Unable to fetch songs from Encore. Please check your connection.',
+          placement: 'bottomRight',
+        });
+        setLoading(false);
+      }
+    },
     [notification],
   );
+  const searchKey = active ? search : null;
+  const [prevSearchKey, setPrevSearchKey] = useState<string | null>(null);
+
+  if (searchKey !== prevSearchKey) {
+    setPrevSearchKey(searchKey);
+
+    if (searchKey !== null) {
+      setResults([]);
+      setTotal(undefined);
+      setHasMore(true);
+      setLoading(true);
+    } else {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (!active) {
@@ -222,18 +236,16 @@ export function useOnlineSearch(active: boolean, search: string) {
     }
 
     searchRef.current = search;
-    setResults([]);
-    setTotal(undefined);
-    setHasMore(true);
-    setLoading(true);
-    debouncedFetch(search);
+
+    const timer = setTimeout(() => {
+      fetchFirstPages(search);
+    }, 300);
 
     return () => {
-      debouncedFetch.cancel();
+      clearTimeout(timer);
       abortRef.current?.abort();
-      setLoading(false);
     };
-  }, [active, search, debouncedFetch]);
+  }, [active, search, fetchFirstPages]);
 
   const loadMore = useCallback(() => {
     if (loading || !hasMore) {

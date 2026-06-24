@@ -48,8 +48,13 @@ export function useHitDetection(
   const midiMappingRef = useRef(midiMapping);
   const isPlayingRef = useRef(isPlaying);
 
-  isPlayingRef.current = isPlaying;
-  midiMappingRef.current = midiMapping;
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  useEffect(() => {
+    midiMappingRef.current = midiMapping;
+  }, [midiMapping]);
 
   useEffect(() => {
     chartRef.current = chart;
@@ -103,17 +108,12 @@ export function useHitDetection(
         }
 
         const expectedPrefixes = new Set(
-          hitElements.flatMap((el) => MIDI_MAPPING_TO_KEYS[el].map(keyPrefix)),
+          hitElements.flatMap((el) => MIDI_MAPPING_TO_KEYS[el]),
         );
         const tick = currentTickRef.current;
-
-        if (tick === null) {
-          return;
-        }
-
         const chartData = chartRef.current;
 
-        if (chartData === null) {
+        if (tick === null || chartData === null) {
           return;
         }
 

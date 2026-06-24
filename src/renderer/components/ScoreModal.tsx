@@ -20,7 +20,7 @@ type Props = {
   scoreData?: ScoreData;
 };
 
-export const ScoreModal = memo(function ScoreModal({
+export const ScoreModal = memo(function Modal({
   isOpen,
   onRetry,
   onNextSong,

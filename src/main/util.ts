@@ -1,4 +1,3 @@
-/* eslint import/prefer-default-export: off */
 import path from 'path';
 import fs from 'fs';
 import ini from 'ini';

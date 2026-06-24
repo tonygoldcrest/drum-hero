@@ -31,8 +31,13 @@ export function useVolumeControls(
   const mixerLevelsRef = useRef(mixerLevels);
   const volumeControlsRef = useRef(volumeControls);
 
-  mixerLevelsRef.current = mixerLevels;
-  volumeControlsRef.current = volumeControls;
+  useEffect(() => {
+    mixerLevelsRef.current = mixerLevels;
+  }, [mixerLevels]);
+
+  useEffect(() => {
+    volumeControlsRef.current = volumeControls;
+  }, [volumeControls]);
 
   const updateControlRef = useRef(
     (

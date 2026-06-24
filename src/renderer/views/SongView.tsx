@@ -35,11 +35,28 @@ export function SongView() {
   const [difficulty, setDifficulty] = useState<Difficulty>('expert');
   const [scoreData, setScoreData] = useState<ScoreData>();
   const [isScoreModalOpen, setIsScoreModalOpen] = useState(false);
-  const [isDev, setIsDev] = useState(true);
+  const [isDev, setIsDev] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
   const { fileData, format, songData, trackData } = useSongLoader(id);
   const scoreRef = useRef<HitDetectionResult | undefined>(undefined);
+  const {
+    chart,
+    parsedMidi,
+    renderData,
+    vexflowContainerRef,
+    difficulties,
+    activeDifficulty,
+  } = useSheetMusic({
+    fileData,
+    format,
+    fiveLaneDrums: songData?.five_lane_drums === 'True',
+    proDrums: songData?.pro_drums === 'True',
+    songId: songData?.id,
+    difficulty,
+    showBarNumbers,
+    enableColors,
+  });
   const { audioPlayer, isPlaying, setIsPlaying, timeStore } = useAudioPlayer(
     trackData,
     isDev,
@@ -71,23 +88,6 @@ export function SongView() {
   );
   const { volumeSliders } = useVolumeControls(trackData, audioPlayer);
   const audioLoading = trackData.length > 0 && !audioPlayer;
-  const {
-    chart,
-    parsedMidi,
-    renderData,
-    vexflowContainerRef,
-    difficulties,
-    activeDifficulty,
-  } = useSheetMusic({
-    fileData,
-    format,
-    fiveLaneDrums: songData?.five_lane_drums === 'True',
-    proDrums: songData?.pro_drums === 'True',
-    songId: songData?.id,
-    difficulty,
-    showBarNumbers,
-    enableColors,
-  });
   const delaySeconds = (Number(songData?.delay) || 0) / 1000;
 
   useEffect(() => {

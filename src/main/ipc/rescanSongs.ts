@@ -42,38 +42,36 @@ export async function rescanSongs(event: IpcMainEvent, newDir = true) {
       ([, s]) => !isUnderDirectory(s.dir, selectedPath),
     ),
   );
+  const files = await glob(`${selectedPath}/**/{notes.mid,notes.chart}`);
+  const dirToFile = new Map<string, string>();
 
-  glob(`${selectedPath}/**/{notes.mid,notes.chart}`, {}, (err, files) => {
-    const dirToFile = new Map<string, string>();
+  for (const file of files) {
+    const dir = path.dirname(file);
 
-    for (const file of files) {
-      const dir = path.dirname(file);
-
-      if (!dirToFile.has(dir) || path.extname(file) === '.mid') {
-        dirToFile.set(dir, file);
-      }
+    if (!dirToFile.has(dir) || path.extname(file) === '.mid') {
+      dirToFile.set(dir, file);
     }
+  }
 
-    const songList = [...dirToFile.keys()]
-      .map((dir) => buildSongFromDir(dir, existingByDir.get(dir)))
-      .filter((s): s is SongData => s !== null);
-    const rescannedSongs = songList.reduce(
-      (acc, song) => {
-        acc[song.id] = song;
+  const songList = [...dirToFile.keys()]
+    .map((dir) => buildSongFromDir(dir, existingByDir.get(dir)))
+    .filter((s): s is SongData => s !== null);
+  const rescannedSongs = songList.reduce(
+    (acc, song) => {
+      acc[song.id] = song;
 
-        return acc;
-      },
-      {} as StorageSchema['songs'],
-    );
+      return acc;
+    },
+    {} as StorageSchema['songs'],
+  );
 
-    appState.store.set('songs', { ...otherSongs, ...rescannedSongs });
+  appState.store.set('songs', { ...otherSongs, ...rescannedSongs });
 
-    event.reply('rescan-songs', {
-      songs: Object.values(rescannedSongs).map((s) => ({
-        ...s,
-        updatedAt: fs.statSync(s.dir).mtime.toISOString(),
-      })),
-      lastOpenedPath: selectedPath,
-    });
+  event.reply('rescan-songs', {
+    songs: Object.values(rescannedSongs).map((s) => ({
+      ...s,
+      updatedAt: fs.statSync(s.dir).mtime.toISOString(),
+    })),
+    lastOpenedPath: selectedPath,
   });
 }

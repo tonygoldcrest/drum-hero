@@ -79,6 +79,15 @@ export function usePlayhead({
   playheadStyle,
 }: UsePlayheadParams): UsePlayheadResult {
   const [highlightedMeasureIndex, setHighlightedMeasureIndex] = useState(-1);
+
+  if (currentTick !== null) {
+    const index = findMeasureIndex(renderData, currentTick);
+
+    if (index >= 0 && index !== highlightedMeasureIndex) {
+      setHighlightedMeasureIndex(index);
+    }
+  }
+
   const highlightsRef = useMemo(
     () => renderData.map(() => createRef<HTMLDivElement>()),
     [renderData],
@@ -157,19 +166,6 @@ export function usePlayhead({
       renderedNotes,
     };
   }, [activeNoteIdx, highlightedMeasureIndex, renderData]);
-
-  useEffect(() => {
-    if (currentTick === null) {
-      return;
-    }
-
-    const index = findMeasureIndex(renderData, currentTick);
-
-    if (index >= 0) {
-      setHighlightedMeasureIndex(index);
-    }
-  }, [currentTick, renderData]);
-
   const scrollParentRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {

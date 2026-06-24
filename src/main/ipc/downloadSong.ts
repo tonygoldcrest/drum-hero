@@ -96,7 +96,10 @@ export async function downloadSong(
     fs.mkdirSync(outputDir, { recursive: true });
 
     for (const file of files) {
-      fs.writeFileSync(path.join(outputDir, file.name), file.data);
+      fs.writeFileSync(
+        path.join(outputDir, file.name),
+        new Uint8Array(file.data),
+      );
     }
 
     const songData = buildSongFromDir(outputDir, { id: md5 });

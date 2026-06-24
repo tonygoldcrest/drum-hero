@@ -171,7 +171,6 @@ describe('useSongFilter', () => {
     const { result } = renderHook(() => useSongFilter(list));
 
     act(() => result.current.setSort({ key: 'name', direction: 'asc' }));
-    result.current.filteredSongList;
 
     expect(ids(list)).toEqual(snapshot);
   });

@@ -85,9 +85,20 @@ export function MidiConfigModal({ isOpen, onClose }: Props) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [midiDevices, setMidiDevices] = useState<MidiDevice[]>([]);
   const [listeningTo, setListeningTo] = useState<keyof MidiMapping>();
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
   const listeningToRef = useRef(listeningTo);
 
-  listeningToRef.current = listeningTo;
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+
+    if (!isOpen) {
+      setListeningTo(undefined);
+    }
+  }
+
+  useEffect(() => {
+    listeningToRef.current = listeningTo;
+  }, [listeningTo]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -134,7 +145,6 @@ export function MidiConfigModal({ isOpen, onClose }: Props) {
       backdropRef.current?.showPopover();
     } else {
       backdropRef.current?.hidePopover();
-      setListeningTo(undefined);
     }
   }, [isOpen]);
 

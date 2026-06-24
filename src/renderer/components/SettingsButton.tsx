@@ -37,7 +37,7 @@ interface Props {
   onDownloadStemTools?: () => void;
 }
 
-export const SettingsButton = memo(function SettingsButton({
+export const SettingsButton = memo(function Settings({
   difficulty,
   onChangeDifficulty,
   volumeSliders,

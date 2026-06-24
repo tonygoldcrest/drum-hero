@@ -38,9 +38,7 @@ export function useSheetMusic({
 }: UseSheetMusicParams): UseSheetMusicResult {
   const { notification } = App.useApp();
   const vexflowContainerRef = useRef<HTMLDivElement>(null);
-  const [parsedMidi, setParsedMidi] = useState<ChartParser | null>(null);
   const [renderData, setRenderData] = useState<RenderData[]>([]);
-  const lastParseKeyRef = useRef<string>('');
   const chart = useMemo(() => {
     if (!fileData) {
       return null;
@@ -66,26 +64,20 @@ export function useSheetMusic({
   const activeDifficulty: Difficulty = difficulties.includes(difficulty)
     ? difficulty
     : last(difficulties) ?? 'expert';
-
-  useEffect(() => {
+  const parsedMidi = useMemo(() => {
     if (!chart || !songId) {
-      setParsedMidi(null);
-
-      return;
+      return null;
     }
-
-    const key = `${activeDifficulty}:${songId}`;
-
-    if (key === lastParseKeyRef.current) {
-      return;
-    }
-
-    lastParseKeyRef.current = key;
 
     try {
-      setParsedMidi(new ChartParser(chart, fiveLaneDrums, activeDifficulty));
+      return new ChartParser(chart, fiveLaneDrums, activeDifficulty);
     } catch {
-      setParsedMidi(null);
+      return null;
+    }
+  }, [chart, songId, fiveLaneDrums, activeDifficulty]);
+
+  useEffect(() => {
+    if (chart && songId && !parsedMidi) {
       notification.error({
         message: 'Chart parse failed',
         description:
@@ -93,7 +85,7 @@ export function useSheetMusic({
         placement: 'bottomRight',
       });
     }
-  }, [chart, songId, fiveLaneDrums, activeDifficulty, notification]);
+  }, [chart, songId, parsedMidi, notification]);
 
   useEffect(() => {
     if (!vexflowContainerRef.current || !parsedMidi) {
