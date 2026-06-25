@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button, Layout, Spin } from 'antd';
 import { Content } from 'antd/es/layout/layout';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Playback } from '../components/Playback';
 import { SettingsButton } from '../components/SettingsButton';
-import { SongSheet } from '../components/SongSheet';
+import { SheetMusic } from '../components/SheetMusic/SheetMusic';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowLeft,
@@ -14,11 +14,10 @@ import {
 import { useApp } from '../context/AppContext';
 import { Difficulty } from 'scan-chart';
 import { useSongLoader } from '../hooks/useSongLoader';
-import { usePlayback } from '../hooks/usePlayback';
+import { useGameEngine } from '../hooks/useGameEngine';
 import { useVolumeControls } from '../hooks/useVolumeControls';
 import { calculateAccuracy } from './utils';
 import { useSheetMusic } from '../hooks/useSheetMusic';
-import { HitDetectionResult } from '../hooks/useHitDetection';
 import { useDrumControls } from '../hooks/useDrumControls';
 import { ScoreModal } from '../components/ScoreModal';
 import { CountIn } from '../components/CountIn';
@@ -42,7 +41,6 @@ export function SongView() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { fileData, format, songData, trackData } = useSongLoader(id);
-  const scoreRef = useRef<HitDetectionResult | undefined>(undefined);
   const {
     chart,
     parsedMidi,
@@ -67,7 +65,9 @@ export function SongView() {
   );
   const delaySeconds = (Number(songData?.delay) || 0) / 1000;
   const {
-    audioPlayer,
+    engine,
+    isReady,
+    duration,
     timeStore,
     isPlaying,
     isCounting,
@@ -80,23 +80,20 @@ export function SongView() {
     pause,
     cancel,
     seekSeconds,
-  } = usePlayback({
+    setStemVolume,
+  } = useGameEngine({
     trackData,
+    isDev,
     chart,
     measures,
+    renderData,
     delaySeconds,
     countInEnabled: countIn,
-    isDev,
-    onEnded: () => {
-      const score = {
-        hitNotes: scoreRef.current?.hitKeys.current.size ?? 0,
-        falseHits: scoreRef.current?.incorrectHitCount.current ?? 0,
-        totalNotes: renderData
-          .flatMap((rd) => rd.measure.notes)
-          .filter((n) => !n.isRest)
-          .reduce((sum, n) => sum + n.notes.length, 0),
-      };
-
+    playheadStyle,
+    progressColoring,
+    selectedDevice,
+    midiMapping,
+    onEnded: (score) => {
       setScoreData(score);
       setIsScoreModalOpen(true);
 
@@ -113,8 +110,12 @@ export function SongView() {
       }
     },
   });
-  const { volumeSliders } = useVolumeControls(trackData, audioPlayer);
-  const audioLoading = trackData.length > 0 && !audioPlayer;
+  const { volumeSliders } = useVolumeControls(
+    trackData,
+    setStemVolume,
+    isReady,
+  );
+  const audioLoading = trackData.length > 0 && !isReady;
   const isLoading = !songData || audioLoading;
   const onNextSong = () => {
     setIsScoreModalOpen(false);
@@ -130,7 +131,7 @@ export function SongView() {
     midiMapping,
     {
       tom3: () => {
-        if (audioPlayer && !isPlaying && !isEnded && !isCounting) {
+        if (isReady && !isPlaying && !isEnded && !isCounting) {
           play();
 
           return;
@@ -245,15 +246,15 @@ export function SongView() {
 
         <Playback
           timeStore={timeStore}
-          disabled={!audioPlayer}
-          duration={audioPlayer?.duration ?? 0}
+          disabled={!isReady}
+          duration={duration}
           isDev={isDev}
           onChange={(value) => {
-            if (!audioPlayer) {
+            if (!isReady) {
               return;
             }
 
-            seekSeconds((value / 100) * audioPlayer.duration);
+            seekSeconds((value / 100) * duration);
           }}
         />
         <SettingsButton
@@ -269,21 +270,13 @@ export function SongView() {
       <div className="relative grow flex min-h-0">
         <Content className="grow p-6 m-0 overflow-auto flex flex-col items-center font-display text-ink">
           {songData && chart && parsedMidi && (
-            <SongSheet
-              chart={chart}
+            <SheetMusic
+              engine={engine}
               renderData={renderData}
               songData={songData}
-              timeStore={timeStore}
-              delaySeconds={delaySeconds}
-              playheadStyle={playheadStyle}
-              progressColoring={progressColoring}
-              selectedDevice={selectedDevice}
-              midiMapping={midiMapping}
-              isPlaying={isPlaying}
               isDev={isDev}
               vexflowContainerRef={vexflowContainerRef}
               onSelectMeasure={(measure) => playFromTick(measure.startTick)}
-              scoreRef={scoreRef}
             />
           )}
         </Content>

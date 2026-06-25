@@ -1,73 +1,66 @@
-import { RefObject, useMemo } from 'react';
+import { RefObject, createRef, useEffect, useMemo, useRef } from 'react';
 import { cn } from '../../cn';
-import { PlayheadStyle } from '../../types';
 import { Measure, RenderData } from '../../../chart-parser/types';
-import { CursorPosition } from '../../hooks/usePlayhead';
+import { GameEngine } from '../../services/game-engine';
 import { SongData } from '../../../types';
 
 export interface SheetMusicProps {
+  engine: GameEngine | undefined;
   songData: SongData;
   renderData: RenderData[];
   vexflowContainerRef: RefObject<HTMLDivElement | null>;
-  highlightsRef: RefObject<HTMLDivElement | null>[];
-  highlightedMeasureIndex: number;
-  cursorPosition: CursorPosition | null;
-  playheadStyle: PlayheadStyle;
   isDev: boolean;
   onSelectMeasure: (measure: Measure) => void;
 }
 
 export function SheetMusic({
+  engine,
   songData,
   renderData,
   vexflowContainerRef,
-  highlightsRef,
-  highlightedMeasureIndex,
-  cursorPosition,
-  playheadStyle,
   isDev,
   onSelectMeasure,
 }: SheetMusicProps) {
+  const cursorRef = useRef<HTMLDivElement>(null);
+  const highlightsRef = useMemo(
+    () => renderData.map(() => createRef<HTMLDivElement>()),
+    [renderData],
+  );
+
+  useEffect(() => {
+    engine?.setView({
+      cursorEl: cursorRef.current ?? undefined,
+      highlightEls: highlightsRef.map((ref) => ref.current ?? undefined),
+    });
+  }, [engine, renderData, highlightsRef]);
+
   const measureHighlights = useMemo(
     () =>
-      renderData.map(({ measure, stave }, index) => {
-        const highlighted =
-          playheadStyle === 'Measure' && index === highlightedMeasureIndex;
+      renderData.map(({ measure, stave }, index) => (
+        <div
+          key={index}
+          ref={highlightsRef[index]}
+          style={{
+            top: stave.getY(),
+            left: stave.getX() - 5,
+            width: stave.getWidth() + 10,
+            height: stave.getHeight() + 30,
+          }}
+          className={cn(
+            'absolute z-[-3] rounded-[11px] border-0 bg-transparent',
+            isDev &&
+              'cursor-pointer hover:bg-accent-soft-bg hover:shadow-accent-soft hover:border hover:border-accent-soft-border hover:z-[-1]',
+          )}
+          onClick={() => {
+            if (!isDev) {
+              return;
+            }
 
-        return (
-          <div
-            key={index}
-            ref={highlightsRef[index]}
-            style={{
-              top: stave.getY(),
-              left: stave.getX() - 5,
-              width: stave.getWidth() + 10,
-              height: stave.getHeight() + 30,
-            }}
-            className={cn(
-              'absolute z-[-3] rounded-[11px] border-0 bg-transparent',
-              highlighted && 'bg-accent-soft-bg border-2 border-accent',
-              isDev &&
-                'cursor-pointer hover:bg-accent-soft-bg hover:shadow-accent-soft hover:border hover:border-accent-soft-border hover:z-[-1]',
-            )}
-            onClick={() => {
-              if (!isDev) {
-                return;
-              }
-
-              onSelectMeasure(measure);
-            }}
-          />
-        );
-      }),
-    [
-      renderData,
-      highlightsRef,
-      highlightedMeasureIndex,
-      playheadStyle,
-      isDev,
-      onSelectMeasure,
-    ],
+            onSelectMeasure(measure);
+          }}
+        />
+      )),
+    [renderData, highlightsRef, isDev, onSelectMeasure],
   );
 
   return (
@@ -85,22 +78,17 @@ export function SheetMusic({
           className="min-w-max pointer-events-none **:pointer-events-none"
         />
         {measureHighlights}
-        {cursorPosition && (
+        <div
+          ref={cursorRef}
+          className="absolute z-1 -translate-x-1/2 pointer-events-none shadow-accent-button"
+          style={{ display: 'none' }}
+        >
           <div
-            className="absolute z-1 -translate-x-1/2 pointer-events-none shadow-accent-button"
-            style={{
-              left: cursorPosition.left,
-              top: cursorPosition.top,
-              height: cursorPosition.height,
-            }}
-          >
-            <div
-              className="absolute w-3 h-3 bg-accent left-1/2 rounded-[3px]"
-              style={{ transform: 'translateX(-50%) rotate(45deg)' }}
-            />
-            <div className="absolute w-0.75 bg-accent h-full rounded-[3px] left-1/2 -translate-x-1/2" />
-          </div>
-        )}
+            className="absolute w-3 h-3 bg-accent left-1/2 rounded-[3px]"
+            style={{ transform: 'translateX(-50%) rotate(45deg)' }}
+          />
+          <div className="absolute w-0.75 bg-accent h-full rounded-[3px] left-1/2 -translate-x-1/2" />
+        </div>
       </div>
     </div>
   );

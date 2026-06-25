@@ -144,7 +144,7 @@ export function getCursorX(
 export function getNoteSvg(note: StaveNote) {
   return note.noteHeads
     .map((nh) => nh.getSVGElement())
-    .filter((el): el is SVGElement => el !== null);
+    .filter((el): el is SVGElement => el !== null && el !== undefined);
 }
 
 export function calculateAccuracy({

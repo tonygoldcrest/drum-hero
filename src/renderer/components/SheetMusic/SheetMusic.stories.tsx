@@ -12,7 +12,6 @@ import {
   MeasureSpec,
 } from './drumMidiFixture';
 import { useSheetMusic } from '../../hooks/useSheetMusic';
-import { usePlayhead } from '../../hooks/usePlayhead';
 import { SongData } from '../../../types';
 
 const STORY_SONG = {
@@ -37,14 +36,6 @@ function SheetHarness({ measures }: { measures: MeasureSpec[] }) {
     enableColors: true,
     showTempo: true,
   });
-  const { highlightedMeasureIndex, cursorPosition, highlightsRef } =
-    usePlayhead({
-      chart,
-      currentTime: 0,
-      currentTick: null,
-      renderData,
-      playheadStyle: 'None',
-    });
 
   if (!chart || !parsedMidi) {
     return null;
@@ -52,13 +43,10 @@ function SheetHarness({ measures }: { measures: MeasureSpec[] }) {
 
   return (
     <SheetMusic
+      engine={undefined}
       songData={STORY_SONG}
       renderData={renderData}
       vexflowContainerRef={vexflowContainerRef}
-      highlightsRef={highlightsRef}
-      highlightedMeasureIndex={highlightedMeasureIndex}
-      cursorPosition={cursorPosition}
-      playheadStyle="None"
       isDev={false}
       onSelectMeasure={() => {}}
     />

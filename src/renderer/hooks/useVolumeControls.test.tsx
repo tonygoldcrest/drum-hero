@@ -1,7 +1,6 @@
 import { ReactElement } from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AudioPlayer } from '../services/audio-player/player';
 import { TrackConfig } from '../services/audio-player/types';
 import { AudioVolumeProps } from '../components/AudioVolume';
 import { useVolumeControls } from './useVolumeControls';
@@ -19,24 +18,21 @@ vi.mock('../context/AppContext', () => ({
 
 type Result = { current: ReturnType<typeof useVolumeControls> };
 
-function makePlayer(names: string[]) {
-  const audioTracks = names.map((name) => ({ name, setVolume: vi.fn() }));
-
-  return {
-    audioTracks,
-  } as unknown as AudioPlayer & {
-    audioTracks: { name: string; setVolume: ReturnType<typeof vi.fn> }[];
-  };
-}
-
 function tracks(...names: string[]): TrackConfig[] {
   return names.map((name) => ({ name, urls: [`${name}.ogg`] }));
 }
 
-function render(names: string[], player: AudioPlayer | null) {
-  const td = tracks(...names);
+function render(names: string[], isReady = true) {
+  const setStemVolume = vi.fn();
+  const view = renderHook(
+    ({ data, ready }: { data: TrackConfig[]; ready: boolean }) =>
+      useVolumeControls(data, setStemVolume, ready),
+    { initialProps: { data: tracks(...names), ready: isReady } },
+  );
+  const rerenderTracks = (next: string[]) =>
+    view.rerender({ data: tracks(...next), ready: isReady });
 
-  return renderHook(() => useVolumeControls(td, player));
+  return { ...view, setStemVolume, rerenderTracks };
 }
 
 function control(result: Result, name: string) {
@@ -75,10 +71,7 @@ function setVolume(result: Result, name: string, value: number) {
 
 describe('useVolumeControls', () => {
   it('initialises a control per track at full volume', () => {
-    const { result } = render(
-      ['drums', 'guitar'],
-      makePlayer(['drums', 'guitar']),
-    );
+    const { result } = render(['drums', 'guitar']);
 
     expect(result.current.volumeControls).toHaveLength(2);
     result.current.volumeControls.forEach((c) => {
@@ -88,49 +81,43 @@ describe('useVolumeControls', () => {
   });
 
   it('returns nothing with no tracks', () => {
-    const { result } = render([], null);
+    const { result } = render([]);
 
     expect(result.current.volumeControls).toEqual([]);
     expect(result.current.volumeSliders).toEqual([]);
   });
 
-  it('builds no sliders without an audio player', () => {
-    const { result } = render(['drums'], null);
+  it('builds no sliders before the audio is ready', () => {
+    const { result } = render(['drums'], false);
 
     expect(result.current.volumeControls).toHaveLength(1);
     expect(result.current.volumeSliders).toEqual([]);
   });
 
   it('pushes the initial volume to each track', () => {
-    const player = makePlayer(['drums', 'guitar']);
+    const { setStemVolume } = render(['drums', 'guitar']);
 
-    render(['drums', 'guitar'], player);
-
-    expect(player.audioTracks[0].setVolume).toHaveBeenCalledWith(1);
-    expect(player.audioTracks[1].setVolume).toHaveBeenCalledWith(1);
+    expect(setStemVolume).toHaveBeenCalledWith('drums', 1);
+    expect(setStemVolume).toHaveBeenCalledWith('guitar', 1);
   });
 
   it('mutes to zero and restores the previous volume', () => {
-    const player = makePlayer(['drums']);
-    const { result } = render(['drums'], player);
+    const { result, setStemVolume } = render(['drums']);
 
     setVolume(result, 'drums', 80);
     mute(result, 'drums');
 
     expect(control(result, 'drums').volume).toBe(0);
-    expect(player.audioTracks[0].setVolume).toHaveBeenLastCalledWith(0);
+    expect(setStemVolume).toHaveBeenLastCalledWith('drums', 0);
 
     mute(result, 'drums');
 
     expect(control(result, 'drums').volume).toBe(80);
-    expect(player.audioTracks[0].setVolume).toHaveBeenLastCalledWith(0.8);
+    expect(setStemVolume).toHaveBeenLastCalledWith('drums', 0.8);
   });
 
   it('soloing one track mutes the others', () => {
-    const { result } = render(
-      ['drums', 'guitar', 'bass'],
-      makePlayer(['drums', 'guitar', 'bass']),
-    );
+    const { result } = render(['drums', 'guitar', 'bass']);
 
     solo(result, 'drums');
 
@@ -140,10 +127,7 @@ describe('useVolumeControls', () => {
   });
 
   it('un-soloing the only soloed track restores everyone', () => {
-    const { result } = render(
-      ['drums', 'guitar'],
-      makePlayer(['drums', 'guitar']),
-    );
+    const { result } = render(['drums', 'guitar']);
 
     solo(result, 'drums');
     solo(result, 'drums');
@@ -153,10 +137,7 @@ describe('useVolumeControls', () => {
   });
 
   it('supports soloing a second track alongside the first', () => {
-    const { result } = render(
-      ['drums', 'guitar', 'bass'],
-      makePlayer(['drums', 'guitar', 'bass']),
-    );
+    const { result } = render(['drums', 'guitar', 'bass']);
 
     solo(result, 'drums');
     solo(result, 'guitar');
@@ -167,10 +148,7 @@ describe('useVolumeControls', () => {
   });
 
   it('un-soloing one of two soloed tracks mutes only that track', () => {
-    const { result } = render(
-      ['drums', 'guitar', 'bass'],
-      makePlayer(['drums', 'guitar', 'bass']),
-    );
+    const { result } = render(['drums', 'guitar', 'bass']);
 
     solo(result, 'drums');
     solo(result, 'guitar');
@@ -182,10 +160,7 @@ describe('useVolumeControls', () => {
   });
 
   it('restores the muted volume a solo captured, not a stale default', () => {
-    const { result } = render(
-      ['drums', 'guitar'],
-      makePlayer(['drums', 'guitar']),
-    );
+    const { result } = render(['drums', 'guitar']);
 
     setVolume(result, 'guitar', 40);
     solo(result, 'drums');
@@ -198,18 +173,12 @@ describe('useVolumeControls', () => {
   });
 
   it('rebuilds controls when the track list changes', () => {
-    const one = tracks('drums');
-    const two = tracks('drums', 'guitar');
-    const player = makePlayer(['drums', 'guitar']);
-    const { result, rerender } = renderHook(
-      ({ td }: { td: TrackConfig[] }) => useVolumeControls(td, player),
-      { initialProps: { td: one } },
-    );
+    const { result, rerenderTracks } = render(['drums']);
 
     mute(result, 'drums');
     expect(control(result, 'drums').volume).toBe(0);
 
-    rerender({ td: two });
+    rerenderTracks(['drums', 'guitar']);
 
     expect(result.current.volumeControls).toHaveLength(2);
     expect(control(result, 'drums').volume).toBe(100);
@@ -224,10 +193,7 @@ describe('useVolumeControls', () => {
     it('initialises from a persisted level', () => {
       settings.mixerLevels = { drums: 60, guitar: 80 };
 
-      const { result } = render(
-        ['drums', 'guitar'],
-        makePlayer(['drums', 'guitar']),
-      );
+      const { result } = render(['drums', 'guitar']);
 
       expect(control(result, 'drums').volume).toBe(60);
       expect(control(result, 'guitar').volume).toBe(80);
@@ -236,10 +202,7 @@ describe('useVolumeControls', () => {
     it('falls back to 100 for a stem with no persisted level', () => {
       settings.mixerLevels = { drums: 60 };
 
-      const { result } = render(
-        ['drums', 'guitar'],
-        makePlayer(['drums', 'guitar']),
-      );
+      const { result } = render(['drums', 'guitar']);
 
       expect(control(result, 'guitar').volume).toBe(100);
     });
@@ -247,24 +210,18 @@ describe('useVolumeControls', () => {
     it('uses the persisted level when the track list changes, not the transient muted volume', () => {
       settings.mixerLevels = { drums: 80 };
 
-      const one = tracks('drums');
-      const two = tracks('drums', 'guitar');
-      const player = makePlayer(['drums', 'guitar']);
-      const { result, rerender } = renderHook(
-        ({ td }: { td: TrackConfig[] }) => useVolumeControls(td, player),
-        { initialProps: { td: one } },
-      );
+      const { result, rerenderTracks } = render(['drums']);
 
       mute(result, 'drums');
       expect(control(result, 'drums').volume).toBe(0);
 
-      rerender({ td: two });
+      rerenderTracks(['drums', 'guitar']);
 
       expect(control(result, 'drums').volume).toBe(80);
     });
 
     it('writes to mixerLevels when the slider changes', () => {
-      const { result } = render(['drums'], makePlayer(['drums']));
+      const { result } = render(['drums']);
 
       setVolume(result, 'drums', 75);
 
@@ -272,7 +229,7 @@ describe('useVolumeControls', () => {
     });
 
     it('writes zero to mixerLevels when muting', () => {
-      const { result } = render(['drums'], makePlayer(['drums']));
+      const { result } = render(['drums']);
 
       setVolume(result, 'drums', 80);
       settings.setMixerLevels.mockClear();
@@ -282,7 +239,7 @@ describe('useVolumeControls', () => {
     });
 
     it('writes the restored volume to mixerLevels when unmuting', () => {
-      const { result } = render(['drums'], makePlayer(['drums']));
+      const { result } = render(['drums']);
 
       setVolume(result, 'drums', 80);
       mute(result, 'drums');
@@ -293,10 +250,7 @@ describe('useVolumeControls', () => {
     });
 
     it('does not write to mixerLevels when soloing the first track', () => {
-      const { result } = render(
-        ['drums', 'guitar'],
-        makePlayer(['drums', 'guitar']),
-      );
+      const { result } = render(['drums', 'guitar']);
 
       solo(result, 'drums');
 
@@ -304,10 +258,7 @@ describe('useVolumeControls', () => {
     });
 
     it('does not write to mixerLevels when un-soloing the last soloed track', () => {
-      const { result } = render(
-        ['drums', 'guitar'],
-        makePlayer(['drums', 'guitar']),
-      );
+      const { result } = render(['drums', 'guitar']);
 
       solo(result, 'drums');
       settings.setMixerLevels.mockClear();
@@ -317,10 +268,7 @@ describe('useVolumeControls', () => {
     });
 
     it('does not write to mixerLevels when soloing a second track', () => {
-      const { result } = render(
-        ['drums', 'guitar', 'bass'],
-        makePlayer(['drums', 'guitar', 'bass']),
-      );
+      const { result } = render(['drums', 'guitar', 'bass']);
 
       solo(result, 'drums');
       settings.setMixerLevels.mockClear();
@@ -330,10 +278,7 @@ describe('useVolumeControls', () => {
     });
 
     it('does not write to mixerLevels when un-soloing one of multiple soloed tracks', () => {
-      const { result } = render(
-        ['drums', 'guitar', 'bass'],
-        makePlayer(['drums', 'guitar', 'bass']),
-      );
+      const { result } = render(['drums', 'guitar', 'bass']);
 
       solo(result, 'drums');
       solo(result, 'guitar');

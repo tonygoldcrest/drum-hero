@@ -5,7 +5,6 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { AudioPlayer } from '../services/audio-player/player';
 import { TrackConfig } from '../services/audio-player/types';
 import { AudioVolume } from '../components/AudioVolume';
 import { useApp } from '../context/AppContext';
@@ -24,7 +23,8 @@ interface VolumeControlsResult {
 
 export function useVolumeControls(
   trackData: TrackConfig[],
-  audioPlayer: AudioPlayer | null,
+  setStemVolume: (name: string, gain: number) => void,
+  isReady: boolean,
 ): VolumeControlsResult {
   const [volumeControls, setVolumeControls] = useState<VolumeControl[]>([]);
   const { mixerLevels, setMixerLevels } = useApp();
@@ -78,22 +78,14 @@ export function useVolumeControls(
   }, [trackData]);
 
   useEffect(() => {
-    if (volumeControls.length === 0 || !audioPlayer) {
+    if (volumeControls.length === 0 || !isReady) {
       return;
     }
 
     volumeControls.forEach((control) => {
-      const audioTrack = audioPlayer.audioTracks.find(
-        (track) => track.name === control.stemName,
-      );
-
-      if (!audioTrack) {
-        return;
-      }
-
-      audioTrack.setVolume(control.volume / 100);
+      setStemVolume(control.stemName, control.volume / 100);
     });
-  }, [volumeControls, audioPlayer]);
+  }, [volumeControls, isReady, setStemVolume]);
 
   const handleMute = useCallback((control: VolumeControl) => {
     if (control.volume === 0) {
@@ -162,7 +154,7 @@ export function useVolumeControls(
     [volumeControls],
   );
   const volumeSliders = useMemo(() => {
-    if (volumeControls.length === 0 || !audioPlayer) {
+    if (volumeControls.length === 0 || !isReady) {
       return [];
     }
 
@@ -184,7 +176,7 @@ export function useVolumeControls(
           }}
         />
       ));
-  }, [volumeControls, audioPlayer, handleMute, handleSolo]);
+  }, [volumeControls, isReady, handleMute, handleSolo]);
 
   return { volumeControls, volumeSliders };
 }
