@@ -1,6 +1,6 @@
 # <img width="64" height="64" alt="SightKick Logo Github" src="https://github.com/user-attachments/assets/e7b4df52-573e-4ac1-af78-83c425ac0301" /> SightKick
 
-A drum sight-reading game with sheet music and thousands of songs.
+A game for learning drums with sheet music for thousands of songs. Mute the drum track, play along with your kit, and chase your best score.
 
 <h1 align="center">
   <a href="https://sightkick.dev">Guide</a> |
