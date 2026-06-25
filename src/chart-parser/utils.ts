@@ -27,10 +27,6 @@ export function noteToKey(
       return flags & noteFlags.cymbal ? 'f/5/x2' : 'd/5';
 
     case noteTypes.greenDrum:
-      if (isFiveLane) {
-        return 'a/5/x2';
-      }
-
       return flags & noteFlags.cymbal ? 'a/5/x2' : 'a/4';
 
     default:

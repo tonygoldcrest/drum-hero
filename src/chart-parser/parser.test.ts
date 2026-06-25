@@ -271,16 +271,26 @@ describe('drum key mapping', () => {
   it('maps five-lane colours differently', () => {
     const parser = parse(
       {
-        groups: [
-          group(0, TOM_YELLOW),
-          group(192, TOM_BLUE),
-          group(384, TOM_GREEN),
-        ],
+        groups: [group(0, TOM_YELLOW), group(192, TOM_BLUE), group(384, CRASH)],
       },
       true,
     );
 
     expect(hitKeys(parser.measures)).toEqual(['a/5/x2', 'd/5', 'g/5/x2']);
+  });
+
+  it('honours the tom/cymbal flag on the five-lane green note type', () => {
+    const parser = parse(
+      {
+        groups: [
+          group(0, { type: noteTypes.greenDrum, flags: noteFlags.tom }),
+          group(192, CRASH),
+        ],
+      },
+      true,
+    );
+
+    expect(hitKeys(parser.measures)).toEqual(['a/4', 'a/5/x2']);
   });
 
   it('maps a double kick to its own staff position', () => {
