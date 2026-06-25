@@ -22,6 +22,8 @@ const MIDI_MAPPING_TO_KEYS: Partial<Record<keyof MidiMapping, string[]>> = {
   tom3: ['a/4'],
 };
 const HIT_TOLERANCE_SECONDS = 0.1;
+const ACCENT_VELOCITY_THRESHOLD = 90;
+const GHOST_VELOCITY_THRESHOLD = 50;
 
 export function keyPrefix(key: string): string {
   const [pitch, octave] = key.split('/');
@@ -158,11 +160,27 @@ export class ScoringEngine {
     }
 
     const hit = bestNote;
+    const accentPrefixes = new Set((hit.accents ?? []).map(keyPrefix));
+    const ghostPrefixes = new Set((hit.ghosts ?? []).map(keyPrefix));
+    const passesVelocity = (prefix: string) => {
+      if (accentPrefixes.has(prefix)) {
+        return velocity > ACCENT_VELOCITY_THRESHOLD;
+      }
+
+      if (ghostPrefixes.has(prefix)) {
+        return velocity < GHOST_VELOCITY_THRESHOLD;
+      }
+
+      return true;
+    };
     const newPrefixes = hit.note
       .getKeys()
       .map(keyPrefix)
       .filter(
-        (p) => expectedPrefixes.has(p) && !this.hitKeys.has(`${hit.tick}:${p}`),
+        (p) =>
+          expectedPrefixes.has(p) &&
+          !this.hitKeys.has(`${hit.tick}:${p}`) &&
+          passesVelocity(p),
       );
 
     if (newPrefixes.length === 0) {

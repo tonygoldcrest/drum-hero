@@ -59,6 +59,18 @@ const quarters: Note[] = [0, 192, 384, 576].map((tick) =>
   note({ tick, duration: 'q' }),
 );
 
+function accentBounds(div: HTMLDivElement) {
+  return Array.from(div.querySelectorAll('.vf-accent path')).map((path) => {
+    const numbers = (
+      path.getAttribute('d')?.match(/-?\d+(?:\.\d+)?/g) ?? []
+    ).map(Number);
+    const xs = numbers.filter((_, i) => i % 2 === 0);
+    const ys = numbers.filter((_, i) => i % 2 === 1);
+
+    return { left: Math.min(...xs), top: Math.min(...ys) };
+  });
+}
+
 describe('renderMusic', () => {
   it('returns nothing when the element ref is empty', () => {
     expect(renderMusic(ref(null), song([measure(quarters)]))).toEqual([]);
@@ -173,6 +185,143 @@ describe('renderMusic', () => {
     const data = renderMusic(ref(div), song([measure(notes)]));
 
     expect(data[0].renderedNotes).toHaveLength(2);
+    expect(div.querySelector('svg')).not.toBeNull();
+  });
+
+  it('draws an accent only on an accented note', () => {
+    const plain = container();
+    const accented = container();
+
+    renderMusic(ref(plain), song([measure([note({ notes: ['c/5'] })])]));
+    renderMusic(
+      ref(accented),
+      song([measure([note({ notes: ['c/5'], accents: ['c/5'] })])]),
+    );
+
+    expect(plain.querySelectorAll('.vf-accent')).toHaveLength(0);
+    expect(accented.querySelectorAll('.vf-accent')).toHaveLength(1);
+  });
+
+  it('puts the accent of a lone note above the staff', () => {
+    const div = container();
+    const data = renderMusic(
+      ref(div),
+      song([measure([note({ notes: ['c/5'], accents: ['c/5'] })])]),
+    );
+
+    expect(accentBounds(div)[0].top).toBeLessThan(data[0].stave.getYForLine(0));
+  });
+
+  it('draws a single accent above a fully accented chord', () => {
+    const div = container();
+    const data = renderMusic(
+      ref(div),
+      song([
+        measure([
+          note({ notes: ['c/5', 'g/5/x2'], accents: ['c/5', 'g/5/x2'] }),
+        ]),
+      ]),
+    );
+    const accents = accentBounds(div);
+
+    expect(accents).toHaveLength(1);
+    expect(accents[0].top).toBeLessThan(data[0].stave.getYForLine(0));
+  });
+
+  it('puts a partially accented chord note to the right of its head', () => {
+    const div = container();
+    const data = renderMusic(
+      ref(div),
+      song([measure([note({ notes: ['c/5', 'g/5/x2'], accents: ['c/5'] })])]),
+    );
+    const accents = accentBounds(div);
+    const [noteHead] = data[0].renderedNotes;
+
+    expect(accents).toHaveLength(1);
+    expect(accents[0].top).toBeGreaterThan(data[0].stave.getYForLine(0));
+    expect(accents[0].left).toBeGreaterThan(noteHead.note.getAbsoluteX());
+  });
+
+  it('colours a single-note accent like the note', () => {
+    const plain = container();
+    const accented = container();
+    const redCount = (div: HTMLDivElement) =>
+      div.querySelector('svg')!.innerHTML.split(themedark.color.red).length - 1;
+
+    renderMusic(
+      ref(plain),
+      song([measure([note({ notes: ['c/5'] })])]),
+      true,
+      true,
+    );
+    renderMusic(
+      ref(accented),
+      song([measure([note({ notes: ['c/5'], accents: ['c/5'] })])]),
+      true,
+      true,
+    );
+
+    expect(redCount(accented)).toBeGreaterThan(redCount(plain));
+  });
+
+  it('colours a partial-chord accent like its note', () => {
+    const div = container();
+
+    renderMusic(
+      ref(div),
+      song([measure([note({ notes: ['c/5', 'g/5/x2'], accents: ['c/5'] })])]),
+      true,
+      true,
+    );
+
+    expect(div.querySelector('.vf-accent')!.innerHTML).toContain(
+      themedark.color.red,
+    );
+  });
+
+  it('draws a fully accented chord accent in ink, not a note colour', () => {
+    const div = container();
+
+    renderMusic(
+      ref(div),
+      song([
+        measure([
+          note({ notes: ['c/5', 'g/5/x2'], accents: ['c/5', 'g/5/x2'] }),
+        ]),
+      ]),
+      true,
+      true,
+    );
+
+    const accent = div.querySelector('.vf-accent')!.innerHTML;
+
+    expect(accent).not.toContain(themedark.color.red);
+    expect(accent).not.toContain(themedark.color.yellow);
+  });
+
+  it('parenthesises a ghosted note head', () => {
+    const plain = container();
+    const ghosted = container();
+    const pathCount = (div: HTMLDivElement) =>
+      div.querySelectorAll('svg path').length;
+
+    renderMusic(ref(plain), song([measure([note({ notes: ['c/5'] })])]));
+    renderMusic(
+      ref(ghosted),
+      song([measure([note({ notes: ['c/5'], ghosts: ['c/5'] })])]),
+    );
+
+    expect(pathCount(ghosted)).toBeGreaterThan(pathCount(plain));
+  });
+
+  it('marks only the flagged head in a chord', () => {
+    const div = container();
+    const data = renderMusic(
+      ref(div),
+      song([measure([note({ notes: ['f/4', 'c/5'], accents: ['c/5'] })])]),
+    );
+
+    expect(data[0].renderedNotes).toHaveLength(1);
     expect(div.querySelector('svg')).not.toBeNull();
   });
 

@@ -1,4 +1,4 @@
-import { Difficulty, type NoteEvent } from 'scan-chart';
+import { Difficulty, noteFlags, type NoteEvent } from 'scan-chart';
 import { ParsedChart, Measure, Note, TupletMeta } from './types';
 import { noteToKey } from './utils';
 
@@ -28,6 +28,8 @@ const DEFAULT_BPM = 120;
 interface Onset {
   tick: number;
   keys: string[];
+  accents?: string[];
+  ghosts?: string[];
   graceNotes?: string[][];
 }
 
@@ -247,7 +249,12 @@ function resolveCluster(cluster: Onset[]): Onset {
   }
 
   const occurrences = cluster.flatMap((onset) =>
-    onset.keys.map((key) => ({ tick: onset.tick, key })),
+    onset.keys.map((key) => ({
+      tick: onset.tick,
+      key,
+      accent: onset.accents?.includes(key) ?? false,
+      ghost: onset.ghosts?.includes(key) ?? false,
+    })),
   );
   // For each drum, its latest occurrence is the main hit; earlier repeats of the
   // same drum become grace notes.
@@ -255,6 +262,21 @@ function resolveCluster(cluster: Onset[]): Onset {
 
   occurrences.forEach(({ tick, key }) => {
     lastTickByKey.set(key, Math.max(lastTickByKey.get(key) ?? -Infinity, tick));
+  });
+
+  const accents = new Set<string>();
+  const ghosts = new Set<string>();
+
+  occurrences.forEach(({ tick, key, accent, ghost }) => {
+    if (tick === lastTickByKey.get(key)) {
+      if (accent) {
+        accents.add(key);
+      }
+
+      if (ghost) {
+        ghosts.add(key);
+      }
+    }
   });
 
   const graceByTick = new Map<number, Set<string>>();
@@ -275,6 +297,8 @@ function resolveCluster(cluster: Onset[]): Onset {
   return {
     tick: cluster[cluster.length - 1].tick,
     keys: sortKeys([...lastTickByKey.keys()]),
+    accents: accents.size > 0 ? [...accents] : undefined,
+    ghosts: ghosts.size > 0 ? [...ghosts] : undefined,
     graceNotes: graceNotes.length > 0 ? graceNotes : undefined,
   };
 }
@@ -426,6 +450,8 @@ function buildGrid(
             isRest,
             tick: Math.round(startTick + slot * spacing),
             graceNotes: isRest ? undefined : onset.graceNotes,
+            accents: isRest ? undefined : onset.accents,
+            ghosts: isRest ? undefined : onset.ghosts,
           });
         }
 
@@ -804,18 +830,43 @@ export class ChartParser {
     isFiveLane: boolean,
   ): Onset[] {
     return noteEventGroups
-      .map((group) => {
+      .map((group): Onset | null => {
         const tick = group[0]?.tick;
 
         if (tick === undefined) {
           return null;
         }
 
-        const keys = group
-          .map((e) => noteToKey(e.type, e.flags, isFiveLane))
-          .filter((k): k is string => k !== null);
+        const keys: string[] = [];
+        const accents: string[] = [];
+        const ghosts: string[] = [];
 
-        return keys.length > 0 ? { tick, keys } : null;
+        group.forEach((e) => {
+          const key = noteToKey(e.type, e.flags, isFiveLane);
+
+          if (key === null) {
+            return;
+          }
+
+          keys.push(key);
+
+          if (e.flags & noteFlags.accent) {
+            accents.push(key);
+          }
+
+          if (e.flags & noteFlags.ghost) {
+            ghosts.push(key);
+          }
+        });
+
+        return keys.length > 0
+          ? {
+              tick,
+              keys,
+              accents: accents.length > 0 ? accents : undefined,
+              ghosts: ghosts.length > 0 ? ghosts : undefined,
+            }
+          : null;
       })
       .filter((o): o is Onset => o !== null);
   }

@@ -420,6 +420,56 @@ describe('coincidence resolution', () => {
   });
 });
 
+describe('dynamics', () => {
+  const ACCENT_SNARE: Ev = {
+    type: noteTypes.redDrum,
+    flags: noteFlags.accent,
+  };
+  const GHOST_SNARE: Ev = { type: noteTypes.redDrum, flags: noteFlags.ghost };
+
+  it('marks an accented hit', () => {
+    const parser = parse({ groups: [group(0, ACCENT_SNARE)] });
+    const hits = nonRest(parser.measures[0]);
+
+    expect(hits[0].accents).toEqual(['c/5']);
+    expect(hits[0].ghosts).toBeUndefined();
+  });
+
+  it('marks a ghost hit', () => {
+    const parser = parse({ groups: [group(0, GHOST_SNARE)] });
+    const hits = nonRest(parser.measures[0]);
+
+    expect(hits[0].ghosts).toEqual(['c/5']);
+    expect(hits[0].accents).toBeUndefined();
+  });
+
+  it('marks only the flagged key in a chord', () => {
+    const parser = parse({ groups: [group(0, KICK, ACCENT_SNARE)] });
+    const hits = nonRest(parser.measures[0]);
+
+    expect(hits[0].notes).toEqual(['f/4', 'c/5']);
+    expect(hits[0].accents).toEqual(['c/5']);
+  });
+
+  it('leaves an unflagged hit without dynamics', () => {
+    const parser = parse({ groups: [group(0, SNARE)] });
+    const hits = nonRest(parser.measures[0]);
+
+    expect(hits[0].accents).toBeUndefined();
+    expect(hits[0].ghosts).toBeUndefined();
+  });
+
+  it('keeps the dynamic of the main hit when collapsing a flam', () => {
+    const parser = parse({
+      groups: [group(0, SNARE), group(5, ACCENT_SNARE)],
+    });
+    const hits = nonRest(parser.measures[0]);
+
+    expect(hits[0].graceNotes).toEqual([['c/5']]);
+    expect(hits[0].accents).toEqual(['c/5']);
+  });
+});
+
 describe('beat bucketing tolerance', () => {
   it('snaps an onset just before a beat boundary onto the next beat', () => {
     const parser = parse({ groups: [group(188, SNARE)] });

@@ -9,6 +9,8 @@ export interface Note {
   tick: number;
   tupletId?: number;
   graceNotes?: string[][];
+  accents?: string[];
+  ghosts?: string[];
 }
 
 export interface TempoMark {
@@ -46,4 +48,6 @@ export type ParsedChart = ReturnType<typeof parseChartFile>;
 export interface RenderedNote {
   tick: number;
   note: StaveNote;
+  accents?: string[];
+  ghosts?: string[];
 }

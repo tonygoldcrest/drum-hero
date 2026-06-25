@@ -15,6 +15,9 @@ import {
   Voice,
   GraceNote,
   GraceNoteGroup,
+  Parenthesis,
+  Glyph,
+  Flow,
 } from 'vexflow';
 import { ChartParser } from './parser';
 import { Measure, RenderData } from './types';
@@ -35,6 +38,8 @@ const NOTE_COLOR_MAP: { [key: string]: string } = {
 };
 const STEM_DIRECTION = -1;
 const REST_KEY = 'b/4';
+const ACCENT_SCALE = Flow.NOTATION_FONT_SCALE;
+const ACCENT_SCALE_RIGHT = Flow.NOTATION_FONT_SCALE * 0.8;
 
 export function renderMusic(
   elementRef: React.RefObject<HTMLDivElement | null>,
@@ -115,6 +120,21 @@ function buildVoice(measure: Measure, enableColors: boolean) {
       staveNote.addModifier(graceGroup, 0);
     }
 
+    if (!note.isRest && note.ghosts?.length) {
+      staveNote.keys.forEach((key, keyIndex) => {
+        if (note.ghosts?.includes(key)) {
+          staveNote.addModifier(
+            new Parenthesis(ModifierPosition.LEFT),
+            keyIndex,
+          );
+          staveNote.addModifier(
+            new Parenthesis(ModifierPosition.RIGHT),
+            keyIndex,
+          );
+        }
+      });
+    }
+
     if (enableColors && !note.isRest) {
       staveNote.keys.forEach((key, keyIndex) => {
         staveNote.setKeyStyle(keyIndex, { fillStyle: NOTE_COLOR_MAP[key] });
@@ -156,6 +176,94 @@ function buildVoice(measure: Measure, enableColors: boolean) {
   });
 
   return { voice, beams, tuplets, staveNotes };
+}
+
+function drawAccentGlyph(
+  context: RenderContext,
+  x: number,
+  y: number,
+  originX: number,
+  originY: number,
+  scale: number,
+  color: string,
+) {
+  const glyph = new Glyph('articAccentAbove', scale);
+
+  glyph.setOrigin(originX, originY);
+  context.openGroup('accent');
+  context.setFillStyle(color);
+  context.setStrokeStyle(color);
+  glyph.render(context, x, y);
+  context.closeGroup();
+}
+
+function drawAccents(
+  context: RenderContext,
+  stave: Stave,
+  measure: Measure,
+  staveNotes: StaveNote[],
+  enableColors: boolean,
+) {
+  const gap = stave.getSpacingBetweenLines();
+  const topLineY = stave.getYForLine(0);
+  const colorOf = (key: string) =>
+    enableColors ? NOTE_COLOR_MAP[key] : themedark.color.ink;
+
+  context.save();
+
+  staveNotes.forEach((staveNote, index) => {
+    const note = measure.notes[index];
+
+    if (!note.accents?.length) {
+      return;
+    }
+
+    const ys = staveNote.getYs();
+    const wholeChord = note.notes.every((key) => note.accents?.includes(key));
+
+    if (wholeChord) {
+      const { x } = staveNote.getModifierStartXY(ModifierPosition.ABOVE, 0);
+      const color =
+        note.notes.length === 1 ? colorOf(note.notes[0]) : themedark.color.ink;
+
+      drawAccentGlyph(
+        context,
+        x,
+        Math.min(...ys, topLineY) - gap,
+        0.5,
+        1,
+        ACCENT_SCALE,
+        color,
+      );
+
+      return;
+    }
+
+    note.accents.forEach((key) => {
+      const keyIndex = note.notes.indexOf(key);
+
+      if (keyIndex < 0) {
+        return;
+      }
+
+      const { x } = staveNote.getModifierStartXY(
+        ModifierPosition.RIGHT,
+        keyIndex,
+      );
+
+      drawAccentGlyph(
+        context,
+        x + gap / 2,
+        ys[keyIndex],
+        0.2,
+        0.5,
+        ACCENT_SCALE_RIGHT,
+        colorOf(key),
+      );
+    });
+  });
+
+  context.restore();
 }
 
 function renderMeasure(
@@ -214,15 +322,14 @@ function renderMeasure(
   tuplets.forEach((tuplet) => {
     tuplet.setContext(context).draw();
   });
+  drawAccents(context, stave, measure, staveNotes, enableColors);
 
-  const renderedNotes = staveNotes
-    .map((staveNote, i) => ({
-      tick: measure.notes[i].tick,
-      note: staveNote,
-      isMeasureRest:
-        measure.notes[i].isRest && measure.notes[i].duration === 'w',
-    }))
-    .map(({ tick, note }) => ({ tick, note }));
+  const renderedNotes = staveNotes.map((staveNote, i) => ({
+    tick: measure.notes[i].tick,
+    note: staveNote,
+    accents: measure.notes[i].accents,
+    ghosts: measure.notes[i].ghosts,
+  }));
 
   return { stave, renderedNotes };
 }

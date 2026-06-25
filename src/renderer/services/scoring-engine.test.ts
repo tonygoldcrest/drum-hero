@@ -24,8 +24,12 @@ function fakeNote(keys: string[], isRest = false): StaveNote {
   } as unknown as StaveNote;
 }
 
-function rendered(tick: number, note: StaveNote): RenderedNote {
-  return { tick, note } as unknown as RenderedNote;
+function rendered(
+  tick: number,
+  note: StaveNote,
+  marks: { accents?: string[]; ghosts?: string[] } = {},
+): RenderedNote {
+  return { tick, note, ...marks } as unknown as RenderedNote;
 }
 
 function measure(notes: RenderedNote[]): RenderData {
@@ -278,6 +282,58 @@ describe('ScoringEngine', () => {
 
     engine.setEnabled(true);
     engine.handleMidiMessage(noteOn(38));
+
+    expect(engine.isHit(480, 'c/5')).toBe(true);
+    expect(engine.falseHitCount).toBe(0);
+  });
+
+  it('rejects a soft hit on an accented note as a miss', () => {
+    const note = fakeNote(['c/5']);
+    const { engine } = setup(
+      { renderData: [measure([rendered(480, note, { accents: ['c/5'] })])] },
+      { tick: 480 },
+    );
+
+    engine.handleMidiMessage(noteOn(38, 80));
+
+    expect(engine.hitCount).toBe(0);
+    expect(engine.falseHitCount).toBe(1);
+  });
+
+  it('accepts a hard hit on an accented note', () => {
+    const note = fakeNote(['c/5']);
+    const { engine } = setup(
+      { renderData: [measure([rendered(480, note, { accents: ['c/5'] })])] },
+      { tick: 480 },
+    );
+
+    engine.handleMidiMessage(noteOn(38, 110));
+
+    expect(engine.isHit(480, 'c/5')).toBe(true);
+    expect(engine.falseHitCount).toBe(0);
+  });
+
+  it('rejects a loud hit on a ghost note as a miss', () => {
+    const note = fakeNote(['c/5']);
+    const { engine } = setup(
+      { renderData: [measure([rendered(480, note, { ghosts: ['c/5'] })])] },
+      { tick: 480 },
+    );
+
+    engine.handleMidiMessage(noteOn(38, 80));
+
+    expect(engine.hitCount).toBe(0);
+    expect(engine.falseHitCount).toBe(1);
+  });
+
+  it('accepts a soft hit on a ghost note', () => {
+    const note = fakeNote(['c/5']);
+    const { engine } = setup(
+      { renderData: [measure([rendered(480, note, { ghosts: ['c/5'] })])] },
+      { tick: 480 },
+    );
+
+    engine.handleMidiMessage(noteOn(38, 30));
 
     expect(engine.isHit(480, 'c/5')).toBe(true);
     expect(engine.falseHitCount).toBe(0);
