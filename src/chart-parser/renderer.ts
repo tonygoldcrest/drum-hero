@@ -41,6 +41,7 @@ export function renderMusic(
   song: ChartParser,
   showBarNumbers: boolean = true,
   enableColors: boolean = false,
+  showTempo: boolean = true,
 ): RenderData[] {
   if (!elementRef.current) {
     return [];
@@ -69,6 +70,7 @@ export function renderMusic(
       index === song.measures.length - 1,
       showBarNumbers,
       enableColors,
+      showTempo,
     );
 
     return { measure, stave, renderedNotes };
@@ -165,6 +167,7 @@ function renderMeasure(
   endMeasure: boolean,
   showBarNumbers: boolean,
   enableColors: boolean,
+  showTempo: boolean,
 ) {
   const stave = new Stave(xOffset, yOffset, STAVE_WIDTH);
 
@@ -178,6 +181,10 @@ function renderMeasure(
 
   if (measure.sigChange) {
     stave.addTimeSignature(`${measure.timeSig[0]}/${measure.timeSig[1]}`);
+  }
+
+  if (showTempo && measure.tempo) {
+    stave.setTempo(measure.tempo, 0);
   }
 
   if (showBarNumbers) {

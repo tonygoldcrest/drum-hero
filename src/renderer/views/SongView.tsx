@@ -29,6 +29,7 @@ export function SongView() {
     playheadStyle,
     enableColors,
     showBarNumbers,
+    showTempo,
     progressColoring,
     countIn,
     selectedDevice,
@@ -58,6 +59,7 @@ export function SongView() {
     difficulty,
     showBarNumbers,
     enableColors,
+    showTempo,
   });
   const measures = useMemo(
     () => renderData.map((rd) => rd.measure),

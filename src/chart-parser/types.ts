@@ -8,9 +8,13 @@ export interface Note {
   isRest: boolean;
   tick: number;
   tupletId?: number;
-  // Ornamental hits (flams/drags) drawn before this note, out of time. Each
-  // entry is a chord of keys.
   graceNotes?: string[][];
+}
+
+export interface TempoMark {
+  bpm: number;
+  duration: string;
+  dots: number;
 }
 
 export interface Measure {
@@ -22,6 +26,7 @@ export interface Measure {
   endTick: number;
   notes: Note[];
   tuplets: TupletMeta[];
+  tempo?: TempoMark;
 }
 
 export interface TupletMeta {

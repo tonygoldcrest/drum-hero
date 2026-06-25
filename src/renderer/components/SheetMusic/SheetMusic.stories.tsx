@@ -35,6 +35,7 @@ function SheetHarness({ measures }: { measures: MeasureSpec[] }) {
     difficulty: 'expert',
     showBarNumbers: false,
     enableColors: true,
+    showTempo: true,
   });
   const { highlightedMeasureIndex, cursorPosition, highlightsRef } =
     usePlayhead({

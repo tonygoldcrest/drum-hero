@@ -17,6 +17,8 @@ interface AppContextValue {
   setEnableColors: (v: boolean) => void;
   showBarNumbers: boolean;
   setShowBarNumbers: (v: boolean) => void;
+  showTempo: boolean;
+  setShowTempo: (v: boolean) => void;
   progressColoring: boolean;
   setProgressColoring: (v: boolean) => void;
   countIn: boolean;
@@ -80,6 +82,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     'settings.showBarNumbers',
     false,
   );
+  const [showTempo, setShowTempo] = usePersisted('settings.showTempo', true);
   const [progressColoring, setProgressColoring] = usePersisted(
     'settings.progressColoring',
     true,
@@ -177,6 +180,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setEnableColors,
         showBarNumbers,
         setShowBarNumbers,
+        showTempo,
+        setShowTempo,
         progressColoring,
         setProgressColoring,
         countIn,

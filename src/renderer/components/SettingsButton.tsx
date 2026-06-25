@@ -57,6 +57,8 @@ export const SettingsButton = memo(function Settings({
     setEnableColors,
     showBarNumbers,
     setShowBarNumbers,
+    showTempo,
+    setShowTempo,
     progressColoring,
     setProgressColoring,
     countIn,
@@ -245,6 +247,13 @@ export const SettingsButton = memo(function Settings({
             checked={showBarNumbers}
             onChange={setShowBarNumbers}
           />
+        </div>
+        <Divider />
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-sm text-text-muted whitespace-nowrap">
+            Show tempo
+          </div>
+          <Switch size="small" checked={showTempo} onChange={setShowTempo} />
         </div>
         <Divider />
         <div className="flex items-center justify-between gap-3">

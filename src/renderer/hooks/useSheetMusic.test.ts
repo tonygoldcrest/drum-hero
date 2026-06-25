@@ -49,6 +49,7 @@ interface Props {
   difficulty: 'easy' | 'medium' | 'hard' | 'expert';
   showBarNumbers: boolean;
   enableColors: boolean;
+  showTempo: boolean;
 }
 
 const BASE: Props = {
@@ -60,6 +61,7 @@ const BASE: Props = {
   difficulty: 'expert',
   showBarNumbers: false,
   enableColors: true,
+  showTempo: true,
 };
 let notification: NotificationMock;
 

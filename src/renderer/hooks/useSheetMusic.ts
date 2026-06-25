@@ -15,6 +15,7 @@ interface UseSheetMusicParams {
   difficulty: Difficulty;
   showBarNumbers: boolean;
   enableColors: boolean;
+  showTempo: boolean;
 }
 
 interface UseSheetMusicResult {
@@ -35,6 +36,7 @@ export function useSheetMusic({
   difficulty,
   showBarNumbers,
   enableColors,
+  showTempo,
 }: UseSheetMusicParams): UseSheetMusicResult {
   const { notification } = App.useApp();
   const vexflowContainerRef = useRef<HTMLDivElement>(null);
@@ -104,9 +106,10 @@ export function useSheetMusic({
         parsedMidi,
         showBarNumbers,
         enableColors,
+        showTempo,
       ),
     );
-  }, [parsedMidi, showBarNumbers, enableColors]);
+  }, [parsedMidi, showBarNumbers, enableColors, showTempo]);
 
   return {
     chart,

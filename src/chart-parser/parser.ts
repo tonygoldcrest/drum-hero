@@ -2,6 +2,8 @@ import { Difficulty, type NoteEvent } from 'scan-chart';
 import { ParsedChart, Measure, Note, TupletMeta } from './types';
 import { noteToKey } from './utils';
 
+const DEFAULT_BPM = 120;
+
 /**
  * Clone Hero drum midi -> sheet music model.
  *
@@ -760,6 +762,41 @@ export class ChartParser {
 
     this.createMeasures(chart.timeSignatures);
     this.buildMeasures(onsets);
+    this.assignTempos(chart.tempos);
+  }
+
+  private assignTempos(tempos: ParsedChart['tempos']) {
+    const sorted = [...(tempos ?? [])].sort((a, b) => a.tick - b.tick);
+    const tempoAt = (tick: number) => {
+      let bpm = sorted[0]?.beatsPerMinute ?? DEFAULT_BPM;
+
+      sorted.forEach((tempo) => {
+        if (tempo.tick <= tick) {
+          bpm = tempo.beatsPerMinute;
+        }
+      });
+
+      return bpm;
+    };
+    let previousBpm: number | undefined;
+
+    this.measures.forEach((measure, index) => {
+      const quarterBpm = tempoAt(measure.startTick);
+
+      if (previousBpm === undefined || !approxEqual(quarterBpm, previousBpm)) {
+        const meter = this.meters[index];
+
+        measure.tempo = {
+          bpm:
+            Math.round((meter.isCompound ? quarterBpm / 3 : quarterBpm) * 100) /
+            100,
+          duration: 'q',
+          dots: meter.isCompound ? 1 : 0,
+        };
+      }
+
+      previousBpm = quarterBpm;
+    });
   }
 
   private collectOnsets(
