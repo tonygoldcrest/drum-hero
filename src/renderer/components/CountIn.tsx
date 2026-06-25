@@ -2,12 +2,16 @@ import themedark from '../theme';
 
 interface CountInProps {
   count: number | undefined;
+  beatMs: number | undefined;
 }
 
-export function CountIn({ count }: CountInProps) {
+export function CountIn({ count, beatMs }: CountInProps) {
   if (count === undefined || count <= 0) {
     return undefined;
   }
+
+  const duration = `${(beatMs ?? 800) / 1000}s`;
+  const animation = `countdown-pop ${duration} ease-out reverse forwards`;
 
   return (
     <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
@@ -17,7 +21,7 @@ export function CountIn({ count }: CountInProps) {
           style={{
             width: '12rem',
             height: '12rem',
-            animation: 'countdown-pop 0.8s ease-out reverse',
+            animation,
             boxShadow: themedark.shadow.accentButton,
             background:
               'radial-gradient(var(--color-accent), #ff5a3c90 90%, rgba(0,0,0,0) 100%)',
@@ -30,7 +34,7 @@ export function CountIn({ count }: CountInProps) {
             lineHeight: 1,
             fontWeight: 700,
             color: themedark.color.text,
-            animation: 'countdown-pop 0.8s ease-out reverse',
+            animation,
           }}
         >
           {count}

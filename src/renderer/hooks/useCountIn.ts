@@ -8,6 +8,7 @@ interface CountInOptions {
 
 interface CountInResult {
   count: number | undefined;
+  beatMs: number | undefined;
   isCounting: boolean;
   start: (options: CountInOptions) => void;
   cancel: () => void;
@@ -15,6 +16,7 @@ interface CountInResult {
 
 interface CountState {
   beat: number;
+  beatMs: number;
   runId: number;
 }
 
@@ -25,7 +27,7 @@ export function useCountIn(): CountInResult {
   const start = useCallback((options: CountInOptions) => {
     optionsRef.current = options;
     runIdRef.current += 1;
-    setState({ beat: 1, runId: runIdRef.current });
+    setState({ beat: 1, beatMs: options.beatMs, runId: runIdRef.current });
   }, []);
   const cancel = useCallback(() => {
     optionsRef.current = undefined;
@@ -48,11 +50,21 @@ export function useCountIn(): CountInResult {
         return;
       }
 
-      setState({ beat: state.beat + 1, runId: state.runId });
+      setState({
+        beat: state.beat + 1,
+        beatMs: state.beatMs,
+        runId: state.runId,
+      });
     }, options.beatMs);
 
     return () => clearTimeout(id);
   }, [state]);
 
-  return { count: state?.beat, isCounting: state !== undefined, start, cancel };
+  return {
+    count: state?.beat,
+    beatMs: state?.beatMs,
+    isCounting: state !== undefined,
+    start,
+    cancel,
+  };
 }

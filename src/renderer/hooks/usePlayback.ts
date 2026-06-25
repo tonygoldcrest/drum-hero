@@ -34,6 +34,7 @@ interface UsePlaybackResult {
   isStarted: boolean;
   isEnded: boolean;
   countInBeat: number | undefined;
+  countInBeatMs: number | undefined;
   play: () => void;
   playFromTick: (tick: number) => void;
   pause: () => void;
@@ -71,6 +72,7 @@ export function usePlayback({
   });
   const {
     count: countInBeat,
+    beatMs: countInBeatMs,
     start: startCountIn,
     cancel: cancelCountIn,
   } = useCountIn();
@@ -214,6 +216,7 @@ export function usePlayback({
     isStarted,
     isEnded: state === 'ended',
     countInBeat,
+    countInBeatMs,
     play,
     playFromTick,
     pause,

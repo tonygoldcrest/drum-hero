@@ -74,6 +74,7 @@ export function SongView() {
     isStarted,
     isEnded,
     countInBeat,
+    countInBeatMs,
     play,
     playFromTick,
     pause,
@@ -291,7 +292,7 @@ export function SongView() {
             <Spin />
           </div>
         )}
-        <CountIn count={countInBeat} />
+        <CountIn count={countInBeat} beatMs={countInBeatMs} />
       </div>
     </Layout>
   );
