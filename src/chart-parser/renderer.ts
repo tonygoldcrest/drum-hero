@@ -80,7 +80,7 @@ export function renderMusic(
 function buildVoice(measure: Measure, enableColors: boolean) {
   const tupletGroups = new Map<number, StaveNote[]>();
   const staveNotes = measure.notes.map((note) => {
-    const isMeasureRest = note.isRest && note.duration === 'w';
+    const isMeasureRest = note.isRest && measure.notes.length === 1;
     const staveNote = new StaveNote({
       keys: note.isRest ? [REST_KEY] : note.notes,
       duration: `${note.duration}${'d'.repeat(note.dots)}${
