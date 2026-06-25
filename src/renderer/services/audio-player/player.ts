@@ -1,5 +1,6 @@
 import { AudioTrack } from './track';
 import { TrackConfig } from './types';
+import { trimTrailingSilence } from './utils';
 
 export class AudioPlayer {
   context: AudioContext;
@@ -37,8 +38,11 @@ export class AudioPlayer {
         const dataBuffers = await Promise.all(
           urls.map((url) => fetch(url).then((res) => res.arrayBuffer())),
         );
-        const audioBuffers = await Promise.all(
+        const decodedBuffers = await Promise.all(
           dataBuffers.map((buf) => this.context.decodeAudioData(buf)),
+        );
+        const audioBuffers = decodedBuffers.map((buffer) =>
+          trimTrailingSilence(buffer, this.context),
         );
         const audioTrack = new AudioTrack(audioBuffers, name, this.context);
 
