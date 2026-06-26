@@ -38,13 +38,19 @@ function samePos(a: NotePos | undefined, b: NotePos | undefined): boolean {
   return a.measureIdx === b.measureIdx && a.noteIdx === b.noteIdx;
 }
 
-function setScaleTransform(el: SVGElement, transform: string): void {
-  const g = el as SVGGraphicsElement;
+const ACTIVE_CLASS = 'vf-note-active';
+const HIT_CLASS = 'vf-note-hit';
+const MISS_CLASS = 'vf-note-miss';
 
-  g.style.transformBox = 'fill-box';
-  g.style.transformOrigin = 'center';
-  g.style.transition = 'transform 0.08s ease-out';
-  g.style.transform = transform;
+function flashClass(el: SVGElement, cls: string): void {
+  if (el.classList.contains(cls)) {
+    return;
+  }
+
+  el.classList.add(cls);
+  el.addEventListener('animationend', () => el.classList.remove(cls), {
+    once: true,
+  });
 }
 
 function forEachNoteHead(
@@ -94,7 +100,7 @@ export class ViewEngine {
   private measureIdx = -1;
   private activePos: NotePos | undefined;
   private coloredPos: NotePos | undefined;
-  private scaledEls: SVGElement[] = [];
+  private activeEls: SVGElement[] = [];
   private filledEls = new Set<SVGElement>();
 
   constructor(private isHit: IsHit) {}
@@ -135,7 +141,7 @@ export class ViewEngine {
   }
 
   paintHit(note: StaveNote, prefixes: string[]): void {
-    if (!this.progressColoring || this.playheadStyle === 'None') {
+    if (this.playheadStyle === 'None') {
       return;
     }
 
@@ -146,10 +152,16 @@ export class ViewEngine {
 
       const el = note.noteHeads[i]?.getSVGElement();
 
-      if (el) {
+      if (!el) {
+        return;
+      }
+
+      if (this.progressColoring) {
         (el as SVGGraphicsElement).style.fill = HIT_NOTE_COLOR;
         this.filledEls.add(el);
       }
+
+      flashClass(el, HIT_CLASS);
     });
   }
 
@@ -160,7 +172,8 @@ export class ViewEngine {
     this.scrollContainer = undefined;
     this.cursorShown = false;
     this.cursorHeight = -1;
-    this.scaledEls = [];
+    this.activeEls.forEach((el) => el.classList.remove(ACTIVE_CLASS));
+    this.activeEls = [];
     this.filledEls.clear();
   }
 
@@ -210,7 +223,7 @@ export class ViewEngine {
 
     const target = pos ? this.toActiveNote(pos) : undefined;
 
-    this.applyScale(target);
+    this.applyActive(target);
     this.applyColoring(target);
   }
 
@@ -249,19 +262,13 @@ export class ViewEngine {
     return noteHeadEls.length === 0 ? undefined : { ...pos, noteHeadEls };
   }
 
-  private applyScale(target: ActiveNote | undefined): void {
-    this.scaledEls.forEach((el) => setScaleTransform(el, ''));
-    this.scaledEls = target?.noteHeadEls ?? [];
-    target?.noteHeadEls.forEach((el) => setScaleTransform(el, 'scale(1.5)'));
+  private applyActive(target: ActiveNote | undefined): void {
+    this.activeEls.forEach((el) => el.classList.remove(ACTIVE_CLASS));
+    this.activeEls = target?.noteHeadEls ?? [];
+    this.activeEls.forEach((el) => el.classList.add(ACTIVE_CLASS));
   }
 
   private applyColoring(target: ActiveNote | undefined): void {
-    const colorNote = (el: SVGElement, tick: number, key: string) => {
-      (el as SVGGraphicsElement).style.fill = this.isHit(tick, key)
-        ? HIT_NOTE_COLOR
-        : MISSED_NOTE_COLOR;
-      this.filledEls.add(el);
-    };
     const clearAll = () => {
       this.filledEls.forEach((el) => {
         (el as SVGGraphicsElement).style.fill = '';
@@ -283,20 +290,42 @@ export class ViewEngine {
       prev !== undefined &&
       (measureIdx < prev.measureIdx ||
         (measureIdx === prev.measureIdx && noteIdx < prev.noteIdx));
+    const flashMisses = !isBackward;
+    const colorNote = (
+      el: SVGElement,
+      tick: number,
+      key: string,
+      isRest: boolean,
+    ) => {
+      const hit = this.isHit(tick, key);
+
+      (el as SVGGraphicsElement).style.fill = hit
+        ? HIT_NOTE_COLOR
+        : MISSED_NOTE_COLOR;
+      this.filledEls.add(el);
+
+      if (flashMisses && !hit && !isRest) {
+        flashClass(el, MISS_CLASS);
+      }
+    };
 
     if (isBackward) {
       clearAll();
 
       for (let m = 0; m < measureIdx; m++) {
         this.renderData[m]?.renderedNotes.forEach(({ note, tick }) =>
-          forEachNoteHead(note, (el, key) => colorNote(el, tick, key)),
+          forEachNoteHead(note, (el, key) =>
+            colorNote(el, tick, key, note.isRest()),
+          ),
         );
       }
 
       for (let i = 0; i < noteIdx; i++) {
         const { note, tick } = curNotes[i];
 
-        forEachNoteHead(note, (el, key) => colorNote(el, tick, key));
+        forEachNoteHead(note, (el, key) =>
+          colorNote(el, tick, key, note.isRest()),
+        );
       }
     } else {
       const fromMeasure = prev?.measureIdx ?? 0;
@@ -306,7 +335,9 @@ export class ViewEngine {
         for (let i = fromNote; i < noteIdx; i++) {
           const { note, tick } = curNotes[i];
 
-          forEachNoteHead(note, (el, key) => colorNote(el, tick, key));
+          forEachNoteHead(note, (el, key) =>
+            colorNote(el, tick, key, note.isRest()),
+          );
         }
       } else {
         const prevMeasureNotes =
@@ -315,19 +346,25 @@ export class ViewEngine {
         for (let i = fromNote; i < prevMeasureNotes.length; i++) {
           const { note, tick } = prevMeasureNotes[i];
 
-          forEachNoteHead(note, (el, key) => colorNote(el, tick, key));
+          forEachNoteHead(note, (el, key) =>
+            colorNote(el, tick, key, note.isRest()),
+          );
         }
 
         for (let m = fromMeasure + 1; m < measureIdx; m++) {
           this.renderData[m]?.renderedNotes.forEach(({ note, tick }) =>
-            forEachNoteHead(note, (el, key) => colorNote(el, tick, key)),
+            forEachNoteHead(note, (el, key) =>
+              colorNote(el, tick, key, note.isRest()),
+            ),
           );
         }
 
         for (let i = 0; i < noteIdx; i++) {
           const { note, tick } = curNotes[i];
 
-          forEachNoteHead(note, (el, key) => colorNote(el, tick, key));
+          forEachNoteHead(note, (el, key) =>
+            colorNote(el, tick, key, note.isRest()),
+          );
         }
       }
     }

@@ -7,7 +7,8 @@ import {
   useEffect,
 } from 'react';
 import { uniq } from 'es-toolkit';
-import { MidiMapping, MidiDevice } from '../../types';
+import { InputElement, InputMapping } from '../../types';
+import { inputBus, InputDevice } from '../input';
 import { PlayheadStyle, PLAYHEAD_STYLES } from '../types';
 
 interface AppContextValue {
@@ -25,16 +26,16 @@ interface AppContextValue {
   setCountIn: (v: boolean) => void;
   currentPath: string | null;
   setCurrentPath: (p: string | null) => void;
-  selectedDevice: MidiDevice | null;
-  setSelectedDevice: (d: MidiDevice | null) => void;
-  midiMapping: MidiMapping;
-  assignNote: (element: keyof MidiMapping, note: number) => void;
-  removeNote: (element: keyof MidiMapping, note: number) => void;
+  selectedDevice: InputDevice | null;
+  setSelectedDevice: (d: InputDevice | null) => void;
+  inputMapping: InputMapping;
+  assignControl: (element: InputElement, controlId: string) => void;
+  removeControl: (element: InputElement, controlId: string) => void;
   mixerLevels: Record<string, number>;
   setMixerLevels: (mixerLevels: Record<string, number>) => void;
 }
 
-const EMPTY_MIDI_MAPPING: MidiMapping = {
+const EMPTY_INPUT_MAPPING: InputMapping = {
   hihat: [],
   ride: [],
   crash: [],
@@ -45,7 +46,7 @@ const EMPTY_MIDI_MAPPING: MidiMapping = {
   tom3: [],
   pause: [],
 };
-const KIT_ELEMENTS = Object.keys(EMPTY_MIDI_MAPPING) as (keyof MidiMapping)[];
+const KIT_ELEMENTS = Object.keys(EMPTY_INPUT_MAPPING) as InputElement[];
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -89,7 +90,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
   const [countIn, setCountIn] = usePersisted('settings.countIn', true);
   const [currentPath, setCurrentPath] = useState<string | null>(null);
-  const [selectedDevice, setSelectedDevice] = usePersisted<MidiDevice | null>(
+  const [selectedDevice, setSelectedDevice] = usePersisted<InputDevice | null>(
     'settings.selectedDevice',
     null,
   );
@@ -97,70 +98,69 @@ export function AppProvider({ children }: { children: ReactNode }) {
     'settings.mixerLevels',
     {},
   );
-  const [midiMappings, setMidiMappings] = usePersisted<
-    Record<string, MidiMapping>
-  >('settings.midiMappings', {});
-  const midiMapping: MidiMapping = {
-    ...EMPTY_MIDI_MAPPING,
-    ...(selectedDevice ? midiMappings[selectedDevice.name] : undefined),
+  const [inputMappings, setInputMappings] = usePersisted<
+    Record<string, InputMapping>
+  >('settings.inputMappings', {});
+  const inputMapping: InputMapping = {
+    ...EMPTY_INPUT_MAPPING,
+    ...(selectedDevice ? inputMappings[selectedDevice.id] : undefined),
   };
   const updateMapping = useCallback(
-    (update: (current: MidiMapping) => MidiMapping) => {
+    (update: (current: InputMapping) => InputMapping) => {
       if (!selectedDevice) {
         return;
       }
 
-      setMidiMappings((prev) => ({
+      setInputMappings((prev) => ({
         ...prev,
-        [selectedDevice.name]: update({
-          ...EMPTY_MIDI_MAPPING,
-          ...prev[selectedDevice.name],
+        [selectedDevice.id]: update({
+          ...EMPTY_INPUT_MAPPING,
+          ...prev[selectedDevice.id],
         }),
       }));
     },
-    [selectedDevice, setMidiMappings],
+    [selectedDevice, setInputMappings],
   );
-  const assignNote = useCallback(
-    (element: keyof MidiMapping, note: number) => {
+  const assignControl = useCallback(
+    (element: InputElement, controlId: string) => {
       updateMapping(
         (current) =>
           Object.fromEntries(
             KIT_ELEMENTS.map((key) => [
               key,
               key === element
-                ? uniq([...(current[key] ?? []), note])
-                : (current[key] ?? []).filter((n) => n !== note),
+                ? uniq([...(current[key] ?? []), controlId])
+                : (current[key] ?? []).filter((c) => c !== controlId),
             ]),
-          ) as MidiMapping,
+          ) as InputMapping,
       );
     },
     [updateMapping],
   );
-  const removeNote = useCallback(
-    (element: keyof MidiMapping, note: number) => {
+  const removeControl = useCallback(
+    (element: InputElement, controlId: string) => {
       updateMapping((current) => ({
         ...current,
-        [element]: (current[element] ?? []).filter((n) => n !== note),
+        [element]: (current[element] ?? []).filter((c) => c !== controlId),
       }));
     },
     [updateMapping],
   );
 
   useEffect(() => {
-    window.electron.ipcRenderer.sendMessage('midi-device-list');
+    inputBus.start();
+  }, []);
 
-    window.electron.ipcRenderer.once<MidiDevice[]>(
-      'midi-device-list',
-      (list) => {
-        setSelectedDevice((prev: MidiDevice | null) =>
-          prev && list.some((d) => d.name === prev.name) ? prev : null,
-        );
-      },
-    );
+  useEffect(() => {
+    inputBus.listDevices().then((list) => {
+      setSelectedDevice((prev: InputDevice | null) =>
+        prev && list.some((d) => d.id === prev.id) ? prev : null,
+      );
+    });
   }, [setSelectedDevice]);
 
   useEffect(() => {
-    if (!selectedDevice) {
+    if (selectedDevice?.sourceId !== 'midi') {
       return undefined;
     }
 
@@ -190,9 +190,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setCurrentPath,
         selectedDevice,
         setSelectedDevice,
-        midiMapping,
-        assignNote,
-        removeNote,
+        inputMapping,
+        assignControl,
+        removeControl,
         mixerLevels,
         setMixerLevels,
       }}

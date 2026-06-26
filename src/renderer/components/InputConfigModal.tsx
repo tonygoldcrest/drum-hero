@@ -1,12 +1,8 @@
 import { Button, Divider } from 'antd';
 import { useApp } from '../context/AppContext';
 import { useEffect, useRef, useState } from 'react';
-import {
-  MidiDevice,
-  MidiMapping,
-  MidiMessage,
-  MidiMessageType,
-} from '../../types';
+import { InputElement } from '../../types';
+import { controlLabel, controlSource, InputDevice, inputBus } from '../input';
 import { cn } from '../cn';
 import themedark from '../theme';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -23,7 +19,7 @@ type Props = {
 };
 
 type MappingElement = {
-  value: keyof MidiMapping;
+  value: InputElement;
   color: string;
   displayName: string;
   type: 'cymbal' | 'drum' | 'control';
@@ -100,18 +96,18 @@ function elementIcon(type: MappingElement['type']) {
   return faCircle;
 }
 
-export function MidiConfigModal({ isOpen, onClose }: Props) {
+export function InputConfigModal({ isOpen, onClose }: Props) {
   const {
     setSelectedDevice,
     selectedDevice,
-    midiMapping,
-    assignNote,
-    removeNote,
+    inputMapping,
+    assignControl,
+    removeControl,
   } = useApp();
   const backdropRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  const [midiDevices, setMidiDevices] = useState<MidiDevice[]>([]);
-  const [listeningTo, setListeningTo] = useState<keyof MidiMapping>();
+  const [midiDevices, setMidiDevices] = useState<InputDevice[]>([]);
+  const [listeningTo, setListeningTo] = useState<InputElement>();
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
   const listeningToRef = useRef(listeningTo);
 
@@ -132,40 +128,29 @@ export function MidiConfigModal({ isOpen, onClose }: Props) {
       return;
     }
 
-    window.electron.ipcRenderer.sendMessage('midi-device-list');
+    inputBus.listDevices().then((list) => {
+      setMidiDevices(list);
 
-    window.electron.ipcRenderer.once<MidiDevice[]>(
-      'midi-device-list',
-      (list) => {
-        setMidiDevices(list);
-
-        if (
-          selectedDevice &&
-          !list.some((d) => d.name === selectedDevice.name)
-        ) {
-          setSelectedDevice(null);
-        }
-      },
-    );
+      if (selectedDevice && !list.some((d) => d.id === selectedDevice.id)) {
+        setSelectedDevice(null);
+      }
+    });
   }, [isOpen, selectedDevice, setSelectedDevice]);
 
   useEffect(() => {
     if (!selectedDevice || !isOpen) {
-      return;
+      return undefined;
     }
 
-    return window.electron.ipcRenderer.on<MidiMessage>(
-      'listen-midi',
-      ({ note, type }) => {
-        const listening = listeningToRef.current;
+    return inputBus.subscribe(({ controlId }) => {
+      const listening = listeningToRef.current;
 
-        if (type === MidiMessageType.NoteOn && listening) {
-          assignNote(listening, note);
-          setListeningTo(undefined);
-        }
-      },
-    );
-  }, [assignNote, selectedDevice, isOpen]);
+      if (listening && controlSource(controlId) === selectedDevice.sourceId) {
+        assignControl(listening, controlId);
+        setListeningTo(undefined);
+      }
+    });
+  }, [assignControl, selectedDevice, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -193,15 +178,15 @@ export function MidiConfigModal({ isOpen, onClose }: Props) {
           <div className="font-semibold text-nowrap">{element.displayName}</div>
         </div>
         <div className="flex flex-wrap gap-1">
-          {midiMapping[element.value]?.map((note) => (
+          {inputMapping[element.value]?.map((control) => (
             <div
               className="font-semibold text-xs bg-surface-raised p-1 border-border-soft border rounded-md flex items-center gap-1"
-              key={note}
+              key={control}
             >
-              {note}
+              {controlLabel(control)}
               <button
                 className="text-accent border-0 cursor-pointer px-0.5 hover:text-accent-text focus-visible:outline-accent-hover focus-visible:outline-1 rounded-xs"
-                onClick={() => removeNote(element.value, note)}
+                onClick={() => removeControl(element.value, control)}
               >
                 <FontAwesomeIcon icon={faXmark} size="xs" />
               </button>
@@ -262,28 +247,28 @@ export function MidiConfigModal({ isOpen, onClose }: Props) {
           className="text-text-body font-semibold text-xl p-4 rounded-t-xl"
           style={{ background: 'var(--gradient-header)' }}
         >
-          Configure E-kit
+          Configure input
         </div>
         <Divider />
         <div className="flex flex-col gap-3 p-4">
           <div className="flex flex-col gap-1">
             <div className="text-text-faint text-[12px] font-semibold uppercase">
-              MIDI Input Device
+              Input Device
             </div>
             <select
               className="select"
-              value={selectedDevice?.name}
+              value={selectedDevice?.id}
               onChange={(event) => {
                 setSelectedDevice(
                   midiDevices.find(
-                    (device) => device.name === event.target.value,
+                    (device) => device.id === event.target.value,
                   ) ?? null,
                 );
               }}
             >
               <option value={undefined}>- None -</option>
-              {midiDevices.map(({ name, port }) => (
-                <option key={port} value={name}>
+              {midiDevices.map(({ id, name }) => (
+                <option key={id} value={id}>
                   {name}
                 </option>
               ))}

@@ -9,10 +9,11 @@ import { App } from 'antd';
 import { TrackConfig } from '../services/audio-player/types';
 import { TimeStore } from '../services/time-store';
 import { Measure, ParsedChart, RenderData } from '../../chart-parser/types';
-import { MidiDevice, MidiMapping, ScoreData } from '../../types';
+import { InputMapping, ScoreData } from '../../types';
 import { PlayheadStyle } from '../types';
 import { PlaybackSnapshot, PlaybackState } from '../services/playback-engine';
 import { GameEngine } from '../services/game-engine';
+import { inputBus } from '../input';
 
 interface UseGameEngineParams {
   trackData: TrackConfig[];
@@ -24,8 +25,7 @@ interface UseGameEngineParams {
   countInEnabled: boolean;
   playheadStyle: PlayheadStyle;
   progressColoring: boolean;
-  selectedDevice: MidiDevice | null;
-  midiMapping: MidiMapping;
+  mapping: InputMapping;
   onEnded: (score: ScoreData) => void;
 }
 
@@ -71,8 +71,7 @@ export function useGameEngine({
   countInEnabled,
   playheadStyle,
   progressColoring,
-  selectedDevice,
-  midiMapping,
+  mapping,
   onEnded,
 }: UseGameEngineParams): UseGameEngineResult {
   const { notification } = App.useApp();
@@ -94,6 +93,7 @@ export function useGameEngine({
     const instance = new GameEngine({
       trackData,
       isDev: isDevRef.current,
+      subscribeInput: inputBus.subscribe,
       onEnded: (score) => onEndedRef.current(score),
       onError: () =>
         notification.error({
@@ -127,8 +127,8 @@ export function useGameEngine({
   }, [engine, playheadStyle, progressColoring]);
 
   useEffect(() => {
-    engine?.setMidi(selectedDevice, midiMapping);
-  }, [engine, selectedDevice, midiMapping]);
+    engine?.setMapping(mapping);
+  }, [engine, mapping]);
 
   const subscribe = useCallback(
     (listener: () => void) => engine?.subscribe(listener) ?? (() => {}),

@@ -1,8 +1,9 @@
 import { TrackConfig } from './audio-player/types';
 import { TimeStore } from './time-store';
 import { Measure, ParsedChart, RenderData } from '../../chart-parser/types';
-import { MidiDevice, MidiMapping, MidiMessage, ScoreData } from '../../types';
+import { InputMapping, ScoreData } from '../../types';
 import { PlayheadStyle } from '../types';
+import { InputEvent } from '../input/types';
 import { PlaybackEngine, PlaybackSnapshot } from './playback-engine';
 import { ScoringEngine } from './scoring-engine';
 import { ViewEngine, ViewRefs } from './view-engine';
@@ -11,6 +12,7 @@ import { secondsToTicks } from '../views/utils';
 export interface GameEngineOptions {
   trackData: TrackConfig[];
   isDev: boolean;
+  subscribeInput: (listener: (event: InputEvent) => void) => () => void;
   onEnded: (score: ScoreData) => void;
   onError: () => void;
 }
@@ -38,11 +40,10 @@ export class GameEngine {
   private chart: ParsedChart | undefined;
   private renderData: RenderData[] = [];
   private delaySeconds = 0;
-  private midiMapping: MidiMapping = {};
-  private device: MidiDevice | null = null;
-  private midiUnsub: (() => void) | undefined;
+  private mapping: InputMapping = {};
   private timeUnsub: () => void;
   private playbackUnsub: () => void;
+  private inputUnsub: () => void;
 
   constructor(options: GameEngineOptions) {
     this.onEndedCb = options.onEnded;
@@ -54,6 +55,9 @@ export class GameEngine {
     });
     this.timeUnsub = this.playback.timeStore.subscribe(this.handleFrame);
     this.playbackUnsub = this.playback.subscribe(this.handlePlaybackChange);
+    this.inputUnsub = options.subscribeInput((event) =>
+      this.scoring.handleInput(event),
+    );
     this.scoring.onHit((note, prefixes) => this.view.paintHit(note, prefixes));
   }
 
@@ -83,7 +87,7 @@ export class GameEngine {
     this.scoring.setContext({
       chart: context.chart,
       renderData: context.renderData,
-      midiMapping: this.midiMapping,
+      mapping: this.mapping,
     });
 
     this.renderFrame();
@@ -94,18 +98,13 @@ export class GameEngine {
     this.renderFrame();
   }
 
-  setMidi(device: MidiDevice | null, mapping: MidiMapping): void {
-    this.midiMapping = mapping;
+  setMapping(mapping: InputMapping): void {
+    this.mapping = mapping;
     this.scoring.setContext({
       chart: this.chart,
       renderData: this.renderData,
-      midiMapping: mapping,
+      mapping,
     });
-
-    if (device !== this.device) {
-      this.device = device;
-      this.connectMidi();
-    }
   }
 
   setView(view: GameView): void {
@@ -160,7 +159,7 @@ export class GameEngine {
   dispose(): void {
     this.timeUnsub();
     this.playbackUnsub();
-    this.midiUnsub?.();
+    this.inputUnsub();
     this.playback.dispose();
   }
 
@@ -185,19 +184,5 @@ export class GameEngine {
       .flatMap((rd) => rd.measure.notes)
       .filter((note) => !note.isRest)
       .reduce((sum, note) => sum + note.notes.length, 0);
-  }
-
-  private connectMidi(): void {
-    this.midiUnsub?.();
-    this.midiUnsub = undefined;
-
-    if (!this.device) {
-      return;
-    }
-
-    this.midiUnsub = window.electron.ipcRenderer.on<MidiMessage>(
-      'listen-midi',
-      (message) => this.scoring.handleMidiMessage(message),
-    );
   }
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Spin } from 'antd';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useOutlet } from 'react-router-dom';
 import { SongFilter } from '../components/SongFilter';
 import { SongList } from '../components/SongList';
 import { SettingsButton } from '../components/SettingsButton';
@@ -16,11 +16,12 @@ import { useStemTools } from '../hooks/useStemTools';
 import { useSongList } from '../hooks/useSongList';
 import { useDownload } from '../hooks/useDownload';
 import { useSongFilter } from '../hooks/useSongFilter';
-import { useDrumControls } from '../hooks/useDrumControls';
+import { useInputControls } from '../hooks/useInputControls';
 
 export function SongListView() {
-  const { currentPath, selectedDevice, midiMapping } = useApp();
+  const { currentPath, inputMapping } = useApp();
   const navigate = useNavigate();
+  const songOpen = useOutlet() !== null;
   const { stemToolsStatus, stemToolsLoading, downloadPercent, download } =
     useStemTools();
   const {
@@ -117,9 +118,8 @@ export function SongListView() {
     setIsSortOpen(true);
   };
 
-  useDrumControls(
-    selectedDevice,
-    midiMapping,
+  useInputControls(
+    inputMapping,
     isSortOpen
       ? {
           tom1: () => moveSortFocus(-1),
@@ -155,7 +155,7 @@ export function SongListView() {
               return (index + 1) % filteredSongList.length;
             }),
           tom3: () => {
-            if (!focusedSongIndex) {
+            if (focusedSongIndex === undefined) {
               return;
             }
 
@@ -177,6 +177,7 @@ export function SongListView() {
           kick: openSort,
           ride: () => setMode(mode === 'online' ? 'local' : 'online'),
         },
+    !songOpen,
   );
 
   return (

@@ -5,7 +5,7 @@ import {
   RenderData,
   RenderedNote,
 } from '../../chart-parser/types';
-import { MidiMessage, MidiMessageType } from '../../types';
+import { InputEvent } from '../input/types';
 import {
   ScoringContext,
   ScoringEngine,
@@ -36,8 +36,8 @@ function measure(notes: RenderedNote[]): RenderData {
   return { renderedNotes: notes } as unknown as RenderData;
 }
 
-function noteOn(note: number, velocity = 100): MidiMessage {
-  return { type: MidiMessageType.NoteOn, note, velocity };
+function hit(controlId: string, value = 100): InputEvent {
+  return { controlId, value };
 }
 
 function setup(
@@ -50,7 +50,7 @@ function setup(
   engine.setContext({
     chart: CHART,
     renderData: [],
-    midiMapping: { snare: [38] },
+    mapping: { snare: ['midi:38'] },
     ...overrides,
   });
   engine.setEnabled(options.enabled ?? true);
@@ -68,74 +68,58 @@ describe('ScoringEngine', () => {
       { tick: 480 },
     );
 
-    engine.handleMidiMessage(noteOn(38));
+    engine.handleInput(hit('midi:38'));
 
     expect(engine.isHit(480, 'c/5')).toBe(true);
     expect(engine.falseHitCount).toBe(0);
     expect(onHit).toHaveBeenCalledWith(note, ['c/5']);
   });
 
-  it('registers a hit using the remapped note after a remap', () => {
+  it('registers a hit using the remapped control after a remap', () => {
     const note = fakeNote(['c/5']);
     const renderData = [measure([rendered(480, note)])];
     const { engine } = setup(
-      { renderData, midiMapping: { snare: [38] } },
+      { renderData, mapping: { snare: ['midi:38'] } },
       { tick: 480 },
     );
 
-    engine.handleMidiMessage(noteOn(40));
+    engine.handleInput(hit('midi:40'));
     expect(engine.hitCount).toBe(0);
 
     engine.setContext({
       chart: CHART,
       renderData,
-      midiMapping: { snare: [40] },
+      mapping: { snare: ['midi:40'] },
     });
-    engine.handleMidiMessage(noteOn(40));
+    engine.handleInput(hit('midi:40'));
     expect(engine.isHit(480, 'c/5')).toBe(true);
 
-    engine.handleMidiMessage(noteOn(38));
+    engine.handleInput(hit('midi:38'));
     expect(engine.hitCount).toBe(1);
     expect(engine.falseHitCount).toBe(0);
   });
 
-  it('ignores note-on with zero velocity', () => {
+  it('ignores input with zero value', () => {
     const note = fakeNote(['c/5']);
     const { engine } = setup(
       { renderData: [measure([rendered(480, note)])] },
       { tick: 480 },
     );
 
-    engine.handleMidiMessage(noteOn(38, 0));
+    engine.handleInput(hit('midi:38', 0));
 
     expect(engine.hitCount).toBe(0);
     expect(engine.falseHitCount).toBe(0);
   });
 
-  it('ignores note-off messages', () => {
+  it('ignores unmapped controls without counting them as misses', () => {
     const note = fakeNote(['c/5']);
     const { engine } = setup(
       { renderData: [measure([rendered(480, note)])] },
       { tick: 480 },
     );
 
-    engine.handleMidiMessage({
-      type: MidiMessageType.NoteOff,
-      note: 38,
-      velocity: 100,
-    });
-
-    expect(engine.hitCount).toBe(0);
-  });
-
-  it('ignores unmapped midi notes without counting them as misses', () => {
-    const note = fakeNote(['c/5']);
-    const { engine } = setup(
-      { renderData: [measure([rendered(480, note)])] },
-      { tick: 480 },
-    );
-
-    engine.handleMidiMessage(noteOn(99));
+    engine.handleInput(hit('midi:99'));
 
     expect(engine.falseHitCount).toBe(0);
     expect(engine.hitCount).toBe(0);
@@ -148,7 +132,7 @@ describe('ScoringEngine', () => {
       { tick: 480 },
     );
 
-    engine.handleMidiMessage(noteOn(38));
+    engine.handleInput(hit('midi:38'));
 
     expect(engine.hitCount).toBe(0);
     expect(engine.falseHitCount).toBe(1);
@@ -159,12 +143,12 @@ describe('ScoringEngine', () => {
     const { engine } = setup(
       {
         renderData: [measure([rendered(480, kick)])],
-        midiMapping: { snare: [38], kick: [36] },
+        mapping: { snare: ['midi:38'], kick: ['midi:36'] },
       },
       { tick: 480 },
     );
 
-    engine.handleMidiMessage(noteOn(38));
+    engine.handleInput(hit('midi:38'));
 
     expect(engine.falseHitCount).toBe(1);
     expect(engine.hitCount).toBe(0);
@@ -177,8 +161,8 @@ describe('ScoringEngine', () => {
       { tick: 480 },
     );
 
-    engine.handleMidiMessage(noteOn(38));
-    engine.handleMidiMessage(noteOn(38));
+    engine.handleInput(hit('midi:38'));
+    engine.handleInput(hit('midi:38'));
 
     expect(engine.hitCount).toBe(1);
     expect(engine.falseHitCount).toBe(1);
@@ -189,7 +173,7 @@ describe('ScoringEngine', () => {
     const { engine } = setup({ renderData: [measure([rendered(480, note)])] });
 
     engine.setTick(undefined);
-    engine.handleMidiMessage(noteOn(38));
+    engine.handleInput(hit('midi:38'));
 
     expect(engine.hitCount).toBe(0);
     expect(engine.falseHitCount).toBe(0);
@@ -202,7 +186,7 @@ describe('ScoringEngine', () => {
       { tick: 480 },
     );
 
-    engine.handleMidiMessage(noteOn(38));
+    engine.handleInput(hit('midi:38'));
     expect(engine.isHit(480, 'c/5')).toBe(true);
 
     engine.setTick(100);
@@ -216,7 +200,7 @@ describe('ScoringEngine', () => {
     const renderData = [measure([rendered(480, note)])];
     const { engine } = setup({ renderData }, { tick: 480 });
 
-    engine.handleMidiMessage(noteOn(38));
+    engine.handleInput(hit('midi:38'));
     expect(engine.hitCount).toBe(1);
 
     const next = fakeNote(['c/5']);
@@ -224,7 +208,7 @@ describe('ScoringEngine', () => {
     engine.setContext({
       chart: CHART,
       renderData: [measure([rendered(480, next)])],
-      midiMapping: { snare: [38] },
+      mapping: { snare: ['midi:38'] },
     });
 
     expect(engine.hitCount).toBe(0);
@@ -238,7 +222,7 @@ describe('ScoringEngine', () => {
       { tick: 480 },
     );
 
-    engine.handleMidiMessage(noteOn(38));
+    engine.handleInput(hit('midi:38'));
 
     expect(engine.isHit(490, 'c/5')).toBe(true);
     expect(engine.isHit(530, 'c/5')).toBe(false);
@@ -251,20 +235,20 @@ describe('ScoringEngine', () => {
       { tick: 480 },
     );
 
-    engine.handleMidiMessage(noteOn(38));
+    engine.handleInput(hit('midi:38'));
 
     expect(engine.hitCount).toBe(0);
     expect(engine.falseHitCount).toBe(1);
   });
 
-  it('ignores midi hits when not enabled', () => {
+  it('ignores hits when not enabled', () => {
     const note = fakeNote(['c/5']);
     const { engine } = setup(
       { renderData: [measure([rendered(480, note)])] },
       { tick: 480, enabled: false },
     );
 
-    engine.handleMidiMessage(noteOn(38));
+    engine.handleInput(hit('midi:38'));
 
     expect(engine.hitCount).toBe(0);
     expect(engine.falseHitCount).toBe(0);
@@ -277,11 +261,11 @@ describe('ScoringEngine', () => {
       { tick: 480, enabled: false },
     );
 
-    engine.handleMidiMessage(noteOn(38));
+    engine.handleInput(hit('midi:38'));
     expect(engine.hitCount).toBe(0);
 
     engine.setEnabled(true);
-    engine.handleMidiMessage(noteOn(38));
+    engine.handleInput(hit('midi:38'));
 
     expect(engine.isHit(480, 'c/5')).toBe(true);
     expect(engine.falseHitCount).toBe(0);
@@ -294,7 +278,7 @@ describe('ScoringEngine', () => {
       { tick: 480 },
     );
 
-    engine.handleMidiMessage(noteOn(38, 80));
+    engine.handleInput(hit('midi:38', 80));
 
     expect(engine.hitCount).toBe(0);
     expect(engine.falseHitCount).toBe(1);
@@ -307,7 +291,7 @@ describe('ScoringEngine', () => {
       { tick: 480 },
     );
 
-    engine.handleMidiMessage(noteOn(38, 110));
+    engine.handleInput(hit('midi:38', 110));
 
     expect(engine.isHit(480, 'c/5')).toBe(true);
     expect(engine.falseHitCount).toBe(0);
@@ -320,7 +304,7 @@ describe('ScoringEngine', () => {
       { tick: 480 },
     );
 
-    engine.handleMidiMessage(noteOn(38, 80));
+    engine.handleInput(hit('midi:38', 80));
 
     expect(engine.hitCount).toBe(0);
     expect(engine.falseHitCount).toBe(1);
@@ -333,7 +317,7 @@ describe('ScoringEngine', () => {
       { tick: 480 },
     );
 
-    engine.handleMidiMessage(noteOn(38, 30));
+    engine.handleInput(hit('midi:38', 30));
 
     expect(engine.isHit(480, 'c/5')).toBe(true);
     expect(engine.falseHitCount).toBe(0);
@@ -347,7 +331,7 @@ describe('ScoringEngine', () => {
     engine.setContext({
       chart: CHART,
       renderData: [measure([rendered(480, note)])],
-      midiMapping: { snare: [38] },
+      mapping: { snare: ['midi:38'] },
     });
     engine.setEnabled(true);
     engine.setTick(480);
@@ -355,7 +339,7 @@ describe('ScoringEngine', () => {
     const unsubscribe = engine.onHit(onHit);
 
     unsubscribe();
-    engine.handleMidiMessage(noteOn(38));
+    engine.handleInput(hit('midi:38'));
 
     expect(onHit).not.toHaveBeenCalled();
     expect(engine.isHit(480, 'c/5')).toBe(true);

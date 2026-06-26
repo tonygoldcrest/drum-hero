@@ -103,17 +103,19 @@ export interface MidiMessage {
   channel?: number;
 }
 
-export interface MidiMapping {
-  hihat?: number[];
-  ride?: number[];
-  crash?: number[];
-  kick?: number[];
-  snare?: number[];
-  tom1?: number[];
-  tom2?: number[];
-  tom3?: number[];
-  pause?: number[];
+export interface InputMapping {
+  hihat?: string[];
+  ride?: string[];
+  crash?: string[];
+  kick?: string[];
+  snare?: string[];
+  tom1?: string[];
+  tom2?: string[];
+  tom3?: string[];
+  pause?: string[];
 }
+
+export type InputElement = keyof InputMapping;
 
 export type IpcUpdateSongPayload = Pick<SongData, 'id'> &
   Partial<Omit<SongData, 'id'>>;

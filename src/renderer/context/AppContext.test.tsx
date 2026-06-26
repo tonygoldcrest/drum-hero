@@ -1,8 +1,8 @@
 import { ReactNode } from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { MidiDevice } from '../../types';
 import { installIpcMock, IpcMock } from '../hooks/test-support';
+import { InputDevice } from '../input';
 import { AppProvider, useApp } from './AppContext';
 
 let ipc: IpcMock;
@@ -48,8 +48,18 @@ beforeEach(() => {
   ipc = installIpcMock();
 });
 
-const DEVICE_A: MidiDevice = { port: 2, name: 'Pad A' };
-const DEVICE_B: MidiDevice = { port: 5, name: 'Pad B' };
+const DEVICE_A: InputDevice = {
+  id: 'midi:Pad A',
+  name: 'Pad A',
+  sourceId: 'midi',
+  port: 2,
+};
+const DEVICE_B: InputDevice = {
+  id: 'midi:Pad B',
+  name: 'Pad B',
+  sourceId: 'midi',
+  port: 5,
+};
 
 describe('AppContext midi stream ownership', () => {
   it('does not listen when no device is selected', () => {

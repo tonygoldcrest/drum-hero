@@ -10,7 +10,6 @@ import { ViewEngine } from './view-engine';
 
 const HIT = 'rgba(0, 0, 0, 0)';
 const MISSED = 'rgb(160, 152, 144)';
-const SCALE = 'scale(1.5)';
 const CHART = {
   resolution: 480,
   tempos: [{ tick: 0, beatsPerMinute: 120, msTime: 0 }],
@@ -79,8 +78,10 @@ function fill(note: StaveNote, head = 0): string {
   return (note.noteHeads[head].getSVGElement() as SVGElement).style.fill;
 }
 
-function transform(note: StaveNote, head = 0): string {
-  return (note.noteHeads[head].getSVGElement() as SVGElement).style.transform;
+function hasClass(note: StaveNote, cls: string, head = 0): boolean {
+  return (
+    note.noteHeads[head].getSVGElement() as SVGElement
+  ).classList.contains(cls);
 }
 
 interface SetupOptions {
@@ -160,7 +161,7 @@ describe('ViewEngine', () => {
     );
   });
 
-  it('scales the active note and unscales the previous one on a crossing', () => {
+  it('marks the active note and clears the previous one on a crossing', () => {
     const n0 = staveNote(['c/5']);
     const n1 = staveNote(['d/5']);
     const view = setup([
@@ -168,12 +169,54 @@ describe('ViewEngine', () => {
     ]);
 
     view.render(0, 0);
-    expect(transform(n0)).toBe(SCALE);
-    expect(transform(n1)).toBe('');
+    expect(hasClass(n0, 'vf-note-active')).toBe(true);
+    expect(hasClass(n1, 'vf-note-active')).toBe(false);
 
     view.render(0, 480);
-    expect(transform(n1)).toBe(SCALE);
-    expect(transform(n0)).toBe('');
+    expect(hasClass(n1, 'vf-note-active')).toBe(true);
+    expect(hasClass(n0, 'vf-note-active')).toBe(false);
+  });
+
+  it('flashes a hit class on the struck note head only for the matching prefix', () => {
+    const note = staveNote(['c/5', 'g/5']);
+    const view = setup([], { progressColoring: true });
+
+    view.paintHit(note, ['c/5']);
+
+    expect(hasClass(note, 'vf-note-hit', 0)).toBe(true);
+    expect(hasClass(note, 'vf-note-hit', 1)).toBe(false);
+  });
+
+  it('flashes a miss class on a passed un-hit note', () => {
+    const n0 = staveNote(['c/5']);
+    const n1 = staveNote(['d/5']);
+    const view = setup(
+      [measureData(0, 1920, [rendered(0, n0), rendered(480, n1)])],
+      { progressColoring: true },
+    );
+
+    view.render(0, 0);
+    expect(hasClass(n0, 'vf-note-miss')).toBe(false);
+
+    view.render(0, 480);
+    expect(hasClass(n0, 'vf-note-miss')).toBe(true);
+  });
+
+  it('does not flash a miss on a note that was hit', () => {
+    const n0 = staveNote(['c/5']);
+    const n1 = staveNote(['d/5']);
+    const isHit = (tick: number, prefix: string) =>
+      tick === 0 && prefix === 'c/5';
+    const view = setup(
+      [measureData(0, 1920, [rendered(0, n0), rendered(240, n1)])],
+      { progressColoring: true, isHit },
+    );
+
+    view.render(0, 0);
+    view.render(0, 240);
+
+    expect(hasClass(n0, 'vf-note-miss')).toBe(false);
+    expect(fill(n0)).toBe(HIT);
   });
 
   it('progress-colours notes before the active note', () => {
@@ -255,7 +298,7 @@ describe('ViewEngine', () => {
     expect(fill(note)).toBe('');
   });
 
-  it('hides the cursor and skips scaling when the style is None', () => {
+  it('hides the cursor and does not mark a note active when the style is None', () => {
     const cursor = div();
     const n0 = staveNote(['c/5']);
     const view = setup([measureData(0, 1920, [rendered(0, n0)])], {
@@ -266,7 +309,7 @@ describe('ViewEngine', () => {
     view.render(0, 0);
 
     expect(cursor.style.display).toBe('none');
-    expect(transform(n0)).toBe('');
+    expect(hasClass(n0, 'vf-note-active')).toBe(false);
   });
 
   it('clears colouring while the playhead sits on a note-head-less rest', () => {

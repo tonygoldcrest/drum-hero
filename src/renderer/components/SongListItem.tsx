@@ -115,9 +115,13 @@ export function SongListItem({
   const navigate = useNavigate();
   const score = useMemo(() => {
     const result = (['expert', 'hard', 'medium', 'easy'] as Difficulty[])
-      .map((d) =>
-        scoreData?.[d] ? { difficulty: d, score: scoreData?.[d] } : null,
-      )
+      .map((d) => {
+        const entry = scoreData?.[d];
+
+        return entry && (entry.hitNotes ?? 0) > 0
+          ? { difficulty: d, score: entry }
+          : null;
+      })
       .find((item) => item !== null);
 
     return result

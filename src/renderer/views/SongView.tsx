@@ -18,7 +18,7 @@ import { useGameEngine } from '../hooks/useGameEngine';
 import { useVolumeControls } from '../hooks/useVolumeControls';
 import { calculateAccuracy } from './utils';
 import { useSheetMusic } from '../hooks/useSheetMusic';
-import { useDrumControls } from '../hooks/useDrumControls';
+import { useInputControls } from '../hooks/useInputControls';
 import { ScoreModal } from '../components/ScoreModal';
 import { CountIn } from '../components/CountIn';
 import { ScoreData } from '../../types';
@@ -31,8 +31,7 @@ export function SongView() {
     showTempo,
     progressColoring,
     countIn,
-    selectedDevice,
-    midiMapping,
+    inputMapping,
   } = useApp();
   const [difficulty, setDifficulty] = useState<Difficulty>('expert');
   const [scoreData, setScoreData] = useState<ScoreData>();
@@ -91,8 +90,7 @@ export function SongView() {
     countInEnabled: countIn,
     playheadStyle,
     progressColoring,
-    selectedDevice,
-    midiMapping,
+    mapping: inputMapping,
     onEnded: (score) => {
       setScoreData(score);
       setIsScoreModalOpen(true);
@@ -101,8 +99,9 @@ export function SongView() {
       const isHighScore =
         !previousScore ||
         calculateAccuracy(score) > calculateAccuracy(previousScore);
+      const isAttempt = (score.hitNotes ?? 0) > 0;
 
-      if (id && isHighScore) {
+      if (id && isHighScore && isAttempt) {
         window.electron.ipcRenderer.sendMessage('update-song', {
           id,
           scoreData: { [activeDifficulty]: score },
@@ -126,9 +125,8 @@ export function SongView() {
     playFromTick(0);
   };
 
-  useDrumControls(
-    selectedDevice,
-    midiMapping,
+  useInputControls(
+    inputMapping,
     {
       tom3: () => {
         if (isReady && !isPlaying && !isEnded && !isCounting) {

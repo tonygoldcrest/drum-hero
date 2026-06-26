@@ -20,7 +20,11 @@ export function isUnderDirectory(songDir: string, rootDir: string): boolean {
 
 export function buildSongFromDir(
   dir: string,
-  existing?: { id?: string; liked?: boolean },
+  existing?: {
+    id?: string;
+    liked?: boolean;
+    scoreData?: SongData['scoreData'];
+  },
 ): SongData | null {
   const songIniPath = path.join(dir, 'song.ini');
 
@@ -66,5 +70,8 @@ export function buildSongFromDir(
     format,
     audio,
     ...(existing?.liked !== undefined ? { liked: existing.liked } : {}),
+    ...(existing?.scoreData !== undefined
+      ? { scoreData: existing.scoreData }
+      : {}),
   };
 }

@@ -23,7 +23,7 @@ import { cn } from '../cn';
 import { usePopoverOutsideClick } from '../hooks/usePopoverOutsideClick';
 import { Difficulty } from 'scan-chart';
 import { StemToolsStatus } from '../../types';
-import { MidiConfigModal } from './MidiConfigModal';
+import { InputConfigModal } from './InputConfigModal';
 
 interface Props {
   volumeSliders?: ReactNode[];
@@ -68,7 +68,7 @@ export const SettingsButton = memo(function Settings({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const [midiConfigOpen, setMidiConfigOpen] = useState(false);
+  const [inputConfigOpen, setInputConfigOpen] = useState(false);
   const { pathname } = useLocation();
 
   useEffect(() => {
@@ -107,10 +107,10 @@ export const SettingsButton = memo(function Settings({
         style={{ anchorName: '--settings-trigger' } as CSSProperties}
       />
 
-      <MidiConfigModal
-        isOpen={midiConfigOpen}
+      <InputConfigModal
+        isOpen={inputConfigOpen}
         onClose={() => {
-          setMidiConfigOpen(false);
+          setInputConfigOpen(false);
         }}
       />
 
@@ -175,10 +175,10 @@ export const SettingsButton = memo(function Settings({
         <Button
           icon={<FontAwesomeIcon icon={faDrum} />}
           onClick={() => {
-            setMidiConfigOpen(true);
+            setInputConfigOpen(true);
           }}
         >
-          Setup E-kit
+          Setup input
         </Button>
 
         {page === 'song-view' && difficulties && difficulties.length > 0 ? (

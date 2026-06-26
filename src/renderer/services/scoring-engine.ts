@@ -1,6 +1,7 @@
 import { StaveNote } from 'vexflow';
 import { ParsedChart, RenderData } from '../../chart-parser/types';
-import { MidiMapping, MidiMessage, MidiMessageType } from '../../types';
+import { InputElement, InputMapping } from '../../types';
+import { InputEvent } from '../input/types';
 import { secondsToTicks, ticksToSeconds } from '../views/utils';
 
 export type ScoringHitHandler = (note: StaveNote, prefixes: string[]) => void;
@@ -8,10 +9,10 @@ export type ScoringHitHandler = (note: StaveNote, prefixes: string[]) => void;
 export interface ScoringContext {
   chart: ParsedChart | undefined;
   renderData: RenderData[];
-  midiMapping: MidiMapping;
+  mapping: InputMapping;
 }
 
-const MIDI_MAPPING_TO_KEYS: Partial<Record<keyof MidiMapping, string[]>> = {
+const ELEMENT_TO_KEYS: Partial<Record<InputElement, string[]>> = {
   kick: ['f/4', 'e/4'],
   snare: ['c/5'],
   hihat: ['g/5'],
@@ -22,8 +23,8 @@ const MIDI_MAPPING_TO_KEYS: Partial<Record<keyof MidiMapping, string[]>> = {
   tom3: ['a/4'],
 };
 const HIT_TOLERANCE_SECONDS = 0.1;
-const ACCENT_VELOCITY_THRESHOLD = 90;
-const GHOST_VELOCITY_THRESHOLD = 50;
+const ACCENT_VALUE_THRESHOLD = 90;
+const GHOST_VALUE_THRESHOLD = 50;
 
 export function keyPrefix(key: string): string {
   const [pitch, octave] = key.split('/');
@@ -34,7 +35,7 @@ export function keyPrefix(key: string): string {
 export class ScoringEngine {
   private chart: ParsedChart | undefined;
   private renderData: RenderData[] = [];
-  private midiMapping: MidiMapping = {};
+  private mapping: InputMapping = {};
   private enabled = false;
   private currentTick: number | undefined;
   private hitKeys = new Set<string>();
@@ -43,7 +44,7 @@ export class ScoringEngine {
 
   setContext(context: ScoringContext): void {
     this.chart = context.chart;
-    this.midiMapping = context.midiMapping;
+    this.mapping = context.mapping;
 
     if (this.renderData !== context.renderData) {
       this.renderData = context.renderData;
@@ -96,14 +97,14 @@ export class ScoringEngine {
     this.incorrectHits = 0;
   }
 
-  handleMidiMessage({ type, note, velocity }: MidiMessage): void {
-    if (type !== MidiMessageType.NoteOn || velocity === 0 || !this.enabled) {
+  handleInput({ controlId, value }: InputEvent): void {
+    if (value === 0 || !this.enabled) {
       return;
     }
 
-    const mapping = this.midiMapping;
-    const hitElements = (Object.keys(mapping) as (keyof MidiMapping)[]).filter(
-      (key) => MIDI_MAPPING_TO_KEYS[key] && mapping[key]?.includes(note),
+    const mapping = this.mapping;
+    const hitElements = (Object.keys(mapping) as InputElement[]).filter(
+      (key) => ELEMENT_TO_KEYS[key] && mapping[key]?.includes(controlId),
     );
 
     if (hitElements.length === 0) {
@@ -111,7 +112,7 @@ export class ScoringEngine {
     }
 
     const expectedPrefixes = new Set(
-      hitElements.flatMap((el) => MIDI_MAPPING_TO_KEYS[el] ?? []),
+      hitElements.flatMap((el) => ELEMENT_TO_KEYS[el] ?? []),
     );
     const tick = this.currentTick;
     const chart = this.chart;
@@ -164,11 +165,11 @@ export class ScoringEngine {
     const ghostPrefixes = new Set((hit.ghosts ?? []).map(keyPrefix));
     const passesVelocity = (prefix: string) => {
       if (accentPrefixes.has(prefix)) {
-        return velocity > ACCENT_VELOCITY_THRESHOLD;
+        return value > ACCENT_VALUE_THRESHOLD;
       }
 
       if (ghostPrefixes.has(prefix)) {
-        return velocity < GHOST_VELOCITY_THRESHOLD;
+        return value < GHOST_VALUE_THRESHOLD;
       }
 
       return true;

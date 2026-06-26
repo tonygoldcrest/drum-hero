@@ -8,8 +8,7 @@ import {
   RenderData,
   RenderedNote,
 } from '../../chart-parser/types';
-import { MidiDevice, MidiMessageType } from '../../types';
-import { installIpcMock, IpcMock } from '../hooks/test-support';
+import { InputEvent } from '../input/types';
 import { GameEngine, GameContext } from './game-engine';
 
 vi.mock('./metronome', () => ({
@@ -52,7 +51,6 @@ type MockPlayer = {
 
 const HIT_RGBA = 'rgba(0, 0, 0, 0)';
 const MISSED = 'rgb(160, 152, 144)';
-const DEVICE: MidiDevice = { port: 1, name: 'Pad' };
 const TRACKS: TrackConfig[] = [{ name: 'drums', urls: ['d.ogg'] }];
 const CHART = {
   resolution: 480,
@@ -125,7 +123,11 @@ async function flush() {
   await Promise.resolve();
 }
 
-let ipc: IpcMock;
+let inputListeners: Set<(event: InputEvent) => void>;
+
+function emitInput(controlId: string, value = 100) {
+  inputListeners.forEach((listener) => listener({ controlId, value }));
+}
 
 async function setup(over: Partial<GameContext> = {}) {
   const onEnded = vi.fn();
@@ -133,6 +135,13 @@ async function setup(over: Partial<GameContext> = {}) {
   const engine = new GameEngine({
     trackData: TRACKS,
     isDev: false,
+    subscribeInput: (listener) => {
+      inputListeners.add(listener);
+
+      return () => {
+        inputListeners.delete(listener);
+      };
+    },
     onEnded,
     onError,
   });
@@ -156,7 +165,7 @@ async function setup(over: Partial<GameContext> = {}) {
 }
 
 beforeEach(async () => {
-  ipc = installIpcMock();
+  inputListeners = new Set();
   (await getPlayerClass()).instances.length = 0;
   vi.useFakeTimers();
 });
@@ -282,7 +291,7 @@ describe('GameEngine', () => {
     expect(fill(n2)).toBe('');
   });
 
-  it('registers a midi hit and hides the struck note head', async () => {
+  it('registers an input hit and hides the struck note head', async () => {
     const note = staveNote(['c/5']);
     const { engine, onEnded, player } = await setup({
       renderData: [
@@ -300,14 +309,10 @@ describe('GameEngine', () => {
       cursorEl: document.createElement('div'),
       highlightEls: [],
     });
-    engine.setMidi(DEVICE, { snare: [38] });
+    engine.setMapping({ snare: ['midi:38'] });
     engine.seekSeconds(0.5);
 
-    ipc.emit('listen-midi', {
-      type: MidiMessageType.NoteOn,
-      note: 38,
-      velocity: 100,
-    });
+    emitInput('midi:38');
 
     expect(fill(note)).toBe(HIT_RGBA);
 
@@ -317,33 +322,29 @@ describe('GameEngine', () => {
     );
   });
 
-  it('does not register midi hits before playback starts', async () => {
+  it('does not register input hits before playback starts', async () => {
     const note = staveNote(['c/5']);
     const { engine } = await setup({
       renderData: [measureData(0, 1920, [rendered(480, note)])],
     });
 
     engine.setSettings({ playheadStyle: 'Cursor', progressColoring: true });
-    engine.setMidi(DEVICE, { snare: [38] });
+    engine.setMapping({ snare: ['midi:38'] });
     engine.timeStore.set(1);
 
-    ipc.emit('listen-midi', {
-      type: MidiMessageType.NoteOn,
-      note: 38,
-      velocity: 100,
-    });
+    emitInput('midi:38');
 
     expect(fill(note)).toBe('');
   });
 
-  it('stops listening to midi when the device is cleared', async () => {
+  it('stops scoring input after dispose', async () => {
     const { engine } = await setup();
 
-    engine.setMidi(DEVICE, { snare: [38] });
-    expect(ipc.onCount('listen-midi')).toBe(1);
+    expect(inputListeners.size).toBe(1);
 
-    engine.setMidi(null, { snare: [38] });
-    expect(ipc.onCount('listen-midi')).toBe(0);
+    engine.dispose();
+
+    expect(inputListeners.size).toBe(0);
   });
 
   it('destroys the player on dispose', async () => {

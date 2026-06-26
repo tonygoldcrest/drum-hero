@@ -6,6 +6,7 @@ import { parseChartFile } from 'scan-chart';
 import { ChartParser } from '../../chart-parser/parser';
 import { renderMusic } from '../../chart-parser/renderer';
 import { IpcLoadSongResponse, SongData } from '../../types';
+import { InputEvent } from '../input/types';
 import { TrackConfig } from '../services/audio-player/types';
 import { AppProvider } from '../context/AppContext';
 import {
@@ -31,6 +32,33 @@ vi.mock('antd', async (importOriginal) => {
 vi.mock('scan-chart', () => ({ parseChartFile: vi.fn() }));
 vi.mock('../../chart-parser/parser', () => ({ ChartParser: vi.fn() }));
 vi.mock('../../chart-parser/renderer', () => ({ renderMusic: vi.fn() }));
+
+const { busListeners } = vi.hoisted(() => ({
+  busListeners: new Set<(event: InputEvent) => void>(),
+}));
+
+vi.mock('../input', () => ({
+  inputBus: {
+    start: () => {},
+    subscribe: (listener: (event: InputEvent) => void) => {
+      busListeners.add(listener);
+
+      return () => {
+        busListeners.delete(listener);
+      };
+    },
+    listDevices: () =>
+      Promise.resolve([
+        { id: 'midi:Pad', name: 'Pad', sourceId: 'midi', port: 1 },
+      ]),
+  },
+  controlSource: (id: string) => id.slice(0, id.indexOf(':')),
+  controlLabel: (id: string) => id.slice(id.indexOf(':') + 1),
+}));
+
+function pressInput(controlId: string) {
+  busListeners.forEach((listener) => listener({ controlId, value: 100 }));
+}
 
 vi.mock('../services/audio-player/player', () => {
   class MockAudioPlayer {
@@ -143,6 +171,7 @@ beforeEach(async () => {
     return { parsed: true } as never;
   } as never);
   renderMusicMock.mockReset().mockReturnValue([]);
+  busListeners.clear();
   (await getInstances()).length = 0;
 });
 
@@ -291,7 +320,7 @@ describe('SongView — score', () => {
     });
   }
 
-  it('shows the score modal and persists a new high score when the song ends', async () => {
+  it('shows the score modal but does not persist a scrub-through with no hits', async () => {
     renderView();
     await loadSong();
 
@@ -300,6 +329,67 @@ describe('SongView — score', () => {
     await finishSong();
 
     expect(screen.getByTestId('score-modal')).toHaveClass('flex');
+    expect(ipc.sent.map((s) => s.channel)).not.toContain('update-song');
+  });
+
+  it('persists a new high score when notes were actually hit', async () => {
+    window.localStorage.setItem(
+      'settings.playheadStyle',
+      JSON.stringify('None'),
+    );
+    window.localStorage.setItem('settings.countIn', JSON.stringify(false));
+    window.localStorage.setItem(
+      'settings.selectedDevice',
+      JSON.stringify({
+        id: 'midi:Pad',
+        name: 'Pad',
+        sourceId: 'midi',
+        port: 1,
+      }),
+    );
+    window.localStorage.setItem(
+      'settings.inputMappings',
+      JSON.stringify({ 'midi:Pad': { snare: ['midi:38'] } }),
+    );
+    renderMusicMock.mockReturnValue([
+      {
+        stave: {
+          getX: () => 0,
+          getY: () => 0,
+          getWidth: () => 100,
+          getHeight: () => 40,
+        },
+        measure: {
+          startTick: 0,
+          endTick: 1920,
+          notes: [{ isRest: false, notes: ['c/5'] }],
+        },
+        renderedNotes: [
+          {
+            tick: 0,
+            note: {
+              isRest: () => false,
+              getKeys: () => ['c/5'],
+              getAbsoluteX: () => 0,
+              noteHeads: [],
+            },
+          },
+        ],
+        yOffset: 0,
+      },
+    ] as never);
+
+    renderView();
+    await loadSong();
+
+    fireEvent.click(screen.getByTestId('play-toggle'));
+
+    await act(async () => {
+      pressInput('midi:38');
+    });
+
+    await finishSong();
+
     expect(ipc.sent.map((s) => s.channel)).toContain('update-song');
   });
 

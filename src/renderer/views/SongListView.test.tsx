@@ -13,6 +13,11 @@ import {
   resetNotification,
 } from '../hooks/test-support';
 import { SongListView } from './SongListView';
+import { useInputControls } from '../hooks/useInputControls';
+
+vi.mock('../hooks/useInputControls', () => ({ useInputControls: vi.fn() }));
+
+const useInputControlsMock = vi.mocked(useInputControls);
 
 vi.mock('antd', async (importOriginal) => {
   const actual = await importOriginal<typeof import('antd')>();
@@ -360,5 +365,57 @@ describe('SongListView — settings', () => {
     fireEvent.click(screen.getByText(/Get stem splitter/));
 
     expect(ipc.sent.map((s) => s.channel)).toContain('download-stem-tools');
+  });
+});
+
+describe('SongListView input control gating', () => {
+  function renderAt(path: string) {
+    return render(
+      <AppProvider>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route path="/" element={<SongListView />}>
+              <Route
+                path=":id"
+                element={<div data-testid="song-view-stub" />}
+              />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </AppProvider>,
+    );
+  }
+
+  function lastEnabled() {
+    return useInputControlsMock.mock.calls.at(-1)?.[2];
+  }
+
+  it('enables controls on the list', () => {
+    renderAt('/');
+
+    expect(lastEnabled()).toBe(true);
+  });
+
+  it('disables controls while a song is open in the outlet', () => {
+    renderAt('/song-1');
+
+    expect(lastEnabled()).toBe(false);
+  });
+
+  it('selects the first focused song with the green tom', () => {
+    renderView();
+    loadSongs([makeSong('a')]);
+
+    function handlers() {
+      return useInputControlsMock.mock.calls.at(-1)?.[1] as Record<
+        string,
+        () => void
+      >;
+    }
+
+    act(() => handlers().tom2());
+    act(() => handlers().tom3());
+
+    expect(screen.getByTestId('song-view-stub')).toBeInTheDocument();
   });
 });
