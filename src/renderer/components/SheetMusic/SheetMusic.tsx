@@ -80,7 +80,7 @@ export function SheetMusic({
         {measureHighlights}
         <div
           ref={cursorRef}
-          className="absolute z-1 -translate-x-1/2 pointer-events-none shadow-accent-button"
+          className="absolute top-0 left-0 z-1 pointer-events-none shadow-accent-button will-change-transform"
           style={{ display: 'none' }}
         >
           <div

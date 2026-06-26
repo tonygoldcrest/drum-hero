@@ -212,8 +212,9 @@ describe('GameEngine', () => {
     engine.timeStore.set(1);
 
     expect(cursorEl.style.display).toBe('');
-    expect(cursorEl.style.left).toBe('50px');
-    expect(cursorEl.style.top).toBe('10px');
+    expect(cursorEl.style.transform).toBe(
+      'translate3d(50px, 10px, 0) translateX(-50%)',
+    );
     expect(cursorEl.style.height).toBe('70px');
   });
 
