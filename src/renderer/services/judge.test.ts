@@ -6,11 +6,7 @@ import {
   RenderedNote,
 } from '../../chart-parser/types';
 import { InputEvent } from '../input/types';
-import {
-  ScoringContext,
-  ScoringEngine,
-  ScoringHitHandler,
-} from './scoring-engine';
+import { JudgeContext, Judge, JudgeHitHandler } from './judge';
 
 const CHART = {
   resolution: 480,
@@ -41,11 +37,11 @@ function hit(controlId: string, value = 100): InputEvent {
 }
 
 function setup(
-  overrides: Partial<ScoringContext> = {},
+  overrides: Partial<JudgeContext> = {},
   options: { tick?: number; enabled?: boolean } = {},
 ) {
-  const onHit = vi.fn<ScoringHitHandler>();
-  const engine = new ScoringEngine();
+  const onHit = vi.fn<JudgeHitHandler>();
+  const engine = new Judge();
 
   engine.setContext({
     chart: CHART,
@@ -60,7 +56,7 @@ function setup(
   return { engine, onHit };
 }
 
-describe('ScoringEngine', () => {
+describe('Judge', () => {
   it('registers a correct hit and notifies onHit with the matched note', () => {
     const note = fakeNote(['c/5']);
     const { engine, onHit } = setup(
@@ -348,8 +344,8 @@ describe('ScoringEngine', () => {
 
   it('stops notifying a removed hit listener', () => {
     const note = fakeNote(['c/5']);
-    const onHit = vi.fn<ScoringHitHandler>();
-    const engine = new ScoringEngine();
+    const onHit = vi.fn<JudgeHitHandler>();
+    const engine = new Judge();
 
     engine.setContext({
       chart: CHART,

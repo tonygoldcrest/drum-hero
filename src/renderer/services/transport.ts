@@ -12,7 +12,7 @@ export type PlaybackState =
   | 'playing'
   | 'ended';
 
-export interface PlaybackContext {
+export interface TransportContext {
   chart: ParsedChart | undefined;
   measures: Measure[];
   delaySeconds: number;
@@ -31,7 +31,7 @@ export interface PlaybackSnapshot {
   duration: number;
 }
 
-export interface PlaybackEngineOptions {
+export interface TransportOptions {
   trackData: TrackConfig[];
   isDev: boolean;
   onEnded: () => void;
@@ -50,7 +50,7 @@ const SNAPSHOT_KEYS: (keyof PlaybackSnapshot)[] = [
   'duration',
 ];
 
-export class PlaybackEngine {
+export class Transport {
   readonly timeStore = new TimeStore();
   private isDev: boolean;
   private onEndedCb: () => void;
@@ -73,7 +73,7 @@ export class PlaybackEngine {
   private listeners = new Set<() => void>();
   private snapshot: PlaybackSnapshot;
 
-  constructor(options: PlaybackEngineOptions) {
+  constructor(options: TransportOptions) {
     this.isDev = options.isDev;
     this.onEndedCb = options.onEnded;
     this.onErrorCb = options.onError;
@@ -88,7 +88,7 @@ export class PlaybackEngine {
     this.startPolling();
   }
 
-  setContext(context: PlaybackContext): void {
+  setContext(context: TransportContext): void {
     this.chart = context.chart;
     this.measures = context.measures;
     this.delaySeconds = context.delaySeconds;

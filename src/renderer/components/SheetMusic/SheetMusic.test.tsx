@@ -37,7 +37,7 @@ const songData = {
 function renderSheet(
   overrides: Partial<Parameters<typeof SheetMusic>[0]> = {},
 ) {
-  const engine = { setView: vi.fn() } as unknown as GameEngine;
+  const engine = { setRendererRefs: vi.fn() } as unknown as GameEngine;
   const onSelectMeasure = vi.fn();
   const result = render(
     <SheetMusic
@@ -70,9 +70,12 @@ describe('SheetMusic', () => {
   it('wires the cursor and one highlight overlay per measure into the engine', () => {
     const { engine } = renderSheet();
 
-    expect(engine.setView as ReturnType<typeof vi.fn>).toHaveBeenCalledTimes(1);
+    expect(
+      engine.setRendererRefs as ReturnType<typeof vi.fn>,
+    ).toHaveBeenCalledTimes(1);
 
-    const arg = (engine.setView as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    const arg = (engine.setRendererRefs as ReturnType<typeof vi.fn>).mock
+      .calls[0][0];
 
     expect(arg.cursorEl).toBeInstanceOf(HTMLElement);
     expect(arg.highlightEls).toHaveLength(2);

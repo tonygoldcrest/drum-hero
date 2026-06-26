@@ -4,8 +4,8 @@ import { Measure, ParsedChart, RenderData } from '../../chart-parser/types';
 import { InputMapping, ScoreData } from '../../types';
 import { PlayheadStyle } from '../types';
 import { InputEvent } from '../input/types';
-import { PlaybackEngine, PlaybackSnapshot } from './playback-engine';
-import { ScoringEngine } from './scoring-engine';
+import { Transport, PlaybackSnapshot } from './transport';
+import { Judge } from './judge';
 import { GameRenderer, GameRendererRefs } from './game-renderer';
 import { secondsToTicks } from '../views/utils';
 
@@ -29,61 +29,63 @@ export interface GameSettings {
   playheadStyle: PlayheadStyle;
 }
 
-export type GameView = GameRendererRefs;
-
 export class GameEngine {
-  private playback: PlaybackEngine;
-  private scoring = new ScoringEngine();
-  private view = new GameRenderer((tick, key) => this.scoring.isHit(tick, key));
+  private transport: Transport;
+  private judge = new Judge();
+  private renderer = new GameRenderer((tick, key) =>
+    this.judge.isHit(tick, key),
+  );
   private onEndedCb: (score: ScoreData) => void;
   private chart: ParsedChart | undefined;
   private renderData: RenderData[] = [];
   private delaySeconds = 0;
   private mapping: InputMapping = {};
   private timeUnsub: () => void;
-  private playbackUnsub: () => void;
+  private transportUnsub: () => void;
   private inputUnsub: () => void;
 
   constructor(options: GameEngineOptions) {
     this.onEndedCb = options.onEnded;
-    this.playback = new PlaybackEngine({
+    this.transport = new Transport({
       trackData: options.trackData,
       isDev: options.isDev,
       onEnded: () => this.handleEnded(),
       onError: options.onError,
     });
-    this.timeUnsub = this.playback.timeStore.subscribe(this.handleFrame);
-    this.playbackUnsub = this.playback.subscribe(this.handlePlaybackChange);
+    this.timeUnsub = this.transport.timeStore.subscribe(this.handleFrame);
+    this.transportUnsub = this.transport.subscribe(this.handleTransportChange);
     this.inputUnsub = options.subscribeInput((event) =>
-      this.scoring.handleInput(event),
+      this.judge.handleInput(event),
     );
-    this.scoring.onHit((note, prefixes) => this.view.paintHit(note, prefixes));
+    this.judge.onHit((note, prefixes) =>
+      this.renderer.paintHit(note, prefixes),
+    );
   }
 
   get timeStore(): TimeStore {
-    return this.playback.timeStore;
+    return this.transport.timeStore;
   }
 
   subscribe = (listener: () => void): (() => void) =>
-    this.playback.subscribe(listener);
+    this.transport.subscribe(listener);
 
-  getSnapshot = (): PlaybackSnapshot => this.playback.getSnapshot();
+  getSnapshot = (): PlaybackSnapshot => this.transport.getSnapshot();
 
   setContext(context: GameContext): void {
     this.chart = context.chart;
     this.renderData = context.renderData;
     this.delaySeconds = context.delaySeconds;
-    this.view.setContext({
+    this.renderer.setContext({
       chart: context.chart,
       renderData: context.renderData,
     });
-    this.playback.setContext({
+    this.transport.setContext({
       chart: context.chart,
       measures: context.measures,
       delaySeconds: context.delaySeconds,
       countInEnabled: context.countInEnabled,
     });
-    this.scoring.setContext({
+    this.judge.setContext({
       chart: context.chart,
       renderData: context.renderData,
       mapping: this.mapping,
@@ -93,50 +95,50 @@ export class GameEngine {
   }
 
   setSettings(settings: GameSettings): void {
-    this.view.setSettings(settings.playheadStyle);
+    this.renderer.setSettings(settings.playheadStyle);
     this.renderFrame();
   }
 
   setMapping(mapping: InputMapping): void {
     this.mapping = mapping;
-    this.scoring.setContext({
+    this.judge.setContext({
       chart: this.chart,
       renderData: this.renderData,
       mapping,
     });
   }
 
-  setView(view: GameView): void {
-    this.view.setRefs(view);
+  setRendererRefs(rendererRefs: GameRendererRefs): void {
+    this.renderer.setRefs(rendererRefs);
     this.renderFrame();
   }
 
   setDev(isDev: boolean): void {
-    this.playback.setDev(isDev);
+    this.transport.setDev(isDev);
   }
 
   play(): void {
-    this.playback.play();
+    this.transport.play();
   }
 
   playFromTick(tick: number): void {
-    this.playback.playFromTick(tick);
+    this.transport.playFromTick(tick);
   }
 
   pause(): void {
-    this.playback.pause();
+    this.transport.pause();
   }
 
   cancel(): void {
-    this.playback.cancel();
+    this.transport.cancel();
   }
 
   seekSeconds(seconds: number): void {
-    this.playback.seekSeconds(seconds);
+    this.transport.seekSeconds(seconds);
   }
 
   setStemVolume(name: string, gain: number): void {
-    this.playback.setStemVolume(name, gain);
+    this.transport.setStemVolume(name, gain);
   }
 
   renderFrame(): void {
@@ -144,36 +146,36 @@ export class GameEngine {
       return;
     }
 
-    const chartTime = this.playback.timeStore.get() - this.delaySeconds;
+    const chartTime = this.transport.timeStore.get() - this.delaySeconds;
     const tick = secondsToTicks(
       chartTime,
       this.chart.resolution,
       this.chart.tempos,
     );
 
-    this.scoring.setTick(tick);
-    this.view.render(chartTime, tick);
+    this.judge.setTick(tick);
+    this.renderer.render(chartTime, tick);
   }
 
   dispose(): void {
     this.timeUnsub();
-    this.playbackUnsub();
+    this.transportUnsub();
     this.inputUnsub();
-    this.playback.dispose();
+    this.transport.dispose();
   }
 
   private handleFrame = (): void => {
     this.renderFrame();
   };
 
-  private handlePlaybackChange = (): void => {
-    this.scoring.setEnabled(this.playback.getSnapshot().isPlaying);
+  private handleTransportChange = (): void => {
+    this.judge.setEnabled(this.transport.getSnapshot().isPlaying);
   };
 
   private handleEnded(): void {
     this.onEndedCb({
-      hitNotes: this.scoring.hitCount,
-      falseHits: this.scoring.falseHitCount,
+      hitNotes: this.judge.hitCount,
+      falseHits: this.judge.falseHitCount,
       totalNotes: this.totalNotes(),
     });
   }

@@ -110,7 +110,7 @@ function setup(
   return view;
 }
 
-describe('ViewEngine', () => {
+describe('GameRenderer', () => {
   it('moves the measure highlight forward as the tick crosses measures', () => {
     const a = div();
     const b = div();

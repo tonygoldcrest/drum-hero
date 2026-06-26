@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TrackConfig } from './audio-player/types';
 import { Measure, ParsedChart } from '../../chart-parser/types';
-import { PlaybackEngine, PlaybackContext } from './playback-engine';
+import { Transport, TransportContext } from './transport';
 
 vi.mock('./metronome', () => ({
   preloadMetronome: vi.fn(),
@@ -73,7 +73,7 @@ const MEASURES = [
   { startTick: 0, endTick: 1920, timeSig: [4, 4] },
   { startTick: 1920, endTick: 3840, timeSig: [4, 4] },
 ] as unknown as Measure[];
-const CTX: PlaybackContext = {
+const CTX: TransportContext = {
   chart: CHART,
   measures: MEASURES,
   delaySeconds: 0,
@@ -87,11 +87,11 @@ async function flush() {
 
 async function setup(
   options: Partial<{ trackData: TrackConfig[]; isDev: boolean }> = {},
-  context: Partial<PlaybackContext> = {},
+  context: Partial<TransportContext> = {},
 ) {
   const onEnded = vi.fn();
   const onError = vi.fn();
-  const engine = new PlaybackEngine({
+  const engine = new Transport({
     trackData: TRACKS,
     isDev: false,
     onEnded,
@@ -126,7 +126,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('PlaybackEngine', () => {
+describe('Transport', () => {
   it('starts idle at position zero', async () => {
     const { engine } = await setup();
 

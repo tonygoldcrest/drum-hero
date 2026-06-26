@@ -4,9 +4,9 @@ import { InputElement, InputMapping } from '../../types';
 import { InputEvent } from '../input/types';
 import { secondsToTicks, ticksToSeconds } from '../views/utils';
 
-export type ScoringHitHandler = (note: StaveNote, prefixes: string[]) => void;
+export type JudgeHitHandler = (note: StaveNote, prefixes: string[]) => void;
 
-export interface ScoringContext {
+export interface JudgeContext {
   chart: ParsedChart | undefined;
   renderData: RenderData[];
   mapping: InputMapping;
@@ -32,7 +32,7 @@ export function keyPrefix(key: string): string {
   return `${pitch}/${octave}`;
 }
 
-export class ScoringEngine {
+export class Judge {
   private chart: ParsedChart | undefined;
   private renderData: RenderData[] = [];
   private mapping: InputMapping = {};
@@ -40,9 +40,9 @@ export class ScoringEngine {
   private currentTick: number | undefined;
   private hitKeys = new Set<string>();
   private incorrectHits = 0;
-  private hitListeners = new Set<ScoringHitHandler>();
+  private hitListeners = new Set<JudgeHitHandler>();
 
-  setContext(context: ScoringContext): void {
+  setContext(context: JudgeContext): void {
     const chartChanged = this.chart !== context.chart;
 
     this.chart = context.chart;
@@ -74,7 +74,7 @@ export class ScoringEngine {
     this.currentTick = tick;
   }
 
-  onHit(listener: ScoringHitHandler): () => void {
+  onHit(listener: JudgeHitHandler): () => void {
     this.hitListeners.add(listener);
 
     return () => {

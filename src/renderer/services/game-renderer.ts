@@ -1,7 +1,7 @@
 import { StaveNote } from 'vexflow';
 import { ParsedChart, RenderData } from '../../chart-parser/types';
 import { PlayheadStyle } from '../types';
-import { keyPrefix } from './scoring-engine';
+import { keyPrefix } from './judge';
 import {
   HIT_NOTE_COLOR,
   MISSED_NOTE_COLOR,

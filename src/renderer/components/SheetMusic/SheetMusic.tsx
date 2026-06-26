@@ -28,7 +28,7 @@ export function SheetMusic({
   );
 
   useEffect(() => {
-    engine?.setView({
+    engine?.setRendererRefs({
       cursorEl: cursorRef.current ?? undefined,
       highlightEls: highlightsRef.map((ref) => ref.current ?? undefined),
     });

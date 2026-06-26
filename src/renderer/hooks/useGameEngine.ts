@@ -11,7 +11,7 @@ import { TimeStore } from '../services/time-store';
 import { Measure, ParsedChart, RenderData } from '../../chart-parser/types';
 import { InputMapping, ScoreData } from '../../types';
 import { PlayheadStyle } from '../types';
-import { PlaybackSnapshot, PlaybackState } from '../services/playback-engine';
+import { PlaybackSnapshot, PlaybackState } from '../services/transport';
 import { GameEngine } from '../services/game-engine';
 import { inputBus } from '../input';
 

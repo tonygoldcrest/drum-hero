@@ -223,7 +223,7 @@ describe('GameEngine', () => {
     });
     const cursorEl = document.createElement('div');
 
-    engine.setView({ cursorEl, highlightEls: [] });
+    engine.setRendererRefs({ cursorEl, highlightEls: [] });
     engine.timeStore.set(1);
 
     expect(cursorEl.style.display).toBe('');
@@ -243,7 +243,7 @@ describe('GameEngine', () => {
 
     const cursorEl = document.createElement('div');
 
-    engine.setView({ cursorEl, highlightEls: [] });
+    engine.setRendererRefs({ cursorEl, highlightEls: [] });
     engine.timeStore.set(1);
 
     expect(cursorEl.style.display).toBe('none');
@@ -262,7 +262,7 @@ describe('GameEngine', () => {
     const a = document.createElement('div');
     const b = document.createElement('div');
 
-    engine.setView({ cursorEl: undefined, highlightEls: [a, b] });
+    engine.setRendererRefs({ cursorEl: undefined, highlightEls: [a, b] });
     engine.timeStore.set(2.1);
 
     expect(b.style.border).toContain('var(--color-accent)');
@@ -285,7 +285,7 @@ describe('GameEngine', () => {
     });
 
     engine.setSettings({ playheadStyle: 'Cursor' });
-    engine.setView({
+    engine.setRendererRefs({
       cursorEl: document.createElement('div'),
       highlightEls: [],
     });
@@ -310,7 +310,7 @@ describe('GameEngine', () => {
     });
 
     engine.setSettings({ playheadStyle: 'Cursor' });
-    engine.setView({
+    engine.setRendererRefs({
       cursorEl: document.createElement('div'),
       highlightEls: [],
     });
@@ -356,7 +356,7 @@ describe('GameEngine', () => {
       countInEnabled: true,
     });
 
-    engine.setView({
+    engine.setRendererRefs({
       cursorEl: document.createElement('div'),
       highlightEls: [],
     });
