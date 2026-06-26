@@ -3,6 +3,7 @@ import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeStore, lastReply, makeEvent, makeStore } from './test-support';
+import { toAssetUrl } from '../util';
 
 const storeHolder = vi.hoisted(() => ({
   current: undefined as FakeStore | undefined,
@@ -96,7 +97,7 @@ function songEntry(dir: string) {
     id: 'song-1',
     dir,
     format: 'chart',
-    audio: [{ src: `gh://${path.join(dir, 'mix.ogg')}`, name: 'mix' }],
+    audio: [{ src: toAssetUrl(path.join(dir, 'mix.ogg')), name: 'mix' }],
   };
 }
 

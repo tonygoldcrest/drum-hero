@@ -44,17 +44,14 @@ export function chartGlobPattern(rootDir: string): string {
   return `${rootDir.replace(/\\/g, '/')}/**/{notes.mid,notes.chart}`;
 }
 
-export function toGhUrl(absPath: string): string {
-  const forward = absPath.replace(/\\/g, '/');
-  const rooted = forward.startsWith('/') ? forward : `/${forward}`;
+export const ASSET_PROTOCOL = 'sightkick';
 
-  return `gh://${encodeURI(rooted).replace(/#/g, '%23').replace(/\?/g, '%3F')}`;
+export function toAssetUrl(absPath: string): string {
+  return `${ASSET_PROTOCOL}://local/${encodeURIComponent(absPath)}`;
 }
 
-export function ghUrlToFilePath(url: string): string {
-  const stripped = decodeURIComponent(url.replace(/^gh:\/+/, '/'));
-
-  return /^\/[a-zA-Z]:/.test(stripped) ? stripped.slice(1) : stripped;
+export function assetUrlToFilePath(url: string): string {
+  return decodeURIComponent(new URL(url).pathname.replace(/^\//, ''));
 }
 
 export function isUnderDirectory(songDir: string, rootDir: string): boolean {
@@ -110,14 +107,14 @@ export function buildSongFromDir(
         f !== 'preview.ogg',
     )
     .map((f) => ({
-      src: toGhUrl(path.join(dir, f)),
+      src: toAssetUrl(path.join(dir, f)),
       name: path.parse(f).name,
     }));
 
   return {
     id: existing?.id ?? randomUUID(),
     dir,
-    albumCover: albumCoverPath ? toGhUrl(albumCoverPath) : null,
+    albumCover: albumCoverPath ? toAssetUrl(albumCoverPath) : null,
     ...meta,
     format,
     audio,

@@ -1,5 +1,7 @@
+import path from 'path';
 import { test, expect, Page } from '@playwright/test';
 import { launchApp, Harness } from './support';
+import { toAssetUrl } from '../src/main/util';
 
 let harness: Harness;
 let page: Page;
@@ -40,7 +42,19 @@ test.describe('seeded library', () => {
 
     await expect(song).toBeVisible({ timeout: 30_000 });
 
-    const cover = page.locator('img[src^="gh://"]').first();
+    const albumUrl = toAssetUrl(
+      path.join(harness.libraryDir, 'test-song', 'album.png'),
+    );
+    const fetched = await page.evaluate(async (url) => {
+      const response = await fetch(url);
+
+      return { ok: response.ok, size: (await response.blob()).size };
+    }, albumUrl);
+
+    expect(fetched.ok).toBe(true);
+    expect(fetched.size).toBeGreaterThan(0);
+
+    const cover = page.locator('img[src^="sightkick://"]').first();
 
     await expect(cover).toBeVisible();
     await expect

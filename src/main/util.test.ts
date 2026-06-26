@@ -3,12 +3,12 @@ import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+  assetUrlToFilePath,
   buildSongFromDir,
   chartGlobPattern,
-  ghUrlToFilePath,
   isUnderDirectory,
   resolveHtmlPath,
-  toGhUrl,
+  toAssetUrl,
 } from './util';
 
 const CHART_WITH_HARD_AND_EXPERT = `[Song]
@@ -119,7 +119,9 @@ describe('buildSongFromDir metadata', () => {
     const names = song?.audio.map((a) => a.name).sort();
 
     expect(names).toEqual(['drums', 'song']);
-    expect(song?.audio.every((a) => a.src.startsWith('gh://'))).toBe(true);
+    expect(song?.audio.every((a) => a.src.startsWith('sightkick://'))).toBe(
+      true,
+    );
   });
 
   it('detects the album cover and carries existing persisted fields', () => {
@@ -135,7 +137,7 @@ describe('buildSongFromDir metadata', () => {
     expect(song?.id).toBe('fixed-id');
     expect(song?.liked).toBe(true);
     expect(song?.scoreData).toEqual({ expert: { score: 10 } });
-    expect(song?.albumCover).toBe(`gh://${path.join(dir, 'album.jpg')}`);
+    expect(song?.albumCover).toBe(toAssetUrl(path.join(dir, 'album.jpg')));
   });
 
   it('reports no album cover when no image is present', () => {
@@ -159,35 +161,26 @@ describe('chartGlobPattern', () => {
   });
 });
 
-describe('gh:// urls', () => {
-  it('encodes a posix absolute path', () => {
-    expect(toGhUrl('/songs/My Song/drums.ogg')).toBe(
-      'gh:///songs/My%20Song/drums.ogg',
+describe('sightkick:// urls', () => {
+  const POSIX = '/songs/My Song/drums.ogg';
+  const WINDOWS = 'C:\\Users\\me\\My Song\\drums.ogg';
+
+  it('fully percent-encodes the absolute path behind a host', () => {
+    expect(toAssetUrl(POSIX)).toBe(
+      'sightkick://local/%2Fsongs%2FMy%20Song%2Fdrums.ogg',
+    );
+    expect(toAssetUrl(WINDOWS)).toBe(
+      'sightkick://local/C%3A%5CUsers%5Cme%5CMy%20Song%5Cdrums.ogg',
     );
   });
 
-  it('rewrites a Windows path with a drive and backslashes', () => {
-    expect(toGhUrl('C:\\Users\\me\\My Song\\drums.ogg')).toBe(
-      'gh:///C:/Users/me/My%20Song/drums.ogg',
-    );
-  });
+  it('round-trips through browser url canonicalization', () => {
+    for (const original of [POSIX, WINDOWS]) {
+      const canonical = new URL(toAssetUrl(original)).href;
 
-  it('round-trips a posix path back to a filesystem path', () => {
-    expect(ghUrlToFilePath(toGhUrl('/songs/My Song/drums.ogg'))).toBe(
-      '/songs/My Song/drums.ogg',
-    );
-  });
-
-  it('strips the leading slash before a Windows drive letter', () => {
-    expect(ghUrlToFilePath(toGhUrl('C:\\Users\\me\\My Song\\drums.ogg'))).toBe(
-      'C:/Users/me/My Song/drums.ogg',
-    );
-  });
-
-  it('accepts legacy unencoded posix urls', () => {
-    expect(ghUrlToFilePath('gh:///songs/My Song/drums.ogg')).toBe(
-      '/songs/My Song/drums.ogg',
-    );
+      expect(canonical).toBe(toAssetUrl(original));
+      expect(assetUrlToFilePath(canonical)).toBe(original);
+    }
   });
 });
 

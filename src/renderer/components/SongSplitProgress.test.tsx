@@ -6,7 +6,7 @@ import { SongSplitProgress } from './SongSplitProgress';
 const song = {
   id: 's1',
   name: 'Enter Sandman',
-  albumCover: 'gh:///cover.png',
+  albumCover: 'sightkick:///cover.png',
 } as SongData;
 
 function renderProgress(overrides: Partial<SongData> = {}, progress = 40) {
@@ -37,7 +37,10 @@ describe('SongSplitProgress', () => {
   it('uses the album cover when present', () => {
     renderProgress();
 
-    expect(screen.getByRole('img')).toHaveAttribute('src', 'gh:///cover.png');
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'src',
+      'sightkick:///cover.png',
+    );
   });
 
   it('falls back to the app icon when there is no album cover', () => {
@@ -45,18 +48,18 @@ describe('SongSplitProgress', () => {
 
     const img = screen.getByRole('img') as HTMLImageElement;
 
-    expect(img.getAttribute('src')).not.toBe('gh:///cover.png');
+    expect(img.getAttribute('src')).not.toBe('sightkick:///cover.png');
   });
 
   it('swaps to the app icon when the cover fails to load', () => {
     renderProgress();
 
     const img = screen.getByRole('img') as HTMLImageElement;
-    const fallback = img.src.replace('gh:///cover.png', '');
+    const fallback = img.src.replace('sightkick:///cover.png', '');
 
     fireEvent.error(img);
 
-    expect(img.getAttribute('src')).not.toBe('gh:///cover.png');
+    expect(img.getAttribute('src')).not.toBe('sightkick:///cover.png');
     expect(fallback).toBeDefined();
   });
 

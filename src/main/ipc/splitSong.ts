@@ -4,7 +4,7 @@ import fs from 'fs';
 import { app } from 'electron';
 import { StorageSchema } from '../../types';
 import { appState } from '../AppState';
-import { buildSongFromDir } from '../util';
+import { assetUrlToFilePath, buildSongFromDir } from '../util';
 
 class CancelledError extends Error {}
 
@@ -59,7 +59,7 @@ async function doSplit(event: Electron.IpcMainEvent, id: string) {
     return;
   }
 
-  const audioPath = songData.audio[0].src.replace(/^gh:\/\//, '');
+  const audioPath = assetUrlToFilePath(songData.audio[0].src);
   const audioFilename = path.basename(audioPath);
   const audioBasename = path.parse(audioFilename).name;
 

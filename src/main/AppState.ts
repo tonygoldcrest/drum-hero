@@ -11,7 +11,7 @@ import {
 } from 'electron';
 import Store from 'electron-store';
 import MenuBuilder from './menu';
-import { ghUrlToFilePath, resolveHtmlPath } from './util';
+import { ASSET_PROTOCOL, assetUrlToFilePath, resolveHtmlPath } from './util';
 import { AppUpdater } from './AppUpdater';
 import { loadSong } from './ipc/loadSong';
 import { loadSongList } from './ipc/loadSongList';
@@ -40,7 +40,7 @@ class AppState {
   start(): void {
     protocol.registerSchemesAsPrivileged([
       {
-        scheme: 'gh',
+        scheme: ASSET_PROTOCOL,
         privileges: {
           standard: true,
           secure: true,
@@ -60,8 +60,8 @@ class AppState {
     app
       .whenReady()
       .then(() => {
-        protocol.handle('gh', (request) =>
-          net.fetch(pathToFileURL(ghUrlToFilePath(request.url)).toString()),
+        protocol.handle(ASSET_PROTOCOL, (request) =>
+          net.fetch(pathToFileURL(assetUrlToFilePath(request.url)).toString()),
         );
         this.setupIpc();
         this.createWindow();
