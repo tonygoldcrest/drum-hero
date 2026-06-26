@@ -131,7 +131,8 @@ describe('renderMusic', () => {
     expect(data[1].stave.getX()).toBe(600);
     expect(data[2].stave.getX()).toBe(0);
     expect(ys[0]).toBe(ys[1]);
-    expect(ys[2]).toBeGreaterThan(ys[0]);
+    expect(data[0].yOffset).toBe(data[1].yOffset);
+    expect(data[2].yOffset).toBeGreaterThan(data[0].yOffset);
   });
 
   it('colours note heads with the per-drum colour when enabled', () => {

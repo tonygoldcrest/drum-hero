@@ -106,6 +106,7 @@ function measureData(
     stave: fakeStave(),
     measure: { startTick, endTick, notes: modelNotes } as unknown as Measure,
     renderedNotes: notes,
+    yOffset: 0,
   };
 }
 

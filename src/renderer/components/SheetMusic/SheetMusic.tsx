@@ -36,12 +36,12 @@ export function SheetMusic({
 
   const measureHighlights = useMemo(
     () =>
-      renderData.map(({ measure, stave }, index) => (
+      renderData.map(({ measure, stave, yOffset }, index) => (
         <div
           key={index}
           ref={highlightsRef[index]}
           style={{
-            top: stave.getY(),
+            top: yOffset + stave.getY(),
             left: stave.getX() - 5,
             width: stave.getWidth() + 10,
             height: stave.getHeight() + 30,

@@ -365,7 +365,7 @@ export class ViewEngine {
     }
 
     const x = getCursorX(chartTime, this.chart, measureData);
-    const y = measureData.stave.getY();
+    const y = measureData.yOffset + measureData.stave.getY();
     const height = measureData.stave.getHeight() + 30;
 
     el.style.transform = `translate3d(${x}px, ${y}px, 0) translateX(-50%)`;

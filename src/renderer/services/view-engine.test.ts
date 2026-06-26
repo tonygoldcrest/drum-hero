@@ -67,6 +67,7 @@ function measureData(
     stave: fakeStave(),
     measure: { startTick, endTick } as unknown as Measure,
     renderedNotes: notes,
+    yOffset: 0,
   };
 }
 

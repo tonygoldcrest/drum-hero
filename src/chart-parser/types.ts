@@ -41,6 +41,7 @@ export interface RenderData {
   stave: Stave;
   measure: Measure;
   renderedNotes: RenderedNote[];
+  yOffset: number;
 }
 
 export type ParsedChart = ReturnType<typeof parseChartFile>;

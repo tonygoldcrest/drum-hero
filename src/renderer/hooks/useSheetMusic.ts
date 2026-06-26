@@ -94,12 +94,6 @@ export function useSheetMusic({
       return;
     }
 
-    if (vexflowContainerRef.current.children.length > 0) {
-      vexflowContainerRef.current.removeChild(
-        vexflowContainerRef.current.children[0],
-      );
-    }
-
     setRenderData(
       renderMusic(
         vexflowContainerRef,

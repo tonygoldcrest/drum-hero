@@ -52,34 +52,63 @@ export function renderMusic(
     return [];
   }
 
-  const renderer = new Renderer(elementRef.current, Renderer.Backends.SVG);
-  const context = renderer.getContext();
+  const container = elementRef.current;
 
-  context.setFillStyle(themedark.color.ink);
-  context.setStrokeStyle(themedark.color.ink);
+  container.replaceChildren();
 
   const lineHeight = showBarNumbers ? 180 : 130;
+  const rowWidth = STAVE_WIDTH * STAVE_PER_ROW + 10;
+  const rowCount = Math.ceil(song.measures.length / STAVE_PER_ROW);
+  const renderData: RenderData[] = [];
 
-  renderer.resize(
-    STAVE_WIDTH * STAVE_PER_ROW + 10,
-    Math.ceil(song.measures.length / STAVE_PER_ROW) * lineHeight + 50,
-  );
+  for (let row = 0; row < rowCount; row += 1) {
+    const yOffset = row * lineHeight;
+    const rowEl = document.createElement('div');
 
-  return song.measures.map((measure, index) => {
-    const { stave, renderedNotes } = renderMeasure(
-      context,
-      measure,
-      index,
-      (index % STAVE_PER_ROW) * STAVE_WIDTH,
-      Math.floor(index / STAVE_PER_ROW) * lineHeight,
-      index === song.measures.length - 1,
-      showBarNumbers,
-      enableColors,
-      showTempo,
-    );
+    rowEl.style.position = 'relative';
+    rowEl.style.width = `${rowWidth}px`;
+    rowEl.style.height = `${lineHeight}px`;
+    container.appendChild(rowEl);
 
-    return { measure, stave, renderedNotes };
-  });
+    const renderer = new Renderer(rowEl, Renderer.Backends.SVG);
+    const context = renderer.getContext();
+
+    context.setFillStyle(themedark.color.ink);
+    context.setStrokeStyle(themedark.color.ink);
+    renderer.resize(rowWidth, lineHeight);
+
+    const svgEl = rowEl.querySelector('svg');
+
+    if (svgEl) {
+      svgEl.style.overflow = 'visible';
+      svgEl.style.display = 'block';
+    }
+
+    for (let col = 0; col < STAVE_PER_ROW; col += 1) {
+      const index = row * STAVE_PER_ROW + col;
+
+      if (index >= song.measures.length) {
+        break;
+      }
+
+      const measure = song.measures[index];
+      const { stave, renderedNotes } = renderMeasure(
+        context,
+        measure,
+        index,
+        col * STAVE_WIDTH,
+        0,
+        index === song.measures.length - 1,
+        showBarNumbers,
+        enableColors,
+        showTempo,
+      );
+
+      renderData[index] = { measure, stave, renderedNotes, yOffset };
+    }
+  }
+
+  return renderData;
 }
 
 function buildVoice(measure: Measure, enableColors: boolean) {
