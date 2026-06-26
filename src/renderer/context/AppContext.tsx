@@ -7,11 +7,14 @@ import {
   useEffect,
 } from 'react';
 import { uniq } from 'es-toolkit';
+import { Difficulty } from 'scan-chart';
 import { InputElement, InputMapping } from '../../types';
 import { inputBus, InputDevice } from '../input';
 import { PlayheadStyle, PLAYHEAD_STYLES } from '../types';
 
 interface AppContextValue {
+  difficulty: Difficulty;
+  setDifficulty: (d: Difficulty) => void;
   playheadStyle: PlayheadStyle;
   setPlayheadStyle: (s: PlayheadStyle) => void;
   enableColors: boolean;
@@ -69,6 +72,10 @@ function usePersisted<T>(key: string, fallback: T) {
 const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const [difficulty, setDifficulty] = usePersisted<Difficulty>(
+    'settings.difficulty',
+    'expert',
+  );
   const [playheadStyle, setPlayheadStyle] = usePersisted<PlayheadStyle>(
     'settings.playheadStyle',
     PLAYHEAD_STYLES[0],
@@ -168,6 +175,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider
       value={{
+        difficulty,
+        setDifficulty,
         playheadStyle,
         setPlayheadStyle,
         enableColors,

@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Difficulty } from 'scan-chart';
 import {
   getNotification,
   NotificationMock,
@@ -25,7 +26,7 @@ interface PagePayload {
 const server: {
   pages: Map<number, PagePayload>;
   fail: boolean;
-  requests: { page: number; search: string }[];
+  requests: { page: number; search: string; difficulty: Difficulty }[];
 } = {
   pages: new Map(),
   fail: false,
@@ -49,9 +50,17 @@ beforeEach(() => {
   vi.useFakeTimers();
 
   global.fetch = vi.fn(async (_url: string, opts: { body: string }) => {
-    const body = JSON.parse(opts.body) as { page: number; search: string };
+    const body = JSON.parse(opts.body) as {
+      page: number;
+      search: string;
+      difficulty: Difficulty;
+    };
 
-    server.requests.push({ page: body.page, search: body.search });
+    server.requests.push({
+      page: body.page,
+      search: body.search,
+      difficulty: body.difficulty,
+    });
 
     if (server.fail) {
       throw new Error('network down');
@@ -67,12 +76,17 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-async function load(active: boolean, search: string) {
+async function load(
+  active: boolean,
+  search: string,
+  difficulty: Difficulty = 'expert',
+) {
   const { useOnlineSearch } = await import('./useOnlineSearch');
 
   return renderHook(
-    ({ a, s }: { a: boolean; s: string }) => useOnlineSearch(a, s),
-    { initialProps: { a: active, s: search } },
+    ({ a, s, d }: { a: boolean; s: string; d: Difficulty }) =>
+      useOnlineSearch(a, s, d),
+    { initialProps: { a: active, s: search, d: difficulty } },
   );
 }
 
@@ -141,11 +155,11 @@ describe('useOnlineSearch', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(100);
     });
-    rerender({ a: true, s: 'ab' });
+    rerender({ a: true, s: 'ab', d: 'expert' });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(100);
     });
-    rerender({ a: true, s: 'abc' });
+    rerender({ a: true, s: 'abc', d: 'expert' });
 
     await settle();
 
@@ -213,10 +227,10 @@ describe('useOnlineSearch', () => {
 
     const afterFirst = server.requests.length;
 
-    rerender({ a: true, s: 'second' });
+    rerender({ a: true, s: 'second', d: 'expert' });
     await settle();
 
-    rerender({ a: true, s: 'first' });
+    rerender({ a: true, s: 'first', d: 'expert' });
     await settle();
 
     expect(server.requests.length).toBeLessThan(afterFirst * 3);
@@ -228,11 +242,61 @@ describe('useOnlineSearch', () => {
 
     const { result, rerender } = await load(true, 'x');
 
-    rerender({ a: false, s: 'x' });
+    rerender({ a: false, s: 'x', d: 'expert' });
 
     await settle();
 
     expect(result.current.loading).toBe(false);
+  });
+
+  it('sends the selected difficulty and refetches when it changes', async () => {
+    setPage(1, ['a'], 1);
+    setPage(2, [], 1);
+
+    const { rerender } = await load(true, 'x', 'hard');
+
+    await settle();
+
+    expect(server.requests.every((r) => r.difficulty === 'hard')).toBe(true);
+
+    const afterHard = server.requests.length;
+
+    rerender({ a: true, s: 'x', d: 'easy' });
+    await settle();
+
+    expect(
+      server.requests.slice(afterHard).some((r) => r.difficulty === 'easy'),
+    ).toBe(true);
+  });
+
+  it('derives drumDifficulties from the note counts', async () => {
+    server.pages.set(1, {
+      data: [
+        {
+          md5: 'a',
+          name: 'Name a',
+          notesData: {
+            noteCounts: [
+              { instrument: 'drums', difficulty: 'expert', count: 10 },
+              { instrument: 'drums', difficulty: 'hard', count: 5 },
+              { instrument: 'drums', difficulty: 'easy', count: 0 },
+              { instrument: 'guitar', difficulty: 'expert', count: 3 },
+            ],
+          },
+        } as unknown as Record<string, string>,
+      ],
+      found: 1,
+    });
+    setPage(2, [], 1);
+
+    const { result } = await load(true, 'x');
+
+    await settle();
+
+    expect(result.current.results[0].drumDifficulties).toEqual([
+      'hard',
+      'expert',
+    ]);
   });
 
   it('does not throw when unmounted before the request resolves', async () => {

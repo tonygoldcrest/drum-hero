@@ -12,7 +12,6 @@ import {
   faPlay,
 } from '@fortawesome/free-solid-svg-icons';
 import { useApp } from '../context/AppContext';
-import { Difficulty } from 'scan-chart';
 import { useSongLoader } from '../hooks/useSongLoader';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { useVolumeControls } from '../hooks/useVolumeControls';
@@ -25,6 +24,7 @@ import { ScoreData } from '../../types';
 
 export function SongView() {
   const {
+    difficulty,
     playheadStyle,
     enableColors,
     showBarNumbers,
@@ -32,21 +32,13 @@ export function SongView() {
     countIn,
     inputMapping,
   } = useApp();
-  const [difficulty, setDifficulty] = useState<Difficulty>('expert');
   const [scoreData, setScoreData] = useState<ScoreData>();
   const [isScoreModalOpen, setIsScoreModalOpen] = useState(false);
   const [isDev, setIsDev] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
   const { fileData, format, songData, trackData } = useSongLoader(id);
-  const {
-    chart,
-    parsedMidi,
-    renderData,
-    vexflowContainerRef,
-    difficulties,
-    activeDifficulty,
-  } = useSheetMusic({
+  const { chart, parsedMidi, renderData, vexflowContainerRef } = useSheetMusic({
     fileData,
     format,
     fiveLaneDrums: songData?.five_lane_drums === 'True',
@@ -69,7 +61,6 @@ export function SongView() {
     timeStore,
     isPlaying,
     isCounting,
-    isStarted,
     isEnded,
     countInBeat,
     countInBeatMs,
@@ -93,7 +84,7 @@ export function SongView() {
       setScoreData(score);
       setIsScoreModalOpen(true);
 
-      const previousScore = songData?.scoreData?.[activeDifficulty];
+      const previousScore = songData?.scoreData?.[difficulty];
       const isHighScore =
         !previousScore ||
         calculateAccuracy(score) > calculateAccuracy(previousScore);
@@ -102,7 +93,7 @@ export function SongView() {
       if (id && isHighScore && isAttempt) {
         window.electron.ipcRenderer.sendMessage('update-song', {
           id,
-          scoreData: { [activeDifficulty]: score },
+          scoreData: { [difficulty]: score },
         });
       }
     },
@@ -186,7 +177,7 @@ export function SongView() {
         onNextSong={onNextSong}
         onRetry={onRetry}
         songData={songData}
-        difficulty={activeDifficulty}
+        difficulty={difficulty}
         scoreData={scoreData}
       />
       <div
@@ -236,7 +227,7 @@ export function SongView() {
           <div className="text-text-faint flex items-center gap-1">
             <div>{songData?.artist}</div>
             <div>·</div>
-            <div>{activeDifficulty}</div>
+            <div className="capitalize">{difficulty}</div>
           </div>
         </div>
 
@@ -253,14 +244,7 @@ export function SongView() {
             seekSeconds((value / 100) * duration);
           }}
         />
-        <SettingsButton
-          page="song-view"
-          volumeSliders={volumeSliders}
-          difficulties={difficulties}
-          onChangeDifficulty={setDifficulty}
-          difficulty={activeDifficulty}
-          difficultyDisabled={isStarted}
-        />
+        <SettingsButton page="song-view" volumeSliders={volumeSliders} />
       </div>
 
       <div className="relative grow flex min-h-0">

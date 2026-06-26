@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import Fuse from 'fuse.js';
+import { Difficulty } from 'scan-chart';
 import { SongData } from '../../types';
 import { Mode } from '../components/SongFilter';
 import { type SortState } from '../components/SortButton';
@@ -11,7 +12,7 @@ function parseDifficulty(value: string | undefined): number {
   return Number.isNaN(parsed) ? -1 : parsed;
 }
 
-export function useSongFilter(songList: SongData[]) {
+export function useSongFilter(songList: SongData[], difficulty: Difficulty) {
   const [nameFilter, setNameFilter] = useState('');
   const [mode, setMode] = useState<Mode>('local');
   const [sort, setSort] = useState<SortState>({
@@ -23,19 +24,25 @@ export function useSongFilter(songList: SongData[]) {
     total: onlineTotal,
     loading: onlineLoading,
     loadMore,
-  } = useOnlineSearch(mode === 'online', nameFilter);
+  } = useOnlineSearch(mode === 'online', nameFilter, difficulty);
   const filteredSongList = useMemo(() => {
     if (mode === 'online') {
       return onlineResults;
     }
 
+    const byDifficulty = songList.filter(
+      (s) => s.drumDifficulties?.includes(difficulty),
+    );
+
     if (nameFilter) {
-      const fuse = new Fuse(songList, { keys: ['name', 'artist', 'charter'] });
+      const fuse = new Fuse(byDifficulty, {
+        keys: ['name', 'artist', 'charter'],
+      });
 
       return fuse.search(nameFilter).map((result) => result.item);
     }
 
-    return [...songList].sort((a, b) => {
+    return [...byDifficulty].sort((a, b) => {
       switch (sort.key) {
         case 'name': {
           const cmp = a.name.localeCompare(b.name);
@@ -64,7 +71,7 @@ export function useSongFilter(songList: SongData[]) {
           return a.name.localeCompare(b.name);
       }
     });
-  }, [songList, nameFilter, mode, onlineResults, sort]);
+  }, [songList, nameFilter, mode, onlineResults, sort, difficulty]);
 
   return {
     nameFilter,

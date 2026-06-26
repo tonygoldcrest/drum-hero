@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SongData } from '../../types';
+import { Difficulty } from 'scan-chart';
 
 const onlineState = vi.hoisted(() => ({
   current: {
@@ -9,12 +10,16 @@ const onlineState = vi.hoisted(() => ({
     loading: false,
     loadMore: () => {},
   },
-  calls: [] as { active: boolean; search: string }[],
+  calls: [] as { active: boolean; search: string; difficulty: Difficulty }[],
 }));
 
 vi.mock('./useOnlineSearch', () => ({
-  useOnlineSearch: (active: boolean, search: string) => {
-    onlineState.calls.push({ active, search });
+  useOnlineSearch: (
+    active: boolean,
+    search: string,
+    difficulty: Difficulty,
+  ) => {
+    onlineState.calls.push({ active, search, difficulty });
 
     return onlineState.current;
   },
@@ -29,6 +34,7 @@ function song(id: string, extra: Partial<SongData> = {}): SongData {
     artist: '',
     charter: '',
     diff_drums: '',
+    drumDifficulties: ['easy', 'medium', 'hard', 'expert'],
     ...extra,
   } as SongData;
 }
@@ -54,7 +60,7 @@ describe('useSongFilter', () => {
       song('b', { liked: true }),
       song('c', { liked: false }),
     ];
-    const { result } = renderHook(() => useSongFilter(list));
+    const { result } = renderHook(() => useSongFilter(list, 'expert'));
 
     expect(result.current.filteredSongList[0].id).toBe('b');
 
@@ -65,7 +71,7 @@ describe('useSongFilter', () => {
 
   it('sorts by name ascending and descending', () => {
     const list = [song('Charlie'), song('alpha'), song('Bravo')];
-    const { result } = renderHook(() => useSongFilter(list));
+    const { result } = renderHook(() => useSongFilter(list, 'expert'));
 
     act(() => result.current.setSort({ key: 'name', direction: 'asc' }));
     expect(ids(result.current.filteredSongList)).toEqual([
@@ -88,7 +94,7 @@ describe('useSongFilter', () => {
       song('new', { updatedAt: '2024-01-01T00:00:00.000Z' }),
       song('none'),
     ];
-    const { result } = renderHook(() => useSongFilter(list));
+    const { result } = renderHook(() => useSongFilter(list, 'expert'));
 
     act(() => result.current.setSort({ key: 'lastAdded', direction: 'desc' }));
     expect(ids(result.current.filteredSongList)).toEqual([
@@ -111,7 +117,7 @@ describe('useSongFilter', () => {
       song('blank', { diff_drums: '' }),
       song('easy', { diff_drums: '0' }),
     ];
-    const { result } = renderHook(() => useSongFilter(list));
+    const { result } = renderHook(() => useSongFilter(list, 'expert'));
 
     act(() => result.current.setSort({ key: 'difficulty', direction: 'asc' }));
     expect(ids(result.current.filteredSongList)).toEqual([
@@ -134,7 +140,7 @@ describe('useSongFilter', () => {
       song('Enter Sandman', { artist: 'Metallica' }),
       song('Painkiller', { artist: 'Judas Priest' }),
     ];
-    const { result } = renderHook(() => useSongFilter(list));
+    const { result } = renderHook(() => useSongFilter(list, 'expert'));
 
     act(() => result.current.setNameFilter('puppets'));
 
@@ -142,10 +148,52 @@ describe('useSongFilter', () => {
     expect(ids(result.current.filteredSongList)).not.toContain('Painkiller');
   });
 
+  it('hides local songs that lack the selected difficulty', () => {
+    const list = [
+      song('full'),
+      song('expert-only', { drumDifficulties: ['expert'] }),
+      song('easy-only', { drumDifficulties: ['easy'] }),
+    ];
+    const { result, rerender } = renderHook(
+      ({ d }: { d: Difficulty }) => useSongFilter(list, d),
+      { initialProps: { d: 'easy' as Difficulty } },
+    );
+
+    expect(ids(result.current.filteredSongList).sort()).toEqual([
+      'easy-only',
+      'full',
+    ]);
+
+    rerender({ d: 'expert' });
+
+    expect(ids(result.current.filteredSongList).sort()).toEqual([
+      'expert-only',
+      'full',
+    ]);
+  });
+
+  it('hides local songs whose difficulties are unknown', () => {
+    const list = [
+      song('known'),
+      song('legacy', { drumDifficulties: undefined }),
+    ];
+    const { result } = renderHook(() => useSongFilter(list, 'expert'));
+
+    expect(ids(result.current.filteredSongList)).toEqual(['known']);
+  });
+
+  it('passes the selected difficulty to the online search', () => {
+    renderHook(() => useSongFilter([], 'hard'));
+
+    expect(onlineState.calls.at(-1)).toMatchObject({ difficulty: 'hard' });
+  });
+
   it('returns online results when in online mode', () => {
     onlineState.current.results = [song('online-1'), song('online-2')];
 
-    const { result } = renderHook(() => useSongFilter([song('local')]));
+    const { result } = renderHook(() =>
+      useSongFilter([song('local')], 'expert'),
+    );
 
     act(() => result.current.setMode('online'));
 
@@ -156,7 +204,7 @@ describe('useSongFilter', () => {
   });
 
   it('activates online search only in online mode', () => {
-    const { result } = renderHook(() => useSongFilter([]));
+    const { result } = renderHook(() => useSongFilter([], 'expert'));
 
     expect(onlineState.calls.at(-1)).toMatchObject({ active: false });
 
@@ -168,7 +216,7 @@ describe('useSongFilter', () => {
   it('does not mutate the input song list while sorting', () => {
     const list = [song('b'), song('a'), song('c')];
     const snapshot = ids(list);
-    const { result } = renderHook(() => useSongFilter(list));
+    const { result } = renderHook(() => useSongFilter(list, 'expert'));
 
     act(() => result.current.setSort({ key: 'name', direction: 'asc' }));
 

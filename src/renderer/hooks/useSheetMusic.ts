@@ -1,7 +1,6 @@
 import { RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { App } from 'antd';
 import { Difficulty, parseChartFile } from 'scan-chart';
-import { last } from 'es-toolkit';
 import { ChartParser } from '../../chart-parser/parser';
 import { renderMusic } from '../../chart-parser/renderer';
 import { ParsedChart, RenderData } from '../../chart-parser/types';
@@ -23,8 +22,6 @@ interface UseSheetMusicResult {
   parsedMidi: ChartParser | null;
   renderData: RenderData[];
   vexflowContainerRef: RefObject<HTMLDivElement | null>;
-  difficulties: Difficulty[];
-  activeDifficulty: Difficulty;
 }
 
 export function useSheetMusic({
@@ -51,32 +48,17 @@ export function useSheetMusic({
       five_lane_drums: fiveLaneDrums,
     });
   }, [fileData, format, proDrums, fiveLaneDrums]);
-  const difficulties = useMemo<Difficulty[]>(() => {
-    if (!chart) {
-      return [];
-    }
-
-    const trackDifficulties = chart.trackData
-      .filter((t) => t.instrument === 'drums')
-      .map((t) => t.difficulty);
-    const allDifficulties: Difficulty[] = ['easy', 'medium', 'hard', 'expert'];
-
-    return allDifficulties.filter((d) => trackDifficulties.includes(d));
-  }, [chart]);
-  const activeDifficulty: Difficulty = difficulties.includes(difficulty)
-    ? difficulty
-    : last(difficulties) ?? 'expert';
   const parsedMidi = useMemo(() => {
     if (!chart || !songId) {
       return null;
     }
 
     try {
-      return new ChartParser(chart, fiveLaneDrums, activeDifficulty);
+      return new ChartParser(chart, fiveLaneDrums, difficulty);
     } catch {
       return null;
     }
-  }, [chart, songId, fiveLaneDrums, activeDifficulty]);
+  }, [chart, songId, fiveLaneDrums, difficulty]);
 
   useEffect(() => {
     if (chart && songId && !parsedMidi) {
@@ -110,7 +92,5 @@ export function useSheetMusic({
     parsedMidi,
     renderData,
     vexflowContainerRef,
-    difficulties,
-    activeDifficulty,
   };
 }

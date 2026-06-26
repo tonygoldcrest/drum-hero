@@ -85,11 +85,10 @@ describe('useSheetMusic', () => {
     expect(result.current.chart).toBeNull();
     expect(result.current.parsedMidi).toBeNull();
     expect(result.current.renderData).toEqual([]);
-    expect(result.current.difficulties).toEqual([]);
     expect(parseChartFileMock).not.toHaveBeenCalled();
   });
 
-  it('parses the chart and derives drum difficulties', () => {
+  it('parses the chart', () => {
     const { result } = setup();
 
     expect(parseChartFileMock).toHaveBeenCalledTimes(1);
@@ -99,8 +98,6 @@ describe('useSheetMusic', () => {
     expect(bytes).toBeInstanceOf(Uint8Array);
     expect(format).toBe('mid');
     expect(result.current.chart).toBe(CHART);
-    expect(result.current.difficulties).toEqual(['hard', 'expert']);
-    expect(result.current.activeDifficulty).toBe('expert');
   });
 
   it('forwards the pro/five-lane ini modifiers to the parser', () => {
@@ -111,22 +108,7 @@ describe('useSheetMusic', () => {
     expect(modifiers).toEqual({ pro_drums: true, five_lane_drums: false });
   });
 
-  it('falls back to the hardest available difficulty', () => {
-    parseChartFileMock.mockReturnValue({
-      ...CHART,
-      trackData: [
-        { instrument: 'drums', difficulty: 'easy' },
-        { instrument: 'drums', difficulty: 'medium' },
-      ],
-    } as never);
-
-    const { result } = setup({ ...BASE, difficulty: 'expert' });
-
-    expect(result.current.difficulties).toEqual(['easy', 'medium']);
-    expect(result.current.activeDifficulty).toBe('medium');
-  });
-
-  it('builds the parser with the resolved difficulty and lane mode', () => {
+  it('builds the parser with the selected difficulty and lane mode', () => {
     const { result } = setup({ ...BASE, fiveLaneDrums: true });
 
     expect(ChartParserMock).toHaveBeenCalledTimes(1);

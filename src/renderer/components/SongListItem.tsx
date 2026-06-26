@@ -80,6 +80,7 @@ export interface SongListItemProps {
   onDownload: (id: string) => void;
   onSplit: (id: string) => void;
   downloading?: boolean;
+  difficulty: Difficulty;
   splitting: boolean;
   downloaded?: boolean;
   mode: Mode;
@@ -105,6 +106,7 @@ export function SongListItem({
   onDownload,
   downloading,
   downloaded,
+  difficulty,
   splitting,
   onSplit,
   mode,
@@ -114,24 +116,15 @@ export function SongListItem({
 }: SongListItemProps) {
   const navigate = useNavigate();
   const score = useMemo(() => {
-    const result = (['expert', 'hard', 'medium', 'easy'] as Difficulty[])
-      .map((d) => {
-        const entry = scoreData?.[d];
-
-        return entry && (entry.hitNotes ?? 0) > 0
-          ? { difficulty: d, score: entry }
-          : null;
-      })
-      .find((item) => item !== null);
+    const result = scoreData?.[difficulty];
 
     return result
       ? {
-          difficulty: result.difficulty,
-          starRating: getStarRating(result.score),
-          accuracy: calculateAccuracy(result.score),
+          starRating: getStarRating(result),
+          accuracy: calculateAccuracy(result),
         }
       : null;
-  }, [scoreData]);
+  }, [scoreData, difficulty]);
   const indicator = useMemo(() => {
     if (mode === 'local') {
       return (
@@ -262,9 +255,7 @@ export function SongListItem({
         )}
 
         <div className="flex flex-col gap-1 items-center">
-          {score && (
-            <div className="text-xs text-text-dim">{score.difficulty}</div>
-          )}
+          <div className="text-xs text-text-dim">{difficulty}</div>
 
           <div className="flex gap-1 items-center">
             {times(5, (num) => {

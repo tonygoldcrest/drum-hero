@@ -55,6 +55,7 @@ export interface SongData {
   updatedAt?: string;
   format: 'mid' | 'chart';
   audio: AudioData[];
+  drumDifficulties?: Difficulty[];
   scoreData?: Record<Difficulty, ScoreData>;
 }
 
@@ -129,6 +130,11 @@ export interface IpcLoadSongListResponse {
   songs: SongData[];
   lastOpenedPath: string | null;
   downloadedEncoreMd5s: string[];
+}
+
+export interface IpcScanProgressResponse {
+  current: number;
+  total: number;
 }
 
 export interface StorageSchema {

@@ -79,6 +79,21 @@ describe('useSongList', () => {
     expect(setCurrentPath).toHaveBeenLastCalledWith('/b');
   });
 
+  it('tracks scan progress and clears it when the rescan completes', async () => {
+    const { result } = await load();
+
+    act(() => ipc.emit('rescan-songs', { current: 0, total: 4 }));
+    act(() => ipc.emit('rescan-songs', { current: 2, total: 4 }));
+
+    expect(result.current.scanProgress).toEqual({ current: 2, total: 4 });
+
+    act(() =>
+      ipc.emit('rescan-songs', { songs: [song('b')], lastOpenedPath: '/b' }),
+    );
+
+    expect(result.current.scanProgress).toBeUndefined();
+  });
+
   it('appends a downloaded song with addSong', async () => {
     const { result } = await load();
 

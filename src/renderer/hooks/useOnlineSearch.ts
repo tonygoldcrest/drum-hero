@@ -1,11 +1,32 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { App } from 'antd';
 import { uniqBy } from 'es-toolkit';
+import { Difficulty } from 'scan-chart';
 import { SongData } from '../../types';
 
 type PageResult = { songs: SongData[]; total: number | undefined };
 
-function mapSongs(data: Record<string, string>[]): SongData[] {
+interface NoteCount {
+  instrument: string;
+  difficulty: Difficulty;
+  count: number;
+}
+
+const DIFFICULTY_ORDER: Difficulty[] = ['easy', 'medium', 'hard', 'expert'];
+
+function drumDifficulties(
+  notesData: { noteCounts?: NoteCount[] } | undefined,
+): Difficulty[] {
+  const present = new Set(
+    (notesData?.noteCounts ?? [])
+      .filter((nc) => nc.instrument === 'drums' && nc.count > 0)
+      .map((nc) => nc.difficulty),
+  );
+
+  return DIFFICULTY_ORDER.filter((d) => present.has(d));
+}
+
+function mapSongs(data: Record<string, unknown>[]): SongData[] {
   return uniqBy(
     data.map(
       (chart) =>
@@ -24,6 +45,9 @@ function mapSongs(data: Record<string, string>[]): SongData[] {
           song_length: String(chart.song_length ?? ''),
           diff_drums: String(chart.diff_drums ?? ''),
           diff_drums_real: String(chart.diff_drums_real ?? ''),
+          drumDifficulties: drumDifficulties(
+            chart.notesData as { noteCounts?: NoteCount[] } | undefined,
+          ),
         }) as SongData,
     ),
     (song) => song.id,
@@ -33,6 +57,7 @@ function mapSongs(data: Record<string, string>[]): SongData[] {
 async function fetchEnchorePage(
   query: string,
   page: number,
+  difficulty: Difficulty,
   signal: AbortSignal,
 ): Promise<PageResult> {
   const res = await fetch('https://api.enchor.us/search', {
@@ -46,6 +71,7 @@ async function fetchEnchorePage(
       page,
       instrument: 'drums',
       drumType: 'fourLanePro',
+      difficulty,
       source: 'website',
       drumsReviewed: false,
     }),
@@ -60,7 +86,11 @@ async function fetchEnchorePage(
   };
 }
 
-export function useOnlineSearch(active: boolean, search: string) {
+export function useOnlineSearch(
+  active: boolean,
+  search: string,
+  difficulty: Difficulty,
+) {
   const { notification } = App.useApp();
   const [results, setResults] = useState<SongData[]>([]);
   const [total, setTotal] = useState<number | undefined>();
@@ -68,11 +98,12 @@ export function useOnlineSearch(active: boolean, search: string) {
   const [hasMore, setHasMore] = useState(true);
   const pageRef = useRef(1);
   const searchRef = useRef(search);
+  const difficultyRef = useRef(difficulty);
   const cache = useRef<Map<string, PageResult>>(new Map());
   const abortRef = useRef<AbortController | null>(null);
   const fetchPage = useCallback(
-    async (query: string, page: number, append: boolean) => {
-      const cacheKey = `${query}:${page}`;
+    async (query: string, page: number, diff: Difficulty, append: boolean) => {
+      const cacheKey = `${query}:${diff}:${page}`;
 
       if (cache.current.has(cacheKey)) {
         const cached = cache.current.get(cacheKey)!;
@@ -110,6 +141,7 @@ export function useOnlineSearch(active: boolean, search: string) {
         const { songs, total: pageTotal } = await fetchEnchorePage(
           query,
           page,
+          diff,
           controller.signal,
         );
 
@@ -150,7 +182,7 @@ export function useOnlineSearch(active: boolean, search: string) {
     [notification],
   );
   const fetchFirstPages = useCallback(
-    async (query: string) => {
+    async (query: string, diff: Difficulty) => {
       abortRef.current?.abort();
 
       const controller = new AbortController();
@@ -158,14 +190,14 @@ export function useOnlineSearch(active: boolean, search: string) {
       abortRef.current = controller;
 
       const getOrFetch = async (page: number): Promise<PageResult> => {
-        const cacheKey = `${query}:${page}`;
+        const cacheKey = `${query}:${diff}:${page}`;
         const cached = cache.current.get(cacheKey);
 
         if (cached) {
           return cached;
         }
 
-        const r = await fetchEnchorePage(query, page, controller.signal);
+        const r = await fetchEnchorePage(query, page, diff, controller.signal);
 
         cache.current.set(cacheKey, r);
 
@@ -214,7 +246,7 @@ export function useOnlineSearch(active: boolean, search: string) {
     },
     [notification],
   );
-  const searchKey = active ? search : null;
+  const searchKey = active ? `${search}:${difficulty}` : null;
   const [prevSearchKey, setPrevSearchKey] = useState<string | null>(null);
 
   if (searchKey !== prevSearchKey) {
@@ -236,16 +268,17 @@ export function useOnlineSearch(active: boolean, search: string) {
     }
 
     searchRef.current = search;
+    difficultyRef.current = difficulty;
 
     const timer = setTimeout(() => {
-      fetchFirstPages(search);
+      fetchFirstPages(search, difficulty);
     }, 300);
 
     return () => {
       clearTimeout(timer);
       abortRef.current?.abort();
     };
-  }, [active, search, fetchFirstPages]);
+  }, [active, search, difficulty, fetchFirstPages]);
 
   const loadMore = useCallback(() => {
     if (loading || !hasMore) {
@@ -253,7 +286,7 @@ export function useOnlineSearch(active: boolean, search: string) {
     }
 
     pageRef.current += 1;
-    fetchPage(searchRef.current, pageRef.current, true);
+    fetchPage(searchRef.current, pageRef.current, difficultyRef.current, true);
   }, [loading, hasMore, fetchPage]);
 
   return { results, total, loading, loadMore };

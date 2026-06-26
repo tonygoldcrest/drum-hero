@@ -300,14 +300,22 @@ describe('SongView — playback', () => {
 });
 
 describe('SongView — difficulty', () => {
-  it('reparses the chart when a different difficulty is selected', async () => {
+  it('parses at the difficulty selected in app settings', async () => {
+    localStorage.setItem('settings.difficulty', JSON.stringify('hard'));
+
+    renderView();
+    await loadSong();
+
+    expect(ChartParserMock).toHaveBeenLastCalledWith(CHART, false, 'hard');
+  });
+
+  it('has no difficulty selector in the song-view settings popover', async () => {
     renderView();
     await loadSong();
 
     fireEvent.click(screen.getByTestId('settings-trigger'));
-    fireEvent.click(screen.getByTestId('difficulty-hard'));
 
-    expect(ChartParserMock).toHaveBeenLastCalledWith(CHART, false, 'hard');
+    expect(screen.queryByTestId('difficulty-hard')).not.toBeInTheDocument();
   });
 });
 

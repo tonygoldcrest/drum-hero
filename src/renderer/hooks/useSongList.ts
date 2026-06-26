@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { App } from 'antd';
 import {
   IpcLoadSongListResponse,
+  IpcScanProgressResponse,
   IpcSplitSongResponse,
   SongData,
 } from '../../types';
@@ -13,6 +14,7 @@ export function useSongList() {
   const [splitProgress, setSplitProgress] = useState<Map<string, number>>(
     new Map(),
   );
+  const [scanProgress, setScanProgress] = useState<IpcScanProgressResponse>();
   const { notification } = App.useApp();
   const { setCurrentPath } = useApp();
 
@@ -27,13 +29,19 @@ export function useSongList() {
     );
   }, [setCurrentPath]);
   useEffect(() => {
-    return window.electron.ipcRenderer.on<IpcLoadSongListResponse>(
-      'rescan-songs',
-      ({ songs, lastOpenedPath }) => {
-        setSongList(songs);
-        setCurrentPath(lastOpenedPath);
-      },
-    );
+    return window.electron.ipcRenderer.on<
+      IpcLoadSongListResponse | IpcScanProgressResponse
+    >('rescan-songs', (payload) => {
+      if ('total' in payload) {
+        setScanProgress(payload);
+
+        return;
+      }
+
+      setSongList(payload.songs);
+      setCurrentPath(payload.lastOpenedPath);
+      setScanProgress(undefined);
+    });
   }, [setCurrentPath]);
   useEffect(() => {
     return window.electron.ipcRenderer.on<SongData>('update-song', (song) => {
@@ -123,6 +131,7 @@ export function useSongList() {
     songList,
     splittingIds,
     splitProgress,
+    scanProgress,
     handleSplit,
     handleLikeChange,
     addSong,

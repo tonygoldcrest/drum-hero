@@ -53,9 +53,28 @@ export async function rescanSongs(event: IpcMainEvent, newDir = true) {
     }
   }
 
-  const songList = [...dirToFile.keys()]
-    .map((dir) => buildSongFromDir(dir, existingByDir.get(dir)))
-    .filter((s): s is SongData => s !== null);
+  const dirs = [...dirToFile.keys()];
+  const total = dirs.length;
+  const step = Math.max(1, Math.floor(total / 100));
+  const songList: SongData[] = [];
+
+  event.reply('rescan-songs', { current: 0, total });
+
+  for (let i = 0; i < total; i += 1) {
+    const built = buildSongFromDir(dirs[i], existingByDir.get(dirs[i]));
+
+    if (built) {
+      songList.push(built);
+    }
+
+    if (i % step === 0 || i === total - 1) {
+      event.reply('rescan-songs', { current: i + 1, total });
+      await new Promise((resolve) => {
+        setImmediate(resolve);
+      });
+    }
+  }
+
   const rescannedSongs = songList.reduce(
     (acc, song) => {
       acc[song.id] = song;

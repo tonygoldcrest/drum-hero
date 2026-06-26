@@ -1,6 +1,7 @@
 import { Button, Divider, Input } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolder, faGlobe, faSearch } from '@fortawesome/free-solid-svg-icons';
+import { Difficulty } from 'scan-chart';
 import { cn } from '../cn';
 
 export type Mode = 'local' | 'online';
@@ -9,6 +10,7 @@ export interface SongFilterProps {
   onChangeFilter: (value: string) => void;
   nameFilter: string;
   className?: string;
+  difficulty: Difficulty;
   filteredSongsCount: number;
   mode: Mode;
   onChangeMode: (value: Mode) => void;
@@ -20,6 +22,7 @@ export function SongFilter({
   mode = 'local',
   nameFilter,
   className,
+  difficulty,
   filteredSongsCount,
 }: SongFilterProps) {
   const options = [
@@ -46,6 +49,12 @@ export function SongFilter({
         }}
         suffix={
           <div className="flex gap-1 items-center">
+            <div className="text-text-faint text-[13.5px] capitalize">
+              {difficulty}
+            </div>
+
+            <Divider vertical />
+
             <div className="text-text-faint text-[13.5px]">
               {filteredSongsCount} results
             </div>

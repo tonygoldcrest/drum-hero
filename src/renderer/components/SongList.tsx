@@ -4,6 +4,7 @@ import { SongData, StemToolsStatus } from '../../types';
 import { cn } from '../cn';
 import { SongListItem } from './SongListItem';
 import { Mode } from './SongFilter';
+import { Difficulty } from 'scan-chart';
 
 export interface SongListProps {
   songList: SongData[];
@@ -14,6 +15,7 @@ export interface SongListProps {
   onLoadMore?: () => void;
   downloadingIds?: Set<string>;
   splittingIds: Set<string>;
+  difficulty: Difficulty;
   downloadedIds?: Set<string>;
   scrollKey?: string;
   mode: Mode;
@@ -31,6 +33,7 @@ export function SongList({
   onDownload,
   downloadingIds,
   downloadedIds,
+  difficulty,
   scrollKey,
   mode,
   downloadingDisabled,
@@ -102,6 +105,7 @@ export function SongList({
                 onLikeChange={onLikeChange}
                 onDownload={onDownload}
                 onSplit={onSplit}
+                difficulty={difficulty}
                 downloading={downloadingIds?.has(songData.id)}
                 downloaded={downloadedIds?.has(songData.id)}
                 splitting={splittingIds.has(songData.id)}

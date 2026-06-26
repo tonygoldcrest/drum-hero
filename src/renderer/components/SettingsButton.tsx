@@ -27,30 +27,28 @@ import { InputConfigModal } from './InputConfigModal';
 
 interface Props {
   volumeSliders?: ReactNode[];
-  difficulties?: Difficulty[];
-  difficulty?: Difficulty;
-  difficultyDisabled?: boolean;
-  onChangeDifficulty?: (difficulty: Difficulty) => void;
   page: 'song-list' | 'song-view';
   stemToolsStatus?: StemToolsStatus;
   stemToolsLoading?: boolean;
   downloadPercent?: number;
+  scanPercent?: number;
   onDownloadStemTools?: () => void;
 }
 
+const ALL_DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard', 'expert'];
+
 export const SettingsButton = memo(function Settings({
-  difficulty,
-  difficultyDisabled,
-  onChangeDifficulty,
   volumeSliders,
-  difficulties,
   page,
   stemToolsStatus,
   stemToolsLoading,
   downloadPercent,
+  scanPercent,
   onDownloadStemTools,
 }: Props) {
   const {
+    difficulty,
+    setDifficulty,
     playheadStyle,
     setPlayheadStyle,
     enableColors,
@@ -162,6 +160,12 @@ export const SettingsButton = memo(function Settings({
                 />
               ) : null}
             </div>
+            {scanPercent !== undefined && (
+              <div className="flex flex-col gap-1" data-testid="scan-progress">
+                <div className="text-sm text-text-muted">Scanning songs</div>
+                <Progress percent={scanPercent} />
+              </div>
+            )}
             {stemToolsStatus === 'download' && (
               <Button
                 icon={<FontAwesomeIcon icon={faDownload} />}
@@ -186,21 +190,20 @@ export const SettingsButton = memo(function Settings({
           Setup input
         </Button>
 
-        {page === 'song-view' && difficulties && difficulties.length > 0 ? (
+        {page === 'song-list' ? (
           <>
             <div className="flex flex-col gap-3">
               <div className="text-sm text-text-muted whitespace-nowrap">
                 Difficulty
               </div>
               <div className="flex gap-2">
-                {difficulties.map((d) => (
+                {ALL_DIFFICULTIES.map((d) => (
                   <Button
                     key={d}
-                    className="grow"
+                    className="grow capitalize"
                     type={difficulty === d ? 'primary' : 'default'}
                     data-testid={`difficulty-${d}`}
-                    disabled={difficultyDisabled}
-                    onClick={() => onChangeDifficulty?.(d)}
+                    onClick={() => setDifficulty(d)}
                   >
                     {d}
                   </Button>

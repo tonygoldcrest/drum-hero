@@ -80,6 +80,7 @@ function makeSong(id: string, extra: Partial<SongData> = {}): SongData {
     charter: `Charter ${id}`,
     diff_drums: '3',
     format: 'mid',
+    drumDifficulties: ['easy', 'medium', 'hard', 'expert'],
     audio: [{ src: 'song.ogg', name: 'song' }],
     ...extra,
   } as SongData;
@@ -354,6 +355,24 @@ describe('SongListView — settings', () => {
       channel: 'rescan-songs',
       args: [false],
     });
+  });
+
+  it('shows live scan progress under the folder buttons, then hides it', () => {
+    renderView();
+    loadSongs([makeSong('a')], '/music');
+
+    fireEvent.click(screen.getByTestId('settings-trigger'));
+
+    emit('rescan-songs', { current: 3, total: 6 });
+
+    const progress = screen.getByTestId('scan-progress');
+
+    expect(progress).toBeInTheDocument();
+    expect(within(progress).getByText('50%')).toBeInTheDocument();
+
+    emit('rescan-songs', { songs: [makeSong('a')], lastOpenedPath: '/music' });
+
+    expect(screen.queryByTestId('scan-progress')).not.toBeInTheDocument();
   });
 
   it('offers the stem-splitter download when tools are missing', () => {

@@ -19,7 +19,7 @@ import { useSongFilter } from '../hooks/useSongFilter';
 import { useInputControls } from '../hooks/useInputControls';
 
 export function SongListView() {
-  const { currentPath, inputMapping } = useApp();
+  const { currentPath, inputMapping, difficulty } = useApp();
   const navigate = useNavigate();
   const songOpen = useOutlet() !== null;
   const { stemToolsStatus, stemToolsLoading, downloadPercent, download } =
@@ -28,10 +28,15 @@ export function SongListView() {
     songList,
     splittingIds,
     splitProgress,
+    scanProgress,
     handleSplit,
     handleLikeChange,
     addSong,
   } = useSongList();
+  const scanPercent =
+    scanProgress && scanProgress.total > 0
+      ? Math.round((scanProgress.current / scanProgress.total) * 100)
+      : undefined;
   const {
     nameFilter,
     setNameFilter,
@@ -44,7 +49,7 @@ export function SongListView() {
     onlineTotal,
     onlineLoading,
     loadMore,
-  } = useSongFilter(songList);
+  } = useSongFilter(songList, difficulty);
   const { downloadingIds, handleDownload } = useDownload(
     onlineResults,
     addSong,
@@ -190,6 +195,7 @@ export function SongListView() {
           <SongFilter
             nameFilter={nameFilter}
             onChangeFilter={setNameFilter}
+            difficulty={difficulty}
             filteredSongsCount={
               mode === 'online' && onlineTotal !== undefined
                 ? onlineTotal
@@ -212,6 +218,7 @@ export function SongListView() {
             stemToolsStatus={stemToolsStatus}
             stemToolsLoading={stemToolsLoading}
             downloadPercent={downloadPercent}
+            scanPercent={scanPercent}
             onDownloadStemTools={download}
           />
         </div>
@@ -232,6 +239,7 @@ export function SongListView() {
               downloadingIds={downloadingIds}
               downloadingDisabled={currentPath === null}
               mode={mode}
+              difficulty={difficulty}
               stemToolsStatus={stemToolsStatus}
               downloadedIds={
                 mode === 'online'
