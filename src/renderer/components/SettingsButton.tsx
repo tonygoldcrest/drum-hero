@@ -210,63 +210,70 @@ export const SettingsButton = memo(function Settings({
                 ))}
               </div>
             </div>
-            <Divider />
           </>
         ) : null}
 
-        <div className="flex flex-col gap-3">
-          <div className="text-sm text-text-muted whitespace-nowrap">
-            Playhead style
-          </div>
-
-          <div className="flex gap-2">
-            {PLAYHEAD_STYLES.map((s) => (
-              <Button
-                key={s}
-                className="grow"
-                type={playheadStyle === s ? 'primary' : 'default'}
-                onClick={() => setPlayheadStyle(s)}
-              >
-                {s}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        <Divider />
-
-        <div className="flex items-center justify-between gap-3">
-          <div className="text-sm text-text-muted whitespace-nowrap">
-            Enable colors
-          </div>
-          <Switch
-            size="small"
-            checked={enableColors}
-            onChange={setEnableColors}
-          />
-        </div>
-        {isDev && (
+        {page === 'song-view' ? (
           <>
+            <div className="flex flex-col gap-3">
+              <div className="text-sm text-text-muted whitespace-nowrap">
+                Playhead style
+              </div>
+
+              <div className="flex gap-2">
+                {PLAYHEAD_STYLES.map((s) => (
+                  <Button
+                    key={s}
+                    className="grow"
+                    type={playheadStyle === s ? 'primary' : 'default'}
+                    onClick={() => setPlayheadStyle(s)}
+                  >
+                    {s}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
             <Divider />
+
             <div className="flex items-center justify-between gap-3">
               <div className="text-sm text-text-muted whitespace-nowrap">
-                Show bar numbers
+                Enable colors
               </div>
               <Switch
                 size="small"
-                checked={showBarNumbers}
-                onChange={setShowBarNumbers}
+                checked={enableColors}
+                onChange={setEnableColors}
+              />
+            </div>
+            {isDev && (
+              <>
+                <Divider />
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm text-text-muted whitespace-nowrap">
+                    Show bar numbers
+                  </div>
+                  <Switch
+                    size="small"
+                    checked={showBarNumbers}
+                    onChange={setShowBarNumbers}
+                  />
+                </div>
+              </>
+            )}
+            <Divider />
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm text-text-muted whitespace-nowrap">
+                Show tempo
+              </div>
+              <Switch
+                size="small"
+                checked={showTempo}
+                onChange={setShowTempo}
               />
             </div>
           </>
-        )}
-        <Divider />
-        <div className="flex items-center justify-between gap-3">
-          <div className="text-sm text-text-muted whitespace-nowrap">
-            Show tempo
-          </div>
-          <Switch size="small" checked={showTempo} onChange={setShowTempo} />
-        </div>
+        ) : null}
         {page === 'song-view' && (
           <>
             <Divider />
