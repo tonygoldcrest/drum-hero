@@ -39,7 +39,7 @@ function samePos(a: NotePos | undefined, b: NotePos | undefined): boolean {
 }
 
 const ACTIVE_CLASS = 'vf-note-active';
-const HIT_CLASS = 'vf-note-hit';
+const POP_CLASS = 'vf-note-pop';
 const MISS_CLASS = 'vf-note-miss';
 
 function flashClass(el: SVGElement, cls: string): void {
@@ -91,7 +91,6 @@ export class ViewEngine {
   private chart: ParsedChart | undefined;
   private renderData: RenderData[] = [];
   private playheadStyle: PlayheadStyle = 'Cursor';
-  private progressColoring = false;
   private cursorEl: HTMLElement | undefined;
   private cursorShown = false;
   private cursorHeight = -1;
@@ -116,9 +115,8 @@ export class ViewEngine {
     }
   }
 
-  setSettings(playheadStyle: PlayheadStyle, progressColoring: boolean): void {
+  setSettings(playheadStyle: PlayheadStyle): void {
     this.playheadStyle = playheadStyle;
-    this.progressColoring = progressColoring;
     this.activePos = undefined;
     this.coloredPos = undefined;
 
@@ -156,12 +154,9 @@ export class ViewEngine {
         return;
       }
 
-      if (this.progressColoring) {
-        (el as SVGGraphicsElement).style.fill = HIT_NOTE_COLOR;
-        this.filledEls.add(el);
-      }
-
-      flashClass(el, HIT_CLASS);
+      (el as SVGGraphicsElement).style.fill = HIT_NOTE_COLOR;
+      this.filledEls.add(el);
+      flashClass(el, POP_CLASS);
     });
   }
 
@@ -276,7 +271,7 @@ export class ViewEngine {
       this.filledEls.clear();
     };
 
-    if (!target || this.playheadStyle === 'None' || !this.progressColoring) {
+    if (!target || this.playheadStyle === 'None') {
       clearAll();
       this.coloredPos = undefined;
 

@@ -86,7 +86,6 @@ function hasClass(note: StaveNote, cls: string, head = 0): boolean {
 
 interface SetupOptions {
   playheadStyle?: 'Cursor' | 'Measure' | 'None';
-  progressColoring?: boolean;
   isHit?: (tick: number, prefix: string) => boolean;
   cursorEl?: HTMLElement;
   highlightEls?: (HTMLElement | undefined)[];
@@ -98,7 +97,6 @@ function setup(
 ): ViewEngine {
   const {
     playheadStyle = 'Cursor',
-    progressColoring = false,
     isHit = () => false,
     cursorEl,
     highlightEls = [],
@@ -106,7 +104,7 @@ function setup(
   const view = new ViewEngine(isHit);
 
   view.setContext({ chart: CHART, renderData });
-  view.setSettings(playheadStyle, progressColoring);
+  view.setSettings(playheadStyle);
   view.setRefs({ cursorEl, highlightEls });
 
   return view;
@@ -179,21 +177,20 @@ describe('ViewEngine', () => {
 
   it('flashes a hit class on the struck note head only for the matching prefix', () => {
     const note = staveNote(['c/5', 'g/5']);
-    const view = setup([], { progressColoring: true });
+    const view = setup([]);
 
     view.paintHit(note, ['c/5']);
 
-    expect(hasClass(note, 'vf-note-hit', 0)).toBe(true);
-    expect(hasClass(note, 'vf-note-hit', 1)).toBe(false);
+    expect(hasClass(note, 'vf-note-pop', 0)).toBe(true);
+    expect(hasClass(note, 'vf-note-pop', 1)).toBe(false);
   });
 
   it('flashes a miss class on a passed un-hit note', () => {
     const n0 = staveNote(['c/5']);
     const n1 = staveNote(['d/5']);
-    const view = setup(
-      [measureData(0, 1920, [rendered(0, n0), rendered(480, n1)])],
-      { progressColoring: true },
-    );
+    const view = setup([
+      measureData(0, 1920, [rendered(0, n0), rendered(480, n1)]),
+    ]);
 
     view.render(0, 0);
     expect(hasClass(n0, 'vf-note-miss')).toBe(false);
@@ -209,7 +206,7 @@ describe('ViewEngine', () => {
       tick === 0 && prefix === 'c/5';
     const view = setup(
       [measureData(0, 1920, [rendered(0, n0), rendered(240, n1)])],
-      { progressColoring: true, isHit },
+      { isHit },
     );
 
     view.render(0, 0);
@@ -223,16 +220,13 @@ describe('ViewEngine', () => {
     const n0 = staveNote(['c/5']);
     const n1 = staveNote(['d/5']);
     const n2 = staveNote(['e/5']);
-    const view = setup(
-      [
-        measureData(0, 1920, [
-          rendered(0, n0),
-          rendered(240, n1),
-          rendered(480, n2),
-        ]),
-      ],
-      { progressColoring: true },
-    );
+    const view = setup([
+      measureData(0, 1920, [
+        rendered(0, n0),
+        rendered(240, n1),
+        rendered(480, n2),
+      ]),
+    ]);
 
     view.render(0, 480);
 
@@ -245,16 +239,13 @@ describe('ViewEngine', () => {
     const n0 = staveNote(['c/5']);
     const n1 = staveNote(['d/5']);
     const n2 = staveNote(['e/5']);
-    const view = setup(
-      [
-        measureData(0, 1920, [
-          rendered(0, n0),
-          rendered(240, n1),
-          rendered(480, n2),
-        ]),
-      ],
-      { progressColoring: true },
-    );
+    const view = setup([
+      measureData(0, 1920, [
+        rendered(0, n0),
+        rendered(240, n1),
+        rendered(480, n2),
+      ]),
+    ]);
 
     view.render(0, 480);
     expect(fill(n0)).toBe(MISSED);
@@ -271,7 +262,7 @@ describe('ViewEngine', () => {
       tick === 0 && prefix === 'c/5';
     const view = setup(
       [measureData(0, 1920, [rendered(0, n0), rendered(240, n1)])],
-      { progressColoring: true, isHit },
+      { isHit },
     );
 
     view.render(0, 240);
@@ -281,21 +272,12 @@ describe('ViewEngine', () => {
 
   it('paints a struck note head only for the matching prefix', () => {
     const note = staveNote(['c/5', 'g/5']);
-    const view = setup([], { progressColoring: true });
+    const view = setup([], {});
 
     view.paintHit(note, ['c/5']);
 
     expect(fill(note, 0)).toBe(HIT);
     expect(fill(note, 1)).toBe('');
-  });
-
-  it('does not paint hits when progress colouring is off', () => {
-    const note = staveNote(['c/5']);
-    const view = setup([], { progressColoring: false });
-
-    view.paintHit(note, ['c/5']);
-
-    expect(fill(note)).toBe('');
   });
 
   it('hides the cursor and does not mark a note active when the style is None', () => {
@@ -324,7 +306,7 @@ describe('ViewEngine', () => {
           rendered(480, rest),
         ]),
       ],
-      { progressColoring: true },
+      {},
     );
 
     view.render(0, 240);

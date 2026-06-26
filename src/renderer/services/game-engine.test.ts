@@ -147,7 +147,7 @@ async function setup(over: Partial<GameContext> = {}) {
   });
   const renderData = over.renderData ?? [];
 
-  engine.setSettings({ playheadStyle: 'Cursor', progressColoring: false });
+  engine.setSettings({ playheadStyle: 'Cursor' });
   engine.setContext({
     chart: CHART,
     measures: renderData.map((rd) => rd.measure),
@@ -234,7 +234,7 @@ describe('GameEngine', () => {
       renderData: [measureData(0, 1920, [rendered(0, note)])],
     });
 
-    engine.setSettings({ playheadStyle: 'Measure', progressColoring: false });
+    engine.setSettings({ playheadStyle: 'Measure' });
 
     const cursorEl = document.createElement('div');
 
@@ -252,7 +252,7 @@ describe('GameEngine', () => {
       ],
     });
 
-    engine.setSettings({ playheadStyle: 'Measure', progressColoring: false });
+    engine.setSettings({ playheadStyle: 'Measure' });
 
     const a = document.createElement('div');
     const b = document.createElement('div');
@@ -279,7 +279,7 @@ describe('GameEngine', () => {
       ],
     });
 
-    engine.setSettings({ playheadStyle: 'Cursor', progressColoring: true });
+    engine.setSettings({ playheadStyle: 'Cursor' });
     engine.setView({
       cursorEl: document.createElement('div'),
       highlightEls: [],
@@ -304,7 +304,7 @@ describe('GameEngine', () => {
       ],
     });
 
-    engine.setSettings({ playheadStyle: 'Cursor', progressColoring: true });
+    engine.setSettings({ playheadStyle: 'Cursor' });
     engine.setView({
       cursorEl: document.createElement('div'),
       highlightEls: [],
@@ -328,7 +328,7 @@ describe('GameEngine', () => {
       renderData: [measureData(0, 1920, [rendered(480, note)])],
     });
 
-    engine.setSettings({ playheadStyle: 'Cursor', progressColoring: true });
+    engine.setSettings({ playheadStyle: 'Cursor' });
     engine.setMapping({ snare: ['midi:38'] });
     engine.timeStore.set(1);
 

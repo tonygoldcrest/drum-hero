@@ -20,8 +20,6 @@ interface AppContextValue {
   setShowBarNumbers: (v: boolean) => void;
   showTempo: boolean;
   setShowTempo: (v: boolean) => void;
-  progressColoring: boolean;
-  setProgressColoring: (v: boolean) => void;
   countIn: boolean;
   setCountIn: (v: boolean) => void;
   currentPath: string | null;
@@ -84,10 +82,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     false,
   );
   const [showTempo, setShowTempo] = usePersisted('settings.showTempo', true);
-  const [progressColoring, setProgressColoring] = usePersisted(
-    'settings.progressColoring',
-    true,
-  );
   const [countIn, setCountIn] = usePersisted('settings.countIn', true);
   const [currentPath, setCurrentPath] = useState<string | null>(null);
   const [selectedDevice, setSelectedDevice] = usePersisted<InputDevice | null>(
@@ -182,8 +176,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setShowBarNumbers,
         showTempo,
         setShowTempo,
-        progressColoring,
-        setProgressColoring,
         countIn,
         setCountIn,
         currentPath,

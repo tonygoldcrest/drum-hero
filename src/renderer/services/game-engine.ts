@@ -27,7 +27,6 @@ export interface GameContext {
 
 export interface GameSettings {
   playheadStyle: PlayheadStyle;
-  progressColoring: boolean;
 }
 
 export type GameView = ViewRefs;
@@ -94,7 +93,7 @@ export class GameEngine {
   }
 
   setSettings(settings: GameSettings): void {
-    this.view.setSettings(settings.playheadStyle, settings.progressColoring);
+    this.view.setSettings(settings.playheadStyle);
     this.renderFrame();
   }
 

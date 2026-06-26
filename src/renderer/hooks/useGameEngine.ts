@@ -24,7 +24,6 @@ interface UseGameEngineParams {
   delaySeconds: number;
   countInEnabled: boolean;
   playheadStyle: PlayheadStyle;
-  progressColoring: boolean;
   mapping: InputMapping;
   onEnded: (score: ScoreData) => void;
 }
@@ -70,7 +69,6 @@ export function useGameEngine({
   delaySeconds,
   countInEnabled,
   playheadStyle,
-  progressColoring,
   mapping,
   onEnded,
 }: UseGameEngineParams): UseGameEngineResult {
@@ -123,8 +121,8 @@ export function useGameEngine({
   }, [engine, chart, measures, renderData, delaySeconds, countInEnabled]);
 
   useEffect(() => {
-    engine?.setSettings({ playheadStyle, progressColoring });
-  }, [engine, playheadStyle, progressColoring]);
+    engine?.setSettings({ playheadStyle });
+  }, [engine, playheadStyle]);
 
   useEffect(() => {
     engine?.setMapping(mapping);

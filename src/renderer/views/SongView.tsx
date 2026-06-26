@@ -29,7 +29,6 @@ export function SongView() {
     enableColors,
     showBarNumbers,
     showTempo,
-    progressColoring,
     countIn,
     inputMapping,
   } = useApp();
@@ -89,7 +88,6 @@ export function SongView() {
     delaySeconds,
     countInEnabled: countIn,
     playheadStyle,
-    progressColoring,
     mapping: inputMapping,
     onEnded: (score) => {
       setScoreData(score);

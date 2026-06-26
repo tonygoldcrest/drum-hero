@@ -59,8 +59,6 @@ export const SettingsButton = memo(function Settings({
     setShowBarNumbers,
     showTempo,
     setShowTempo,
-    progressColoring,
-    setProgressColoring,
     countIn,
     setCountIn,
     currentPath,
@@ -254,17 +252,6 @@ export const SettingsButton = memo(function Settings({
             Show tempo
           </div>
           <Switch size="small" checked={showTempo} onChange={setShowTempo} />
-        </div>
-        <Divider />
-        <div className="flex items-center justify-between gap-3">
-          <div className="text-sm text-text-muted whitespace-nowrap">
-            Fade played notes
-          </div>
-          <Switch
-            size="small"
-            checked={progressColoring}
-            onChange={setProgressColoring}
-          />
         </div>
         {page === 'song-view' && (
           <>
