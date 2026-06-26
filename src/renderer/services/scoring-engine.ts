@@ -43,11 +43,13 @@ export class ScoringEngine {
   private hitListeners = new Set<ScoringHitHandler>();
 
   setContext(context: ScoringContext): void {
+    const chartChanged = this.chart !== context.chart;
+
     this.chart = context.chart;
     this.mapping = context.mapping;
+    this.renderData = context.renderData;
 
-    if (this.renderData !== context.renderData) {
-      this.renderData = context.renderData;
+    if (chartChanged) {
       this.reset();
     }
   }

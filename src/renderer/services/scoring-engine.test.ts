@@ -195,7 +195,7 @@ describe('ScoringEngine', () => {
     expect(engine.falseHitCount).toBe(0);
   });
 
-  it('clears all hit state when the rendered notes change', () => {
+  it('preserves hit state when the same chart re-renders', () => {
     const note = fakeNote(['c/5']);
     const renderData = [measure([rendered(480, note)])];
     const { engine } = setup({ renderData }, { tick: 480 });
@@ -208,6 +208,29 @@ describe('ScoringEngine', () => {
     engine.setContext({
       chart: CHART,
       renderData: [measure([rendered(480, next)])],
+      mapping: { snare: ['midi:38'] },
+    });
+
+    expect(engine.hitCount).toBe(1);
+    expect(engine.isHit(480, 'c/5')).toBe(true);
+  });
+
+  it('clears all hit state when the chart changes', () => {
+    const note = fakeNote(['c/5']);
+    const renderData = [measure([rendered(480, note)])];
+    const { engine } = setup({ renderData }, { tick: 480 });
+
+    engine.handleInput(hit('midi:38'));
+    expect(engine.hitCount).toBe(1);
+
+    const nextChart = {
+      resolution: 480,
+      tempos: [{ tick: 0, beatsPerMinute: 120, msTime: 0 }],
+    } as unknown as ParsedChart;
+
+    engine.setContext({
+      chart: nextChart,
+      renderData,
       mapping: { snare: ['midi:38'] },
     });
 

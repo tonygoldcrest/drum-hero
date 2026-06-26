@@ -67,8 +67,15 @@ export const SettingsButton = memo(function Settings({
   const popoverRef = useRef<HTMLDivElement>(null);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [inputConfigOpen, setInputConfigOpen] = useState(false);
+  const [isDev, setIsDev] = useState(false);
   const { pathname } = useLocation();
 
+  useEffect(() => {
+    window.electron.ipcRenderer.sendMessage('check-dev');
+    window.electron.ipcRenderer.once('check-dev', (dev: boolean) => {
+      setIsDev(dev);
+    });
+  }, []);
   useEffect(() => {
     popoverRef.current?.hidePopover();
     setIsPopoverOpen(false);
@@ -235,17 +242,21 @@ export const SettingsButton = memo(function Settings({
             onChange={setEnableColors}
           />
         </div>
-        <Divider />
-        <div className="flex items-center justify-between gap-3">
-          <div className="text-sm text-text-muted whitespace-nowrap">
-            Show bar numbers
-          </div>
-          <Switch
-            size="small"
-            checked={showBarNumbers}
-            onChange={setShowBarNumbers}
-          />
-        </div>
+        {isDev && (
+          <>
+            <Divider />
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm text-text-muted whitespace-nowrap">
+                Show bar numbers
+              </div>
+              <Switch
+                size="small"
+                checked={showBarNumbers}
+                onChange={setShowBarNumbers}
+              />
+            </div>
+          </>
+        )}
         <Divider />
         <div className="flex items-center justify-between gap-3">
           <div className="text-sm text-text-muted whitespace-nowrap">
