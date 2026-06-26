@@ -104,3 +104,138 @@ describe('AppContext midi stream ownership', () => {
     expect(stopCount()).toBe(1);
   });
 });
+
+describe('AppContext input mapping', () => {
+  it('ignores control assignment when no device is selected', () => {
+    const { result } = renderHook(() => useApp(), { wrapper });
+
+    act(() => result.current.assignControl('snare', 'midi:38'));
+
+    expect(result.current.inputMapping.snare).toEqual([]);
+  });
+
+  it('assigns a control to the selected device element', () => {
+    const { result } = renderHook(() => useApp(), { wrapper });
+
+    act(() => result.current.setSelectedDevice(DEVICE_A));
+    act(() => result.current.assignControl('snare', 'midi:38'));
+
+    expect(result.current.inputMapping.snare).toEqual(['midi:38']);
+  });
+
+  it('does not duplicate a control already bound to the element', () => {
+    const { result } = renderHook(() => useApp(), { wrapper });
+
+    act(() => result.current.setSelectedDevice(DEVICE_A));
+    act(() => result.current.assignControl('snare', 'midi:38'));
+    act(() => result.current.assignControl('snare', 'midi:38'));
+
+    expect(result.current.inputMapping.snare).toEqual(['midi:38']);
+  });
+
+  it('moves a control off other elements when reassigned', () => {
+    const { result } = renderHook(() => useApp(), { wrapper });
+
+    act(() => result.current.setSelectedDevice(DEVICE_A));
+    act(() => result.current.assignControl('snare', 'midi:38'));
+    act(() => result.current.assignControl('kick', 'midi:38'));
+
+    expect(result.current.inputMapping.snare).toEqual([]);
+    expect(result.current.inputMapping.kick).toEqual(['midi:38']);
+  });
+
+  it('removes a bound control from an element', () => {
+    const { result } = renderHook(() => useApp(), { wrapper });
+
+    act(() => result.current.setSelectedDevice(DEVICE_A));
+    act(() => result.current.assignControl('snare', 'midi:38'));
+    act(() => result.current.removeControl('snare', 'midi:38'));
+
+    expect(result.current.inputMapping.snare).toEqual([]);
+  });
+
+  it('keeps mappings separate per device', () => {
+    const { result } = renderHook(() => useApp(), { wrapper });
+
+    act(() => result.current.setSelectedDevice(DEVICE_A));
+    act(() => result.current.assignControl('snare', 'midi:38'));
+    act(() => result.current.setSelectedDevice(DEVICE_B));
+
+    expect(result.current.inputMapping.snare).toEqual([]);
+  });
+});
+
+const KEYBOARD: InputDevice = {
+  id: 'keyboard',
+  name: 'Keyboard',
+  sourceId: 'keyboard',
+};
+
+describe('AppContext keyboard default suppression', () => {
+  function dispatchKey(code: string, target?: EventTarget) {
+    const event = new KeyboardEvent('keydown', {
+      code,
+      bubbles: true,
+      cancelable: true,
+    });
+
+    act(() => {
+      if (target) {
+        target.dispatchEvent(event);
+      } else {
+        window.dispatchEvent(event);
+      }
+    });
+
+    return event;
+  }
+
+  function bindSpaceOnKeyboard() {
+    const { result } = renderHook(() => useApp(), { wrapper });
+
+    act(() => result.current.setSelectedDevice(KEYBOARD));
+    act(() => result.current.assignControl('kick', 'keyboard:Space'));
+
+    return result;
+  }
+
+  it('suppresses the default action for a bound key', () => {
+    bindSpaceOnKeyboard();
+
+    expect(dispatchKey('Space').defaultPrevented).toBe(true);
+  });
+
+  it('leaves unbound keys alone', () => {
+    bindSpaceOnKeyboard();
+
+    expect(dispatchKey('KeyZ').defaultPrevented).toBe(false);
+  });
+
+  it('does not suppress while typing in an input', () => {
+    bindSpaceOnKeyboard();
+
+    const input = document.createElement('input');
+
+    document.body.append(input);
+
+    expect(dispatchKey('Space', input).defaultPrevented).toBe(false);
+
+    input.remove();
+  });
+
+  it('does not suppress when a non-keyboard device is selected', () => {
+    const { result } = renderHook(() => useApp(), { wrapper });
+
+    act(() => result.current.setSelectedDevice(DEVICE_A));
+
+    expect(dispatchKey('Space').defaultPrevented).toBe(false);
+  });
+});
+
+describe('useApp', () => {
+  it('throws when used outside the provider', () => {
+    expect(() => renderHook(() => useApp())).toThrow(
+      'useApp must be used within AppProvider',
+    );
+  });
+});

@@ -128,6 +128,17 @@ function row(id: string) {
   return within(screen.getByTestId(`song-item-${id}`));
 }
 
+function filledStarsIn(id: string) {
+  return screen
+    .getByTestId(`song-item-${id}`)
+    .querySelectorAll('svg[data-prefix="fas"][data-icon="star"]').length;
+}
+
+function selectDifficulty(difficulty: string) {
+  fireEvent.click(screen.getByTestId('settings-trigger'));
+  fireEvent.click(screen.getByTestId(`difficulty-${difficulty}`));
+}
+
 beforeEach(() => {
   installLocalStorage();
   ipc = installIpcMock();
@@ -216,6 +227,44 @@ describe('SongListView — filtering and sorting', () => {
       .map((el) => el.textContent);
 
     expect(rendered).toEqual(['Alpha', 'Charlie']);
+  });
+});
+
+describe('SongListView — difficulty selection', () => {
+  it('re-filters the list to songs charted at the chosen difficulty', () => {
+    renderView();
+
+    loadSongs([
+      makeSong('a', { name: 'Expert Only', drumDifficulties: ['expert'] }),
+      makeSong('b', { name: 'Hard Only', drumDifficulties: ['hard'] }),
+    ]);
+
+    expect(screen.getByText('Expert Only')).toBeInTheDocument();
+    expect(screen.queryByText('Hard Only')).not.toBeInTheDocument();
+
+    selectDifficulty('hard');
+
+    expect(screen.queryByText('Expert Only')).not.toBeInTheDocument();
+    expect(screen.getByText('Hard Only')).toBeInTheDocument();
+  });
+
+  it('shows the high score for the selected difficulty', () => {
+    renderView();
+
+    loadSongs([
+      makeSong('a', {
+        scoreData: {
+          expert: { hitNotes: 100, totalNotes: 100, falseHits: 0 },
+          hard: { hitNotes: 45, totalNotes: 100, falseHits: 0 },
+        },
+      } as Partial<SongData>),
+    ]);
+
+    expect(filledStarsIn('a')).toBe(5);
+
+    selectDifficulty('hard');
+
+    expect(filledStarsIn('a')).toBe(2);
   });
 });
 
@@ -436,5 +485,198 @@ describe('SongListView input control gating', () => {
     act(() => handlers().tom3());
 
     expect(screen.getByTestId('song-view-stub')).toBeInTheDocument();
+  });
+});
+
+describe('SongListView — input navigation', () => {
+  function handlers() {
+    return useInputControlsMock.mock.calls.at(-1)?.[1] as Record<
+      string,
+      () => void
+    >;
+  }
+
+  function focused(id: string) {
+    return screen.getByTestId(`song-item-${id}`).className.includes('outline');
+  }
+
+  it('moves focus forward and backward through the list', () => {
+    renderView();
+    loadSongs([makeSong('a'), makeSong('b'), makeSong('c')]);
+
+    act(() => handlers().tom2());
+    expect(focused('a')).toBe(true);
+
+    act(() => handlers().tom2());
+    expect(focused('b')).toBe(true);
+    expect(focused('a')).toBe(false);
+
+    act(() => handlers().tom1());
+    expect(focused('a')).toBe(true);
+  });
+
+  it('toggles online mode with the ride cymbal', () => {
+    renderView();
+    loadSongs([]);
+
+    act(() => handlers().ride());
+
+    expect(online.calls.at(-1)).toMatchObject({ active: true });
+  });
+
+  it('downloads the focused song with the green tom in online mode', () => {
+    online.results = [makeSong('x')];
+
+    renderView();
+    loadSongs([], '/music');
+
+    fireEvent.click(screen.getByTestId('mode-online'));
+
+    act(() => handlers().tom2());
+    act(() => handlers().tom3());
+
+    expect(ipc.sent.map((s) => s.channel)).toContain('download-song');
+  });
+});
+
+describe('SongListView — sort menu navigation', () => {
+  const SORT_LABELS = ['Name', 'Favorite', 'Last added', 'Difficulty'];
+
+  function handlers() {
+    return useInputControlsMock.mock.calls.at(-1)?.[1] as Record<
+      string,
+      () => void
+    >;
+  }
+
+  function sortButton(label: string) {
+    return screen
+      .getAllByText(label, { exact: true })
+      .map((el) => el.closest('button'))
+      .find(
+        (button): button is HTMLButtonElement =>
+          !!button && button.className.includes('justify-start'),
+      )!;
+  }
+
+  function outlinedSort() {
+    return SORT_LABELS.find((label) =>
+      sortButton(label).className.includes('outline-accent'),
+    );
+  }
+
+  function focusSort(label: string) {
+    for (let i = 0; i < SORT_LABELS.length; i += 1) {
+      if (outlinedSort() === label) {
+        return;
+      }
+
+      act(() => handlers().tom2());
+    }
+  }
+
+  it('opens the sort menu with the kick and swaps to the sort control map', () => {
+    renderView();
+    loadSongs([makeSong('a'), makeSong('b')]);
+
+    expect(handlers().kick).toBeTypeOf('function');
+
+    act(() => handlers().kick());
+
+    expect(handlers().snare).toBeTypeOf('function');
+  });
+
+  it('moves the sort focus back and forth with the toms', () => {
+    renderView();
+    loadSongs([makeSong('a'), makeSong('b')]);
+
+    act(() => handlers().kick());
+
+    const before = outlinedSort();
+
+    act(() => handlers().tom2());
+
+    const after = outlinedSort();
+
+    expect(after).not.toBe(before);
+
+    act(() => handlers().tom1());
+
+    expect(outlinedSort()).toBe(before);
+  });
+
+  it('toggles the direction of a directional key with the blue tom', () => {
+    renderView();
+    loadSongs([makeSong('a'), makeSong('b')]);
+
+    act(() => handlers().kick());
+    focusSort('Name');
+    act(() => handlers().tom3());
+
+    expect(
+      sortButton('Name').querySelector('[data-icon="arrow-down"]'),
+    ).not.toBeNull();
+  });
+
+  it('ignores the direction toggle on the non-directional favorite key', () => {
+    renderView();
+    loadSongs([makeSong('a'), makeSong('b')]);
+
+    act(() => handlers().kick());
+    focusSort('Favorite');
+
+    expect(() => act(() => handlers().tom3())).not.toThrow();
+    expect(outlinedSort()).toBe('Favorite');
+  });
+
+  it('closes the sort menu with the snare and restores the list control map', () => {
+    renderView();
+    loadSongs([makeSong('a'), makeSong('b')]);
+
+    act(() => handlers().kick());
+
+    expect(handlers().snare).toBeTypeOf('function');
+
+    act(() => handlers().snare());
+
+    expect(handlers().kick).toBeTypeOf('function');
+    expect(handlers().snare).toBeUndefined();
+  });
+
+  it('does not open the sort menu in online mode', () => {
+    renderView();
+    loadSongs([], '/music');
+    fireEvent.click(screen.getByTestId('mode-online'));
+
+    expect(() => act(() => handlers().kick())).not.toThrow();
+    expect(handlers().snare).toBeUndefined();
+  });
+});
+
+describe('SongListView — input navigation edge cases', () => {
+  function handlers() {
+    return useInputControlsMock.mock.calls.at(-1)?.[1] as Record<
+      string,
+      () => void
+    >;
+  }
+
+  it('tolerates focus moves when the list is empty', () => {
+    renderView();
+    loadSongs([]);
+
+    expect(() => {
+      act(() => handlers().tom1());
+      act(() => handlers().tom2());
+    }).not.toThrow();
+  });
+
+  it('does nothing when activating with no focused song', () => {
+    renderView();
+    loadSongs([makeSong('a')]);
+
+    act(() => handlers().tom3());
+
+    expect(screen.queryByTestId('song-view-stub')).toBeNull();
   });
 });

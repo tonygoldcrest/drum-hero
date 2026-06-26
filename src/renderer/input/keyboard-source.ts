@@ -1,21 +1,11 @@
-import { InputDevice, InputEvent, InputSource, makeControlId } from './types';
+import { InputDevice, InputEvent, InputSource } from './types';
+import { isTypingTarget, makeControlId } from './utils';
 
 const KEYBOARD_DEVICE: InputDevice = {
   id: 'keyboard',
   name: 'Keyboard',
   sourceId: 'keyboard',
 };
-
-function isTyping(target: EventTarget | null): boolean {
-  const el = target as HTMLElement | null;
-
-  return (
-    !!el &&
-    (el.tagName === 'INPUT' ||
-      el.tagName === 'TEXTAREA' ||
-      el.isContentEditable)
-  );
-}
 
 export class KeyboardSource implements InputSource {
   readonly id = 'keyboard' as const;
@@ -27,7 +17,7 @@ export class KeyboardSource implements InputSource {
         event.metaKey ||
         event.ctrlKey ||
         event.altKey ||
-        isTyping(event.target)
+        isTypingTarget(event.target)
       ) {
         return;
       }

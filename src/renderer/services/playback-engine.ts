@@ -132,6 +132,7 @@ export class PlaybackEngine {
     }
 
     this.cancelCountIn();
+    this.audioPlayer.stop();
 
     const startTime = this.tickToTime(tick);
 
@@ -169,6 +170,10 @@ export class PlaybackEngine {
   }
 
   cancel(): void {
+    if (this.state !== 'counting-in') {
+      return;
+    }
+
     this.cancelCountIn();
     this.state = 'parked';
     this.emit();

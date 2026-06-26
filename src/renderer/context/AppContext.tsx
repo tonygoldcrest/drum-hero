@@ -9,7 +9,13 @@ import {
 import { uniq } from 'es-toolkit';
 import { Difficulty } from 'scan-chart';
 import { InputElement, InputMapping } from '../../types';
-import { inputBus, InputDevice } from '../input';
+import {
+  controlLabel,
+  controlSource,
+  inputBus,
+  InputDevice,
+  isTypingTarget,
+} from '../input';
 import { PlayheadStyle, PLAYHEAD_STYLES } from '../types';
 
 interface AppContextValue {
@@ -171,6 +177,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
       window.electron.ipcRenderer.sendMessage('stop-listen-midi');
     };
   }, [selectedDevice]);
+
+  useEffect(() => {
+    if (selectedDevice?.sourceId !== 'keyboard') {
+      return undefined;
+    }
+
+    const mapping = inputMappings[selectedDevice.id] ?? {};
+    const boundCodes = new Set(
+      Object.values(mapping)
+        .flat()
+        .filter((controlId) => controlSource(controlId) === 'keyboard')
+        .map((controlId) => controlLabel(controlId)),
+    );
+
+    if (boundCodes.size === 0) {
+      return undefined;
+    }
+
+    const suppressDefault = (event: KeyboardEvent) => {
+      if (isTypingTarget(event.target)) {
+        return;
+      }
+
+      if (boundCodes.has(event.code)) {
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener('keydown', suppressDefault);
+
+    return () => {
+      window.removeEventListener('keydown', suppressDefault);
+    };
+  }, [selectedDevice, inputMappings]);
 
   return (
     <AppContext.Provider

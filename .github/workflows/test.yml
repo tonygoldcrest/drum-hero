@@ -1,6 +1,27 @@
 name: Test
 
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - 'package.json'
+      - 'yarn.lock'
+      - 'electron.vite.config.ts'
+      - 'scripts/**'
+      - 'assets/**'
+      - 'src/main/**'
+      - 'src/preload/**'
+      - '.github/workflows/test.yml'
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'yarn.lock'
+      - 'electron.vite.config.ts'
+      - 'scripts/**'
+      - 'assets/**'
+      - 'src/main/**'
+      - 'src/preload/**'
+      - '.github/workflows/test.yml'
+  workflow_dispatch:
 
 jobs:
   test:

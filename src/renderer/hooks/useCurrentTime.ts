@@ -1,9 +1,5 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 import { TimeStore } from '../services/time-store';
-
-export function useCurrentTime(store: TimeStore): number {
-  return useSyncExternalStore(store.subscribe, store.get);
-}
 
 export function useThrottledCurrentTime(
   store: TimeStore,

@@ -102,7 +102,12 @@ function measureData(
 ): RenderData {
   return {
     stave: fakeStave(),
-    measure: { startTick, endTick, notes: modelNotes } as unknown as Measure,
+    measure: {
+      startTick,
+      endTick,
+      notes: modelNotes,
+      timeSig: [4, 4],
+    } as unknown as Measure,
     renderedNotes: notes,
     yOffset: 0,
   };
@@ -335,6 +340,39 @@ describe('GameEngine', () => {
     emitInput('midi:38');
 
     expect(fill(note)).toBe('');
+  });
+
+  it('does not score input during the count-in, only once playing', async () => {
+    const note = staveNote(['c/5']);
+    const { engine } = await setup({
+      renderData: [
+        measureData(
+          0,
+          1920,
+          [rendered(480, note)],
+          [{ isRest: false, notes: ['c/5'] } as Note],
+        ),
+      ],
+      countInEnabled: true,
+    });
+
+    engine.setView({
+      cursorEl: document.createElement('div'),
+      highlightEls: [],
+    });
+    engine.setMapping({ snare: ['midi:38'] });
+
+    engine.playFromTick(0);
+    engine.timeStore.set(0.5);
+    emitInput('midi:38');
+
+    expect(fill(note)).toBe('');
+
+    vi.advanceTimersByTime(5000);
+    engine.timeStore.set(0.5);
+    emitInput('midi:38');
+
+    expect(fill(note)).toBe(HIT_RGBA);
   });
 
   it('stops scoring input after dispose', async () => {

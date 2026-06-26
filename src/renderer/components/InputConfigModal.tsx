@@ -153,6 +153,22 @@ export function InputConfigModal({ isOpen, onClose }: Props) {
   }, [assignControl, selectedDevice, isOpen]);
 
   useEffect(() => {
+    if (listeningTo === undefined) {
+      return undefined;
+    }
+
+    const suppressDefault = (event: KeyboardEvent) => {
+      event.preventDefault();
+    };
+
+    window.addEventListener('keydown', suppressDefault);
+
+    return () => {
+      window.removeEventListener('keydown', suppressDefault);
+    };
+  }, [listeningTo]);
+
+  useEffect(() => {
     if (isOpen) {
       backdropRef.current?.showPopover();
     } else {

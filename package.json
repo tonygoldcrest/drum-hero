@@ -30,7 +30,10 @@
     "start": "electron-vite dev",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "yarn build && playwright test",
+    "test:e2e:only": "playwright test"
   },
   "browserslist": [],
   "prettier": {
@@ -79,6 +82,7 @@
     "@electron/rebuild": "^4.0.4",
     "@eslint/compat": "^2.1.0",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.61.1",
     "@storybook/react": "^10.0.0",
     "@storybook/react-vite": "^10.0.0",
     "@tailwindcss/vite": "^4.3.1",

@@ -23,6 +23,12 @@ notes.txt
 
 out
 
+coverage
+
+test-results
+playwright-report
+.playwright
+
 release/app/dist
 release/build
 test-songs/

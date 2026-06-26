@@ -2,7 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { buildSongFromDir } from './util';
+import { buildSongFromDir, isUnderDirectory, resolveHtmlPath } from './util';
 
 const CHART_WITH_HARD_AND_EXPERT = `[Song]
 {
@@ -72,5 +72,105 @@ describe('buildSongFromDir drum difficulties', () => {
     const song = buildSongFromDir(dir);
 
     expect(song?.drumDifficulties).toEqual([]);
+  });
+
+  it('returns an empty list when the chart fails to parse', () => {
+    fs.writeFileSync(
+      path.join(dir, 'song.ini'),
+      '[Song]\nname = Test\npro_drums = True\n',
+    );
+    fs.writeFileSync(path.join(dir, 'notes.mid'), 'not a real midi file');
+
+    const song = buildSongFromDir(dir);
+
+    expect(song?.drumDifficulties).toEqual([]);
+    expect(song?.format).toBe('mid');
+  });
+});
+
+describe('buildSongFromDir guards', () => {
+  it('returns null when there is no song.ini', () => {
+    expect(buildSongFromDir(dir)).toBeNull();
+  });
+
+  it('returns null when neither notes.mid nor notes.chart exists', () => {
+    fs.writeFileSync(path.join(dir, 'song.ini'), '[Song]\nname = Test\n');
+
+    expect(buildSongFromDir(dir)).toBeNull();
+  });
+});
+
+describe('buildSongFromDir metadata', () => {
+  it('collects playable audio stems and skips crowd/preview tracks', () => {
+    writeSong(CHART_WITH_HARD_AND_EXPERT);
+    fs.writeFileSync(path.join(dir, 'drums.ogg'), '');
+    fs.writeFileSync(path.join(dir, 'song.mp3'), '');
+    fs.writeFileSync(path.join(dir, 'crowd.ogg'), '');
+    fs.writeFileSync(path.join(dir, 'preview.ogg'), '');
+
+    const song = buildSongFromDir(dir);
+    const names = song?.audio.map((a) => a.name).sort();
+
+    expect(names).toEqual(['drums', 'song']);
+    expect(song?.audio.every((a) => a.src.startsWith('gh://'))).toBe(true);
+  });
+
+  it('detects the album cover and carries existing persisted fields', () => {
+    writeSong(CHART_WITH_HARD_AND_EXPERT);
+    fs.writeFileSync(path.join(dir, 'album.jpg'), '');
+
+    const song = buildSongFromDir(dir, {
+      id: 'fixed-id',
+      liked: true,
+      scoreData: { expert: { score: 10 } } as never,
+    });
+
+    expect(song?.id).toBe('fixed-id');
+    expect(song?.liked).toBe(true);
+    expect(song?.scoreData).toEqual({ expert: { score: 10 } });
+    expect(song?.albumCover).toBe(`gh://${path.join(dir, 'album.jpg')}`);
+  });
+
+  it('reports no album cover when no image is present', () => {
+    writeSong(CHART_WITH_HARD_AND_EXPERT);
+
+    expect(buildSongFromDir(dir)?.albumCover).toBeNull();
+  });
+});
+
+describe('isUnderDirectory', () => {
+  it('accepts a directory nested inside the root', () => {
+    expect(isUnderDirectory('/songs/rock/track', '/songs')).toBe(true);
+  });
+
+  it('accepts the root directory itself', () => {
+    expect(isUnderDirectory('/songs', '/songs')).toBe(true);
+  });
+
+  it('rejects a sibling escaping via ..', () => {
+    expect(isUnderDirectory('/other/track', '/songs')).toBe(false);
+  });
+});
+
+describe('resolveHtmlPath', () => {
+  const original = process.env.NODE_ENV;
+
+  afterEach(() => {
+    process.env.NODE_ENV = original;
+  });
+
+  it('uses the dev renderer URL in development', () => {
+    process.env.NODE_ENV = 'development';
+    process.env.ELECTRON_RENDERER_URL = 'http://localhost:1234';
+
+    expect(resolveHtmlPath('index.html')).toBe('http://localhost:1234');
+  });
+
+  it('resolves a file URL outside development', () => {
+    process.env.NODE_ENV = 'production';
+
+    expect(resolveHtmlPath('index.html')).toMatch(
+      /^file:\/\/.*renderer\/index\.html$/,
+    );
   });
 });

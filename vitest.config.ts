@@ -14,6 +14,27 @@ export default defineConfig({
         '<rootDir>/src/__mocks__/fileMock.js',
       '\\.(css|less|sass|scss)$': 'identity-obj-proxy',
     },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary', 'json-summary', 'html'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/**/*.{test,spec}.{ts,tsx}',
+        'src/**/*.stories.tsx',
+        'src/**/*.d.ts',
+        'src/__tests__/**',
+        'src/__mocks__/**',
+        'src/**/test-support.{ts,tsx}',
+        'src/**/drumMidiFixture.ts',
+        'src/main/index.ts',
+        'src/main/AppUpdater.ts',
+        'src/main/menu.ts',
+        'src/main/ipc/midi.ts',
+        'src/preload/**',
+        'src/renderer/index.tsx',
+      ],
+    },
   },
   resolve: {
     alias: {

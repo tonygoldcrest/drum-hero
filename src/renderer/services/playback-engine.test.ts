@@ -198,6 +198,37 @@ describe('PlaybackEngine', () => {
     expect(engine.getSnapshot().countInBeat).toBe(1);
   });
 
+  it('stops the running audio when a new count-in begins mid-playback', async () => {
+    const { engine, player } = await setup({}, { countInEnabled: true });
+
+    engine.playFromTick(0);
+    runCountIn();
+
+    expect(engine.getSnapshot().isPlaying).toBe(true);
+    expect(player.isInitialised).toBe(true);
+
+    engine.playFromTick(1920);
+
+    expect(engine.getSnapshot().state).toBe('counting-in');
+    expect(player.isInitialised).toBe(false);
+  });
+
+  it('leaves nothing playing when the play button cancels a mid-playback count-in', async () => {
+    const { engine, player } = await setup({}, { countInEnabled: true });
+
+    engine.playFromTick(0);
+    runCountIn();
+    player.start.mockClear();
+
+    engine.playFromTick(1920);
+    engine.cancel();
+    runCountIn();
+
+    expect(engine.getSnapshot().state).toBe('parked');
+    expect(player.isInitialised).toBe(false);
+    expect(player.start).not.toHaveBeenCalled();
+  });
+
   it('cancels an in-progress count-in without starting audio', async () => {
     const { engine, player } = await setup({}, { countInEnabled: true });
 
@@ -286,6 +317,141 @@ describe('PlaybackEngine', () => {
     unsubscribe();
     engine.pause();
     expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('seeking during a count-in cancels it and plays from the seeked time', async () => {
+    const { engine, player } = await setup({}, { countInEnabled: true });
+
+    engine.playFromTick(0);
+    expect(engine.getSnapshot().isCounting).toBe(true);
+
+    engine.seekSeconds(5);
+
+    expect(engine.getSnapshot().isPlaying).toBe(true);
+    expect(player.start).toHaveBeenCalledTimes(1);
+    expect(player.start).toHaveBeenLastCalledWith(5);
+
+    runCountIn();
+
+    expect(player.start).toHaveBeenCalledTimes(1);
+  });
+
+  it('counts in from the new measure when one is clicked after pausing', async () => {
+    const { engine, player } = await setup({}, { countInEnabled: true });
+
+    engine.playFromTick(0);
+    runCountIn();
+    player.currentTime = 1;
+    engine.pause();
+
+    expect(engine.getSnapshot().state).toBe('parked');
+
+    player.start.mockClear();
+    engine.playFromTick(1920);
+
+    expect(engine.getSnapshot().state).toBe('counting-in');
+    expect(player.isInitialised).toBe(false);
+
+    runCountIn();
+
+    expect(player.start).toHaveBeenCalledTimes(1);
+    expect(player.start).toHaveBeenLastCalledWith(expect.closeTo(2));
+  });
+
+  it('jumps straight to a clicked measure when the count-in is disabled', async () => {
+    const { engine, player } = await setup();
+
+    engine.playFromTick(0);
+    player.start.mockClear();
+
+    engine.playFromTick(1920);
+
+    expect(engine.getSnapshot().isPlaying).toBe(true);
+    expect(player.stop).toHaveBeenCalled();
+    expect(player.start).toHaveBeenLastCalledWith(expect.closeTo(2));
+  });
+
+  it('only the latest count-in completes when measures are clicked rapidly', async () => {
+    const { engine, player } = await setup({}, { countInEnabled: true });
+
+    engine.playFromTick(0);
+    engine.playFromTick(1920);
+
+    runCountIn();
+
+    expect(player.start).toHaveBeenCalledTimes(1);
+    expect(player.start).toHaveBeenLastCalledWith(expect.closeTo(2));
+  });
+
+  it('can restart after the song ends', async () => {
+    const { engine, player } = await setup();
+
+    engine.playFromTick(0);
+    player.onEnded();
+    expect(engine.getSnapshot().isEnded).toBe(true);
+
+    player.start.mockClear();
+    engine.play();
+
+    expect(engine.getSnapshot().isPlaying).toBe(true);
+    expect(player.start).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores pause during a count-in', async () => {
+    const { engine, player } = await setup({}, { countInEnabled: true });
+
+    engine.playFromTick(0);
+    engine.pause();
+
+    expect(player.pause).not.toHaveBeenCalled();
+    expect(engine.getSnapshot().state).toBe('counting-in');
+  });
+
+  it('ignores cancel when not counting in', async () => {
+    const { engine } = await setup();
+
+    engine.cancel();
+
+    expect(engine.getSnapshot().state).toBe('idle');
+  });
+
+  it('lets a following pause stop playback when the back button cancels mid-play', async () => {
+    const { engine, player } = await setup();
+
+    engine.playFromTick(0);
+    player.currentTime = 1;
+
+    engine.cancel();
+    engine.pause();
+
+    expect(player.pause).toHaveBeenCalledTimes(1);
+    expect(engine.getSnapshot().state).toBe('parked');
+    expect(engine.timeStore.get()).toBe(1);
+  });
+
+  it('offsets the audio start by the configured delay', async () => {
+    const { engine, player } = await setup({}, { delaySeconds: 0.5 });
+
+    engine.playFromTick(1920);
+
+    expect(player.start).toHaveBeenLastCalledWith(expect.closeTo(2.5));
+  });
+
+  it('ignores play without a chart', async () => {
+    const { engine, player } = await setup({}, { chart: undefined });
+
+    engine.play();
+
+    expect(player.start).not.toHaveBeenCalled();
+    expect(engine.getSnapshot().state).toBe('idle');
+  });
+
+  it('ignores seek before the player is ready', async () => {
+    const { engine } = await setup({ trackData: [] });
+
+    engine.seekSeconds(3);
+
+    expect(engine.getSnapshot().isPlaying).toBe(false);
   });
 
   it('destroys the player on dispose in production', async () => {

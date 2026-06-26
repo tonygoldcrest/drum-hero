@@ -28,5 +28,18 @@ jobs:
       - name: Type check
         run: yarn tsc --noEmit
 
-      - name: Test
-        run: yarn test
+      - name: Test with coverage
+        run: yarn test:coverage
+
+      - name: Coverage summary (informational)
+        if: ${{ !cancelled() }}
+        run: |
+          node -e "const t=require('./coverage/coverage-summary.json').total;const f=k=>t[k].pct+'% ('+t[k].covered+'/'+t[k].total+')';const md=['## Coverage (informational)','','| Metric | Coverage |','|---|---|','| Lines | '+f('lines')+' |','| Statements | '+f('statements')+' |','| Functions | '+f('functions')+' |','| Branches | '+f('branches')+' |',''].join('\n');require('fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY,md);"
+
+      - name: Upload coverage report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage
+          retention-days: 7

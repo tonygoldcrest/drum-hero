@@ -132,4 +132,39 @@ describe('InputConfigModal', () => {
 
     expect(settings.assignControl).toHaveBeenCalledWith('hihat', 'midi:50');
   });
+
+  function dispatchKey() {
+    const event = new KeyboardEvent('keydown', {
+      code: 'Space',
+      bubbles: true,
+      cancelable: true,
+    });
+
+    window.dispatchEvent(event);
+
+    return event;
+  }
+
+  it('does not suppress default key actions when not learning', () => {
+    render(<InputConfigModal isOpen onClose={() => {}} />);
+
+    expect(dispatchKey().defaultPrevented).toBe(false);
+  });
+
+  it('suppresses default key actions while learning so the focused button is not re-triggered', () => {
+    render(<InputConfigModal isOpen onClose={() => {}} />);
+
+    fireEvent.click(screen.getAllByText('Learn')[0]);
+
+    expect(dispatchKey().defaultPrevented).toBe(true);
+  });
+
+  it('stops suppressing default key actions once a control is learned', () => {
+    render(<InputConfigModal isOpen onClose={() => {}} />);
+
+    fireEvent.click(screen.getAllByText('Learn')[0]);
+    press('midi:50');
+
+    expect(dispatchKey().defaultPrevented).toBe(false);
+  });
 });

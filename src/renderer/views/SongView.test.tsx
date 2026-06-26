@@ -299,6 +299,75 @@ describe('SongView — playback', () => {
   });
 });
 
+describe('SongView — drum navigation', () => {
+  function mapDevice(mapping: Record<string, string[]>) {
+    window.localStorage.setItem('settings.countIn', JSON.stringify(false));
+    window.localStorage.setItem(
+      'settings.selectedDevice',
+      JSON.stringify({
+        id: 'midi:Pad',
+        name: 'Pad',
+        sourceId: 'midi',
+        port: 1,
+      }),
+    );
+    window.localStorage.setItem(
+      'settings.inputMappings',
+      JSON.stringify({ 'midi:Pad': mapping }),
+    );
+  }
+
+  it('starts playback when the green tom is struck', async () => {
+    mapDevice({ tom3: ['midi:38'] });
+
+    renderView();
+    await loadSong();
+
+    const [player] = await getInstances();
+    const start = (player as unknown as { start: ReturnType<typeof vi.fn> })
+      .start;
+
+    await act(async () => {
+      pressInput('midi:38');
+    });
+
+    expect(start).toHaveBeenCalledTimes(1);
+  });
+
+  it('pauses playback when the pause control is struck mid-play', async () => {
+    mapDevice({ tom3: ['midi:38'], pause: ['midi:39'] });
+
+    renderView();
+    await loadSong();
+
+    const [player] = await getInstances();
+    const pause = (player as unknown as { pause: ReturnType<typeof vi.fn> })
+      .pause;
+
+    await act(async () => {
+      pressInput('midi:38');
+    });
+    await act(async () => {
+      pressInput('midi:39');
+    });
+
+    expect(pause).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns to the song list when the snare is struck while stopped', async () => {
+    mapDevice({ snare: ['midi:40'] });
+
+    renderView();
+    await loadSong();
+
+    await act(async () => {
+      pressInput('midi:40');
+    });
+
+    expect(screen.getByTestId('song-list-stub')).toBeInTheDocument();
+  });
+});
+
 describe('SongView — difficulty', () => {
   it('parses at the difficulty selected in app settings', async () => {
     localStorage.setItem('settings.difficulty', JSON.stringify('hard'));
