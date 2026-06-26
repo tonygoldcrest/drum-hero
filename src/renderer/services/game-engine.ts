@@ -6,7 +6,7 @@ import { PlayheadStyle } from '../types';
 import { InputEvent } from '../input/types';
 import { PlaybackEngine, PlaybackSnapshot } from './playback-engine';
 import { ScoringEngine } from './scoring-engine';
-import { ViewEngine, ViewRefs } from './view-engine';
+import { GameRenderer, GameRendererRefs } from './game-renderer';
 import { secondsToTicks } from '../views/utils';
 
 export interface GameEngineOptions {
@@ -29,12 +29,12 @@ export interface GameSettings {
   playheadStyle: PlayheadStyle;
 }
 
-export type GameView = ViewRefs;
+export type GameView = GameRendererRefs;
 
 export class GameEngine {
   private playback: PlaybackEngine;
   private scoring = new ScoringEngine();
-  private view = new ViewEngine((tick, key) => this.scoring.isHit(tick, key));
+  private view = new GameRenderer((tick, key) => this.scoring.isHit(tick, key));
   private onEndedCb: (score: ScoreData) => void;
   private chart: ParsedChart | undefined;
   private renderData: RenderData[] = [];

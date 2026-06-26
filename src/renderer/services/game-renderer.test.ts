@@ -6,7 +6,7 @@ import {
   RenderData,
   RenderedNote,
 } from '../../chart-parser/types';
-import { ViewEngine } from './view-engine';
+import { GameRenderer } from './game-renderer';
 
 const HIT = 'rgba(0, 0, 0, 0)';
 const MISSED = 'rgb(160, 152, 144)';
@@ -94,14 +94,14 @@ interface SetupOptions {
 function setup(
   renderData: RenderData[],
   options: SetupOptions = {},
-): ViewEngine {
+): GameRenderer {
   const {
     playheadStyle = 'Cursor',
     isHit = () => false,
     cursorEl,
     highlightEls = [],
   } = options;
-  const view = new ViewEngine(isHit);
+  const view = new GameRenderer(isHit);
 
   view.setContext({ chart: CHART, renderData });
   view.setSettings(playheadStyle);

@@ -11,12 +11,12 @@ import {
 
 export type IsHit = (tick: number, prefix: string) => boolean;
 
-export interface ViewContext {
+export interface GameRendererContext {
   chart: ParsedChart | undefined;
   renderData: RenderData[];
 }
 
-export interface ViewRefs {
+export interface GameRendererRefs {
   cursorEl: HTMLElement | undefined;
   highlightEls: (HTMLElement | undefined)[];
 }
@@ -87,7 +87,7 @@ function getScrollParent(
   return undefined;
 }
 
-export class ViewEngine {
+export class GameRenderer {
   private chart: ParsedChart | undefined;
   private renderData: RenderData[] = [];
   private playheadStyle: PlayheadStyle = 'Cursor';
@@ -104,7 +104,7 @@ export class ViewEngine {
 
   constructor(private isHit: IsHit) {}
 
-  setContext(context: ViewContext): void {
+  setContext(context: GameRendererContext): void {
     const renderDataChanged = this.renderData !== context.renderData;
 
     this.chart = context.chart;
@@ -125,7 +125,7 @@ export class ViewEngine {
     }
   }
 
-  setRefs(refs: ViewRefs): void {
+  setRefs(refs: GameRendererRefs): void {
     this.cursorEl = refs.cursorEl;
     this.highlightEls = refs.highlightEls;
     this.scrollContainer = undefined;
