@@ -40,6 +40,16 @@ test.describe('seeded library', () => {
 
     await expect(song).toBeVisible({ timeout: 30_000 });
 
+    const cover = page.locator('img[src^="gh://"]').first();
+
+    await expect(cover).toBeVisible();
+    await expect
+      .poll(
+        async () => cover.evaluate((el: HTMLImageElement) => el.naturalWidth),
+        { timeout: 10_000 },
+      )
+      .toBeGreaterThan(0);
+
     await song.click();
 
     const sheet = page.locator('svg').first();

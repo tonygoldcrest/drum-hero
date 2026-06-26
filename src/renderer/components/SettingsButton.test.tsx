@@ -1,9 +1,9 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { InputEvent } from '../input/types';
-import { AppProvider } from '../context/AppContext';
+import { AppProvider, useApp } from '../context/AppContext';
 import {
   installIpcMock,
   installLocalStorage,
@@ -159,6 +159,30 @@ describe('SettingsButton — song-list parameters', () => {
     expect(screen.getByTestId('difficulty-easy').className).not.toContain(
       'ant-btn-primary',
     );
+  });
+
+  it('shows only the folder name for a Windows-style library path', () => {
+    function SeedPath() {
+      const { setCurrentPath } = useApp();
+
+      useEffect(() => {
+        setCurrentPath('C:\\Users\\me\\My Library');
+      }, [setCurrentPath]);
+
+      return undefined;
+    }
+
+    render(
+      <>
+        <SeedPath />
+        <SettingsButton page="song-list" />
+      </>,
+      { wrapper },
+    );
+    open();
+
+    expect(screen.getByText('My Library')).toBeInTheDocument();
+    expect(screen.queryByText(/C:\\/)).not.toBeInTheDocument();
   });
 
   it('requests a folder picker from the Select folder button', () => {

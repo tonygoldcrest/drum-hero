@@ -15,11 +15,18 @@ export interface Harness {
   libraryDir: string;
 }
 
+const ALBUM_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64',
+);
+
 function writeFixtureLibrary(): string {
   const libraryDir = mkdtempSync(path.join(tmpdir(), 'sightkick-library-'));
   const songDir = path.join(libraryDir, 'test-song');
 
   mkdirSync(songDir, { recursive: true });
+
+  writeFileSync(path.join(songDir, 'album.png'), ALBUM_PNG);
 
   writeFileSync(
     path.join(songDir, 'song.ini'),

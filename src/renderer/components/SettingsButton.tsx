@@ -145,7 +145,9 @@ export const SettingsButton = memo(function Settings({
                 title={currentPath ?? undefined}
                 className="grow"
               >
-                {currentPath ? currentPath.split('/').pop() : 'Select folder'}
+                {currentPath
+                  ? currentPath.split(/[\\/]/).pop()
+                  : 'Select folder'}
               </Button>
               {currentPath ? (
                 <Button

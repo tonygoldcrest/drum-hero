@@ -40,6 +40,23 @@ export function resolveHtmlPath(_htmlFileName: string) {
   return `file://${path.resolve(__dirname, '../renderer/index.html')}`;
 }
 
+export function chartGlobPattern(rootDir: string): string {
+  return `${rootDir.replace(/\\/g, '/')}/**/{notes.mid,notes.chart}`;
+}
+
+export function toGhUrl(absPath: string): string {
+  const forward = absPath.replace(/\\/g, '/');
+  const rooted = forward.startsWith('/') ? forward : `/${forward}`;
+
+  return `gh://${encodeURI(rooted).replace(/#/g, '%23').replace(/\?/g, '%3F')}`;
+}
+
+export function ghUrlToFilePath(url: string): string {
+  const stripped = decodeURIComponent(url.replace(/^gh:\/+/, '/'));
+
+  return /^\/[a-zA-Z]:/.test(stripped) ? stripped.slice(1) : stripped;
+}
+
 export function isUnderDirectory(songDir: string, rootDir: string): boolean {
   const relative = path.relative(rootDir, songDir);
 
@@ -93,14 +110,14 @@ export function buildSongFromDir(
         f !== 'preview.ogg',
     )
     .map((f) => ({
-      src: `gh://${path.join(dir, f)}`,
+      src: toGhUrl(path.join(dir, f)),
       name: path.parse(f).name,
     }));
 
   return {
     id: existing?.id ?? randomUUID(),
     dir,
-    albumCover: albumCoverPath ? `gh://${albumCoverPath}` : null,
+    albumCover: albumCoverPath ? toGhUrl(albumCoverPath) : null,
     ...meta,
     format,
     audio,

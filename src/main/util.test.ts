@@ -2,7 +2,14 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { buildSongFromDir, isUnderDirectory, resolveHtmlPath } from './util';
+import {
+  buildSongFromDir,
+  chartGlobPattern,
+  ghUrlToFilePath,
+  isUnderDirectory,
+  resolveHtmlPath,
+  toGhUrl,
+} from './util';
 
 const CHART_WITH_HARD_AND_EXPERT = `[Song]
 {
@@ -135,6 +142,52 @@ describe('buildSongFromDir metadata', () => {
     writeSong(CHART_WITH_HARD_AND_EXPERT);
 
     expect(buildSongFromDir(dir)?.albumCover).toBeNull();
+  });
+});
+
+describe('chartGlobPattern', () => {
+  it('keeps forward-slash roots intact', () => {
+    expect(chartGlobPattern('/songs/rock')).toBe(
+      '/songs/rock/**/{notes.mid,notes.chart}',
+    );
+  });
+
+  it('converts Windows backslash roots to forward slashes', () => {
+    expect(chartGlobPattern('D:\\a\\sightkick\\library')).toBe(
+      'D:/a/sightkick/library/**/{notes.mid,notes.chart}',
+    );
+  });
+});
+
+describe('gh:// urls', () => {
+  it('encodes a posix absolute path', () => {
+    expect(toGhUrl('/songs/My Song/drums.ogg')).toBe(
+      'gh:///songs/My%20Song/drums.ogg',
+    );
+  });
+
+  it('rewrites a Windows path with a drive and backslashes', () => {
+    expect(toGhUrl('C:\\Users\\me\\My Song\\drums.ogg')).toBe(
+      'gh:///C:/Users/me/My%20Song/drums.ogg',
+    );
+  });
+
+  it('round-trips a posix path back to a filesystem path', () => {
+    expect(ghUrlToFilePath(toGhUrl('/songs/My Song/drums.ogg'))).toBe(
+      '/songs/My Song/drums.ogg',
+    );
+  });
+
+  it('strips the leading slash before a Windows drive letter', () => {
+    expect(ghUrlToFilePath(toGhUrl('C:\\Users\\me\\My Song\\drums.ogg'))).toBe(
+      'C:/Users/me/My Song/drums.ogg',
+    );
+  });
+
+  it('accepts legacy unencoded posix urls', () => {
+    expect(ghUrlToFilePath('gh:///songs/My Song/drums.ogg')).toBe(
+      '/songs/My Song/drums.ogg',
+    );
   });
 });
 

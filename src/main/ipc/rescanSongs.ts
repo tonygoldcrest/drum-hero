@@ -1,7 +1,7 @@
 import { IpcMainEvent, dialog } from 'electron';
 import { SongData, StorageSchema } from '../../types';
 import { appState } from '../AppState';
-import { buildSongFromDir, isUnderDirectory } from '../util';
+import { buildSongFromDir, chartGlobPattern, isUnderDirectory } from '../util';
 import { glob } from 'glob';
 import fs from 'fs';
 import path from 'path';
@@ -42,14 +42,15 @@ export async function rescanSongs(event: IpcMainEvent, newDir = true) {
       ([, s]) => !isUnderDirectory(s.dir, selectedPath),
     ),
   );
-  const files = await glob(`${selectedPath}/**/{notes.mid,notes.chart}`);
+  const files = await glob(chartGlobPattern(selectedPath));
   const dirToFile = new Map<string, string>();
 
   for (const file of files) {
-    const dir = path.dirname(file);
+    const normalized = path.normalize(file);
+    const dir = path.dirname(normalized);
 
-    if (!dirToFile.has(dir) || path.extname(file) === '.mid') {
-      dirToFile.set(dir, file);
+    if (!dirToFile.has(dir) || path.extname(normalized) === '.mid') {
+      dirToFile.set(dir, normalized);
     }
   }
 

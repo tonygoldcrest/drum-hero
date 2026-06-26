@@ -11,7 +11,7 @@ import {
 } from 'electron';
 import Store from 'electron-store';
 import MenuBuilder from './menu';
-import { resolveHtmlPath } from './util';
+import { ghUrlToFilePath, resolveHtmlPath } from './util';
 import { AppUpdater } from './AppUpdater';
 import { loadSong } from './ipc/loadSong';
 import { loadSongList } from './ipc/loadSongList';
@@ -60,15 +60,9 @@ class AppState {
     app
       .whenReady()
       .then(() => {
-        protocol.handle('gh', (request) => {
-          // URLs are gh://<absolutePath> where <absolutePath> starts with "/".
-          // Strip the scheme and any leading slashes back down to a single one.
-          const filePath = decodeURIComponent(
-            request.url.replace(/^gh:\/+/, '/'),
-          );
-
-          return net.fetch(pathToFileURL(filePath).toString());
-        });
+        protocol.handle('gh', (request) =>
+          net.fetch(pathToFileURL(ghUrlToFilePath(request.url)).toString()),
+        );
         this.setupIpc();
         this.createWindow();
         app.on('activate', () => {
