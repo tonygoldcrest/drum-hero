@@ -388,6 +388,37 @@ describe('SongView — difficulty', () => {
   });
 });
 
+describe('SongView — bar numbers', () => {
+  function lastShowBarNumbers() {
+    return renderMusicMock.mock.calls.at(-1)?.[2];
+  }
+
+  it('ignores a persisted showBarNumbers outside dev mode', async () => {
+    localStorage.setItem('settings.showBarNumbers', JSON.stringify(true));
+
+    renderView();
+    await loadSong();
+
+    expect(renderMusicMock).toHaveBeenCalled();
+    expect(lastShowBarNumbers()).toBe(false);
+  });
+
+  it('renders bar numbers once dev mode is enabled', async () => {
+    localStorage.setItem('settings.showBarNumbers', JSON.stringify(true));
+
+    renderView();
+    await loadSong();
+
+    expect(lastShowBarNumbers()).toBe(false);
+
+    await act(async () => {
+      ipc.emit('check-dev', true);
+    });
+
+    expect(lastShowBarNumbers()).toBe(true);
+  });
+});
+
 describe('SongView — score', () => {
   async function finishSong() {
     const [player] = await getInstances();

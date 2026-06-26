@@ -28,6 +28,7 @@
     "package:win": "yarn build && electron-builder build -w --x64 --publish never",
     "rebuild": "electron-rebuild --parallel --types prod,dev,optional",
     "start": "electron-vite dev",
+    "preview": "electron-vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test": "vitest run",

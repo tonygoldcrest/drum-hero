@@ -45,7 +45,7 @@ export function SongView() {
     proDrums: songData?.pro_drums === 'True',
     songId: songData?.id,
     difficulty,
-    showBarNumbers,
+    showBarNumbers: isDev && showBarNumbers,
     enableColors,
     showTempo,
   });
