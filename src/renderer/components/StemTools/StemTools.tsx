@@ -98,8 +98,8 @@ export function StemTools({
       <div className="flex flex-col gap-1" data-testid="stem-tools-progress">
         <div className="text-sm text-text-muted">
           {phase === 'extracting'
-            ? 'Stem Tools Extracting…'
-            : 'Stem Tools Downloading…'}
+            ? 'Extracting Stem Tools...'
+            : 'Downloading Stem Tools...'}
         </div>
         <div className="flex items-center gap-2">
           <Progress percent={downloadPercent ?? 0} className="grow" />

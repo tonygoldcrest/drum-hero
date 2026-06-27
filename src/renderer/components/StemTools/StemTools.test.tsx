@@ -96,7 +96,7 @@ describe('StemTools', () => {
       />,
     );
 
-    expect(screen.getByText('Extracting…')).toBeInTheDocument();
+    expect(screen.getByText('Extracting Stem Tools...')).toBeInTheDocument();
     expect(screen.queryByText(/Get stem splitter/)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('cancel-stem-tools'));
