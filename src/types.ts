@@ -72,9 +72,38 @@ export interface AudioData {
 
 export type StemToolsStatus = 'ready' | 'download' | 'unsupported';
 
+export type StemToolsPhase = 'downloading' | 'extracting';
+
+export interface StemToolsManifest {
+  version: string;
+  fileCount: number;
+  downloadSize: number;
+  uncompressedSize: number;
+}
+
+export interface IpcCheckStemToolsResponse {
+  status: StemToolsStatus;
+  installedVersion?: string;
+}
+
+export interface IpcStemToolsRemoteResponse {
+  available: boolean;
+  latestVersion?: string;
+  downloadSize?: number;
+  uncompressedSize?: number;
+  updateAvailable: boolean;
+}
+
 export interface IpcDownloadStemToolsResponse {
+  phase?: StemToolsPhase;
   progress?: number;
   success?: boolean;
+  cancelled?: boolean;
+  error?: string;
+}
+
+export interface IpcDeleteStemToolsResponse {
+  success: boolean;
   error?: string;
 }
 

@@ -12,6 +12,7 @@ import {
 import { SplittingQueue } from '../components/SplittingQueue';
 import { EmptySongState } from '../components/EmptySongState';
 import { useApp } from '../context/AppContext';
+import { StemToolsProvider } from '../context/StemToolsContext';
 import { useStemTools } from '../hooks/useStemTools';
 import { useSongList } from '../hooks/useSongList';
 import { useDownload } from '../hooks/useDownload';
@@ -22,8 +23,7 @@ export function SongListView() {
   const { currentPath, inputMapping, difficulty } = useApp();
   const navigate = useNavigate();
   const songOpen = useOutlet() !== null;
-  const { stemToolsStatus, stemToolsLoading, downloadPercent, download } =
-    useStemTools();
+  const stemTools = useStemTools();
   const {
     songList,
     splittingIds,
@@ -186,88 +186,82 @@ export function SongListView() {
   );
 
   return (
-    <div className="h-screen flex flex-col bg-bg">
-      <div
-        className="border-b border-divider p-4 z-10 flex flex-col gap-4"
-        style={{ background: 'var(--gradient-header)' }}
-      >
-        <div className="flex gap-2 items-center">
-          <SongFilter
-            nameFilter={nameFilter}
-            onChangeFilter={setNameFilter}
-            difficulty={difficulty}
-            filteredSongsCount={
-              mode === 'online' && onlineTotal !== undefined
-                ? onlineTotal
-                : filteredSongList.length
-            }
-            mode={mode}
-            onChangeMode={setMode}
-          />
-          {sortAvailable && (
-            <SortButton
-              sort={sort}
-              onSortChange={setSort}
-              isOpen={isSortOpen}
-              onOpenChange={setIsSortOpen}
-              focusedIndex={isSortOpen ? focusedSortIndex : undefined}
-            />
-          )}
-          <SettingsButton
-            page="song-list"
-            stemToolsStatus={stemToolsStatus}
-            stemToolsLoading={stemToolsLoading}
-            downloadPercent={downloadPercent}
-            scanPercent={scanPercent}
-            onDownloadStemTools={download}
-          />
-        </div>
-        <SplittingQueue
-          splittingIds={splittingIds}
-          splitProgress={splitProgress}
-          songList={songList}
-        />
-      </div>
-
-      <div className="relative grow overflow-hidden w-full flex">
-        <div className="relative w-full max-w-250 grow overflow-hidden mx-auto bg-bg flex flex-col">
-          {filteredSongList.length > 0 ||
-          (mode === 'online' && onlineLoading) ? (
-            <SongList
-              songList={filteredSongList}
-              scrollKey={nameFilter}
-              downloadingIds={downloadingIds}
-              downloadingDisabled={currentPath === null}
-              mode={mode}
+    <StemToolsProvider value={stemTools}>
+      <div className="h-screen flex flex-col bg-bg">
+        <div
+          className="border-b border-divider p-4 z-10 flex flex-col gap-4"
+          style={{ background: 'var(--gradient-header)' }}
+        >
+          <div className="flex gap-2 items-center">
+            <SongFilter
+              nameFilter={nameFilter}
+              onChangeFilter={setNameFilter}
               difficulty={difficulty}
-              stemToolsStatus={stemToolsStatus}
-              downloadedIds={
-                mode === 'online'
-                  ? new Set(songList.map((s) => s.id))
-                  : undefined
+              filteredSongsCount={
+                mode === 'online' && onlineTotal !== undefined
+                  ? onlineTotal
+                  : filteredSongList.length
               }
-              splittingIds={splittingIds}
-              onSplit={handleSplit}
-              onDownload={handleDownload}
-              onLikeChange={handleLikeChange}
-              onLoadMore={mode === 'online' ? loadMore : undefined}
-              focusedIndex={!isSortOpen ? focusedSongIndex : undefined}
+              mode={mode}
+              onChangeMode={setMode}
             />
-          ) : (
-            <EmptySongState mode={mode} />
+            {sortAvailable && (
+              <SortButton
+                sort={sort}
+                onSortChange={setSort}
+                isOpen={isSortOpen}
+                onOpenChange={setIsSortOpen}
+                focusedIndex={isSortOpen ? focusedSortIndex : undefined}
+              />
+            )}
+            <SettingsButton page="song-list" scanPercent={scanPercent} />
+          </div>
+          <SplittingQueue
+            splittingIds={splittingIds}
+            splitProgress={splitProgress}
+            songList={songList}
+          />
+        </div>
+
+        <div className="relative grow overflow-hidden w-full flex">
+          <div className="relative w-full max-w-250 grow overflow-hidden mx-auto bg-bg flex flex-col">
+            {filteredSongList.length > 0 ||
+            (mode === 'online' && onlineLoading) ? (
+              <SongList
+                songList={filteredSongList}
+                scrollKey={nameFilter}
+                downloadingIds={downloadingIds}
+                downloadingDisabled={currentPath === null}
+                mode={mode}
+                difficulty={difficulty}
+                downloadedIds={
+                  mode === 'online'
+                    ? new Set(songList.map((s) => s.id))
+                    : undefined
+                }
+                splittingIds={splittingIds}
+                onSplit={handleSplit}
+                onDownload={handleDownload}
+                onLikeChange={handleLikeChange}
+                onLoadMore={mode === 'online' ? loadMore : undefined}
+                focusedIndex={!isSortOpen ? focusedSongIndex : undefined}
+              />
+            ) : (
+              <EmptySongState mode={mode} />
+            )}
+          </div>
+
+          {mode === 'online' && onlineLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/10 pointer-events-none z-10">
+              <Spin />
+            </div>
           )}
         </div>
 
-        {mode === 'online' && onlineLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/10 pointer-events-none z-10">
-            <Spin />
-          </div>
-        )}
+        <div className="fixed inset-0 pointer-events-none z-100">
+          <Outlet />
+        </div>
       </div>
-
-      <div className="fixed inset-0 pointer-events-none z-100">
-        <Outlet />
-      </div>
-    </div>
+    </StemToolsProvider>
   );
 }

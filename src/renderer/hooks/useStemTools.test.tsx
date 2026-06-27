@@ -45,9 +45,139 @@ describe('useStemTools', () => {
   it('applies the status returned by the check', async () => {
     const { result } = await load();
 
-    act(() => ipc.emit('check-stem-tools', 'unsupported'));
+    act(() => ipc.emit('check-stem-tools', { status: 'unsupported' }));
 
     expect(result.current.stemToolsStatus).toBe('unsupported');
+  });
+
+  it('exposes the installed version and checks for updates when ready', async () => {
+    const { result } = await load();
+
+    act(() =>
+      ipc.emit('check-stem-tools', {
+        status: 'ready',
+        installedVersion: '1.0.0',
+      }),
+    );
+
+    expect(result.current.installedVersion).toBe('1.0.0');
+    expect(ipc.sent).toContainEqual({
+      channel: 'check-stem-tools-update',
+      args: [],
+    });
+
+    act(() =>
+      ipc.emit('check-stem-tools-update', {
+        available: true,
+        latestVersion: '1.1.0',
+        updateAvailable: true,
+        downloadSize: 280_000_000,
+        uncompressedSize: 700_000_000,
+      }),
+    );
+
+    expect(result.current.updateAvailable).toBe(true);
+    expect(result.current.latestVersion).toBe('1.1.0');
+    expect(result.current.available).toBe(true);
+    expect(result.current.downloadSize).toBe(280_000_000);
+    expect(result.current.uncompressedSize).toBe(700_000_000);
+  });
+
+  it('fetches remote info and sizes even when not installed', async () => {
+    const { result } = await load();
+
+    act(() => ipc.emit('check-stem-tools', { status: 'download' }));
+
+    expect(ipc.sent).toContainEqual({
+      channel: 'check-stem-tools-update',
+      args: [],
+    });
+
+    act(() =>
+      ipc.emit('check-stem-tools-update', {
+        available: true,
+        updateAvailable: false,
+        downloadSize: 280_000_000,
+        uncompressedSize: 700_000_000,
+      }),
+    );
+
+    expect(result.current.available).toBe(true);
+    expect(result.current.downloadSize).toBe(280_000_000);
+  });
+
+  it('marks tools unavailable when the remote fetch fails', async () => {
+    const { result } = await load();
+
+    act(() => ipc.emit('check-stem-tools', { status: 'download' }));
+    act(() =>
+      ipc.emit('check-stem-tools-update', {
+        available: false,
+        updateAvailable: false,
+      }),
+    );
+
+    expect(result.current.available).toBe(false);
+    expect(notification.error).not.toHaveBeenCalled();
+  });
+
+  it('tracks the download phase alongside progress', async () => {
+    const { result } = await load();
+
+    act(() =>
+      ipc.emit('download-stem-tools', { phase: 'downloading', progress: 20 }),
+    );
+    expect(result.current.phase).toBe('downloading');
+
+    act(() =>
+      ipc.emit('download-stem-tools', { phase: 'extracting', progress: 60 }),
+    );
+    expect(result.current.phase).toBe('extracting');
+    expect(result.current.downloadPercent).toBe(60);
+  });
+
+  it('clears loading without an error when cancelled', async () => {
+    const { result } = await load();
+
+    act(() => result.current.download());
+    act(() => ipc.emit('download-stem-tools', { cancelled: true }));
+
+    expect(result.current.stemToolsLoading).toBe(false);
+    expect(result.current.downloadPercent).toBeUndefined();
+    expect(notification.error).not.toHaveBeenCalled();
+  });
+
+  it('sends a cancel request', async () => {
+    const { result } = await load();
+
+    act(() => result.current.cancel());
+
+    expect(ipc.sent).toContainEqual({
+      channel: 'cancel-stem-tools',
+      args: [],
+    });
+  });
+
+  it('flips back to download after deletion', async () => {
+    const { result } = await load();
+
+    act(() =>
+      ipc.emit('check-stem-tools', {
+        status: 'ready',
+        installedVersion: '1.0.0',
+      }),
+    );
+
+    act(() => result.current.deleteTools());
+    expect(ipc.sent).toContainEqual({
+      channel: 'delete-stem-tools',
+      args: [],
+    });
+
+    act(() => ipc.emit('delete-stem-tools', { success: true }));
+
+    expect(result.current.stemToolsStatus).toBe('download');
+    expect(result.current.installedVersion).toBeUndefined();
   });
 
   it('sets loading and sends a request on download', async () => {
@@ -102,7 +232,7 @@ describe('useStemTools', () => {
   it('does not flip to ready when the download fails', async () => {
     const { result } = await load();
 
-    act(() => ipc.emit('check-stem-tools', 'unsupported'));
+    act(() => ipc.emit('check-stem-tools', { status: 'unsupported' }));
     act(() => ipc.emit('download-stem-tools', { error: 'boom' }));
 
     expect(result.current.stemToolsStatus).toBe('unsupported');

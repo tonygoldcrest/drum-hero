@@ -121,7 +121,7 @@ function loadSongs(
 }
 
 function setStemTools(status: 'ready' | 'download' | 'unsupported') {
-  emit('check-stem-tools', status);
+  emit('check-stem-tools', { status });
 }
 
 function row(id: string) {
@@ -424,10 +424,16 @@ describe('SongListView — settings', () => {
     expect(screen.queryByTestId('scan-progress')).not.toBeInTheDocument();
   });
 
-  it('offers the stem-splitter download when tools are missing', () => {
+  it('offers the stem-splitter download when tools are missing and available', () => {
     renderView();
     loadSongs([makeSong('a')]);
     setStemTools('download');
+    emit('check-stem-tools-update', {
+      available: true,
+      updateAvailable: false,
+      downloadSize: 280_000_000,
+      uncompressedSize: 700_000_000,
+    });
 
     fireEvent.click(screen.getByTestId('settings-trigger'));
     fireEvent.click(screen.getByText(/Get stem splitter/));

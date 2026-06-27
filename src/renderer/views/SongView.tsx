@@ -4,7 +4,7 @@ import { Content } from 'antd/es/layout/layout';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Playback } from '../components/Playback';
 import { SettingsButton } from '../components/SettingsButton';
-import { SheetMusic } from '../components/SheetMusic/SheetMusic';
+import { SheetMusic } from '../components/SheetMusic';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowLeft,
@@ -18,7 +18,7 @@ import { useVolumeControls } from '../hooks/useVolumeControls';
 import { calculateAccuracy } from './utils';
 import { useSheetMusic } from '../hooks/useSheetMusic';
 import { useInputControls } from '../hooks/useInputControls';
-import { ScoreModal } from '../components/ScoreModal';
+import { ScoreSummary } from '../components/ScoreSummary';
 import { CountIn } from '../components/CountIn';
 import { ScoreData } from '../../types';
 
@@ -172,7 +172,7 @@ export function SongView() {
 
   return (
     <Layout className="h-full pointer-events-auto">
-      <ScoreModal
+      <ScoreSummary
         isOpen={isScoreModalOpen}
         onNextSong={onNextSong}
         onRetry={onRetry}

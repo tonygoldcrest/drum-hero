@@ -16,8 +16,9 @@ import { AppUpdater } from './AppUpdater';
 import { loadSong } from './ipc/loadSong';
 import { loadSongList } from './ipc/loadSongList';
 import { downloadSong } from './ipc/downloadSong';
-import { checkStemTools } from './ipc/checkStemTools';
-import { downloadStemTools } from './ipc/downloadStemTools';
+import { checkStemTools, checkStemToolsUpdate } from './ipc/checkStemTools';
+import { downloadStemTools, cancelStemTools } from './ipc/downloadStemTools';
+import { deleteStemTools } from './ipc/deleteStemTools';
 import { splitSong, cancelSplit } from './ipc/splitSong';
 import { listenMidi, loadMidiDeviceList, stopListenMidi } from './ipc/midi';
 import { updateSong } from './ipc/updateSong';
@@ -85,7 +86,10 @@ class AppState {
     ipcMain.on('download-song', downloadSong);
 
     ipcMain.on('check-stem-tools', checkStemTools);
+    ipcMain.on('check-stem-tools-update', checkStemToolsUpdate);
     ipcMain.on('download-stem-tools', downloadStemTools);
+    ipcMain.on('cancel-stem-tools', cancelStemTools);
+    ipcMain.on('delete-stem-tools', deleteStemTools);
 
     ipcMain.on('split-song', splitSong);
     ipcMain.on('cancel-split', cancelSplit);

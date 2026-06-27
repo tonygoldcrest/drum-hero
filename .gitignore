@@ -41,3 +41,6 @@ npm-debug.log.*
 *.css.d.ts
 *.sass.d.ts
 *.scss.d.ts
+
+# Storybook build output
+storybook-static

@@ -1,10 +1,10 @@
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
-import { app } from 'electron';
 import { StorageSchema } from '../../types';
 import { appState } from '../AppState';
 import { assetUrlToFilePath, buildSongFromDir } from '../util';
+import { getBinaryPath } from '../stemTools';
 
 class CancelledError extends Error {}
 
@@ -31,18 +31,6 @@ export function cancelSplit(_event: Electron.IpcMainEvent, id: string) {
       cancelled: true,
     });
   }
-}
-
-function getBinaryPath() {
-  const binaryName =
-    process.platform === 'win32' ? 'demucs-split.exe' : 'demucs-split';
-
-  return path.join(
-    app.getPath('userData'),
-    'stem-tools',
-    'demucs-split',
-    binaryName,
-  );
 }
 
 async function doSplit(event: Electron.IpcMainEvent, id: string) {

@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import { App } from 'antd';
 import { SheetMusic } from './SheetMusic';
 import {
   buildDrumMidi,
@@ -55,11 +54,9 @@ function SheetHarness({ measures }: { measures: MeasureSpec[] }) {
 
 function Sheet({ measures }: { measures: MeasureSpec[] }) {
   return (
-    <App>
-      <div style={{ padding: 24, background: '#fff', overflow: 'auto' }}>
-        <SheetHarness measures={measures} />
-      </div>
-    </App>
+    <div style={{ padding: 24, background: '#fff', overflow: 'auto' }}>
+      <SheetHarness measures={measures} />
+    </div>
   );
 }
 
@@ -140,7 +137,7 @@ const MEASURES: MeasureSpec[] = [
   { timeSig: [2, 4], hits: seq(GEM.snare, [0, B]) },
 ];
 const meta: Meta<typeof Sheet> = {
-  title: 'Parser',
+  title: 'Song View/Sheet Music',
   component: Sheet,
 };
 
