@@ -2,6 +2,7 @@ import type { Preview } from '@storybook/react';
 import { App as AntdApp, ConfigProvider } from 'antd';
 import { MemoryRouter } from 'react-router-dom';
 import { antdTheme } from '../src/renderer/antdTheme';
+import { AppProvider } from '../src/renderer/context/AppContext';
 import '../src/renderer/App.css';
 
 const electronMock = {
@@ -28,17 +29,19 @@ const preview: Preview = {
     (Story) => (
       <ConfigProvider theme={antdTheme}>
         <AntdApp>
-          <MemoryRouter>
-            <div
-              className="font-ui"
-              style={{
-                minHeight: '100vh',
-                background: 'var(--color-bg, #0d0d0f)',
-              }}
-            >
-              <Story />
-            </div>
-          </MemoryRouter>
+          <AppProvider>
+            <MemoryRouter>
+              <div
+                className="font-ui"
+                style={{
+                  minHeight: '100vh',
+                  background: 'var(--color-bg, #0d0d0f)',
+                }}
+              >
+                <Story />
+              </div>
+            </MemoryRouter>
+          </AppProvider>
         </AntdApp>
       </ConfigProvider>
     ),

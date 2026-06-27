@@ -33,12 +33,14 @@ const meta: Meta<typeof SongViewSettings> = {
     enableColors: true,
     showBarNumbers: false,
     showTempo: true,
+    showReference: true,
     countIn: true,
     isDev: false,
     onPlayheadStyleChange: noop,
     onEnableColorsChange: noop,
     onShowBarNumbersChange: noop,
     onShowTempoChange: noop,
+    onShowReferenceChange: noop,
     onCountInChange: noop,
     onSetupInput: noop,
   },
@@ -62,3 +64,5 @@ export const Default: Story = {};
 export const DevMode: Story = { args: { isDev: true } };
 
 export const WithMixer: Story = { args: { volumeSliders } };
+
+export const ColorsOff: Story = { args: { enableColors: false } };

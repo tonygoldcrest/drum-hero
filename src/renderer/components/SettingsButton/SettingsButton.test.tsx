@@ -87,7 +87,27 @@ describe('SettingsButton — song-view parameters', () => {
 
     fireEvent.click(tempoRow.querySelector('button[role="switch"]')!);
 
-    expect(persisted('settings.showTempo')).toBe(false);
+    expect(persisted('settings.showTempo')).toBe(true);
+  });
+
+  it('toggles show reference and persists it', () => {
+    renderSongView();
+    open();
+
+    const referenceRow = screen.getByText('Show reference').parentElement!;
+
+    fireEvent.click(referenceRow.querySelector('button[role="switch"]')!);
+
+    expect(persisted('settings.showReference')).toBe(false);
+  });
+
+  it('hides the show-reference switch when colors are disabled', () => {
+    window.localStorage.setItem('settings.enableColors', JSON.stringify(false));
+
+    renderSongView();
+    open();
+
+    expect(screen.queryByText('Show reference')).not.toBeInTheDocument();
   });
 
   it('toggles count-in', () => {

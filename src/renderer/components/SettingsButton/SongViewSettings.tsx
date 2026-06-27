@@ -11,6 +11,8 @@ interface Props {
   onEnableColorsChange: (value: boolean) => void;
   showBarNumbers: boolean;
   onShowBarNumbersChange: (value: boolean) => void;
+  showReference: boolean;
+  onShowReferenceChange: (value: boolean) => void;
   showTempo: boolean;
   onShowTempoChange: (value: boolean) => void;
   countIn: boolean;
@@ -30,6 +32,8 @@ export function SongViewSettings({
   onShowBarNumbersChange,
   showTempo,
   onShowTempoChange,
+  showReference,
+  onShowReferenceChange,
   countIn,
   onCountInChange,
   isDev,
@@ -102,6 +106,23 @@ export function SongViewSettings({
       </div>
 
       <Divider />
+
+      {enableColors && (
+        <>
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-sm text-text-muted whitespace-nowrap">
+              Show reference
+            </div>
+            <Switch
+              size="small"
+              checked={showReference}
+              onChange={onShowReferenceChange}
+            />
+          </div>
+
+          <Divider />
+        </>
+      )}
 
       <div className="flex items-center justify-between gap-3">
         <div className="text-sm text-text-muted whitespace-nowrap">

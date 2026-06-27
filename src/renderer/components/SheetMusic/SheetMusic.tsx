@@ -3,6 +3,8 @@ import { cn } from '../../cn';
 import { Measure, RenderData } from '../../../chart-parser/types';
 import { GameEngine } from '../../services/game-engine';
 import { SongData } from '../../../types';
+import { Reference } from './Reference';
+import { useApp } from '../../context/AppContext';
 
 export interface SheetMusicProps {
   engine: GameEngine | undefined;
@@ -21,6 +23,7 @@ export function SheetMusic({
   isDev,
   onSelectMeasure,
 }: SheetMusicProps) {
+  const { enableColors, showReference } = useApp();
   const cursorRef = useRef<HTMLDivElement>(null);
   const highlightsRef = useMemo(
     () => renderData.map(() => createRef<HTMLDivElement>()),
@@ -64,32 +67,38 @@ export function SheetMusic({
   );
 
   return (
-    <div className="flex flex-col items-center min-w-max bg-paper rounded-[11px] p-10">
-      <h1 className="my-0 mx-auto text-4xl text-ink font-semibold">
-        {songData.name}
-      </h1>
-      <div className="ml-auto text-[15px] italic font-bold flex flex-col items-end text-ink">
-        <div>Music by {songData.artist}</div>
-        <div>Arranged by {songData.charter}</div>
-      </div>
-      <div className="min-w-max relative z-0">
-        <div
-          ref={vexflowContainerRef}
-          className="min-w-max pointer-events-none **:pointer-events-none"
-        />
-        {measureHighlights}
-        <div
-          ref={cursorRef}
-          className="absolute top-0 left-0 z-1 pointer-events-none shadow-accent-button will-change-transform"
-          style={{ display: 'none' }}
-        >
+    <>
+      <div className="flex flex-col items-center min-w-max bg-paper rounded-[11px] p-10">
+        <h1 className="my-0 mx-auto text-4xl text-ink font-semibold">
+          {songData.name}
+        </h1>
+        <div className="ml-auto text-[15px] italic font-bold flex flex-col items-end text-ink">
+          <div>Music by {songData.artist}</div>
+          <div>Arranged by {songData.charter}</div>
+        </div>
+        <div className="min-w-max relative z-0">
           <div
-            className="absolute w-3 h-3 bg-accent left-1/2 rounded-[3px]"
-            style={{ transform: 'translateX(-50%) rotate(45deg)' }}
+            ref={vexflowContainerRef}
+            className="min-w-max pointer-events-none **:pointer-events-none"
           />
-          <div className="absolute w-0.75 bg-accent h-full rounded-[3px] left-1/2 -translate-x-1/2" />
+          {measureHighlights}
+          <div
+            ref={cursorRef}
+            className="absolute top-0 left-0 z-1 pointer-events-none shadow-accent-button will-change-transform"
+            style={{ display: 'none' }}
+          >
+            <div
+              className="absolute w-3 h-3 bg-accent left-1/2 rounded-[3px]"
+              style={{ transform: 'translateX(-50%) rotate(45deg)' }}
+            />
+            <div className="absolute w-0.75 bg-accent h-full rounded-[3px] left-1/2 -translate-x-1/2" />
+          </div>
         </div>
       </div>
-    </div>
+
+      {enableColors && showReference && (
+        <Reference className="fixed bottom-10 left-1/2 -translate-x-1/2" />
+      )}
+    </>
   );
 }

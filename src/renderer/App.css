@@ -31,6 +31,7 @@
   --color-red:             #cf3b2e;
 
   --color-paper:           #ece3d0;
+  --color-paper-light: #f3ecdd;
   --color-ink:             #1c1a14;
   --color-ink-soft:        #4a463c;
 
@@ -44,6 +45,7 @@
   --shadow-accent-soft:  0 6px 6px -6px rgba(255,90,60,0.5);
   --shadow-paper:        inset 0 1px 0 rgba(255,255,255,0.6), 0 18px 40px -20px rgba(0,0,0,0.6);
   --shadow-float-label:  0 8px 20px rgba(0,0,0,0.4);
+  --shadow-paper-strong: 0 8px 22px -10px rgba(80,60,20,0.5);
 }
 
 :root {
@@ -178,6 +180,15 @@ body {
   padding: 0;
   margin: 0;
   font-family: 'Space Grotesk', system-ui, sans-serif;
+  user-select: none;
+}
+
+input,
+textarea,
+[contenteditable='true'],
+.ant-notification,
+.ant-message {
+  user-select: text;
 }
 
 * {

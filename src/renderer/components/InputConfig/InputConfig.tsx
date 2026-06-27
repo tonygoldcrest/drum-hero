@@ -1,74 +1,15 @@
-import { Button } from 'antd';
+import { Button, Divider } from 'antd';
 import { InputElement, InputMapping } from '../../../types';
 import { controlLabel, InputDevice } from '../../input';
 import { Modal } from '../Modal';
 import { IconButton } from '../IconButton';
 import themedark from '../../theme';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faCircle,
-  faPause,
-  faPlus,
-  faXmark,
-} from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { MappingElement } from '../../types';
+import { KIT_ELEMENTS } from '../../constants';
+import { elementIcon } from '../../util';
 
-type MappingElement = {
-  value: InputElement;
-  color: string;
-  displayName: string;
-  type: 'cymbal' | 'drum' | 'control';
-};
-
-const KIT_ELEMENTS: MappingElement[] = [
-  {
-    value: 'hihat',
-    displayName: 'Hi-Hat',
-    color: themedark.color.yellow,
-    type: 'cymbal',
-  },
-  {
-    value: 'ride',
-    displayName: 'Ride / Library',
-    color: themedark.color.blue,
-    type: 'cymbal',
-  },
-  {
-    value: 'crash',
-    displayName: 'Crash / Difficulty',
-    color: themedark.color.green,
-    type: 'cymbal',
-  },
-  {
-    value: 'snare',
-    displayName: 'Snare / Back',
-    color: themedark.color.red,
-    type: 'drum',
-  },
-  {
-    value: 'tom1',
-    displayName: 'Tom 1 / Up',
-    color: themedark.color.yellow,
-    type: 'drum',
-  },
-  {
-    value: 'tom2',
-    displayName: 'Tom 2 / Down',
-    color: themedark.color.blue,
-    type: 'drum',
-  },
-  {
-    value: 'tom3',
-    displayName: 'Tom 3 / Ok',
-    color: themedark.color.green,
-    type: 'drum',
-  },
-  {
-    value: 'kick',
-    displayName: 'Kick / Sort',
-    color: themedark.color.orange,
-    type: 'drum',
-  },
-];
 const CONTROL_ELEMENTS: MappingElement[] = [
   {
     value: 'pause',
@@ -77,18 +18,6 @@ const CONTROL_ELEMENTS: MappingElement[] = [
     type: 'control',
   },
 ];
-
-function elementIcon(type: MappingElement['type']) {
-  if (type === 'cymbal') {
-    return faXmark;
-  }
-
-  if (type === 'control') {
-    return faPause;
-  }
-
-  return faCircle;
-}
 
 interface Props {
   isOpen: boolean;
@@ -130,7 +59,20 @@ export function InputConfig({
             size="lg"
             className="w-5"
           />
-          <div className="font-semibold text-nowrap">{element.displayName}</div>
+
+          <div className="flex items-center">
+            <div className="font-semibold text-nowrap">
+              {element.displayName}
+            </div>
+            {element.alternative && (
+              <>
+                <Divider vertical className="bg-text-dimmer mt-0.5!" />
+                <div className="font-semibold text-nowrap">
+                  {element.alternative}
+                </div>
+              </>
+            )}
+          </div>
         </div>
         <div className="flex flex-wrap gap-1">
           {mapping[element.value]?.map((control) => (

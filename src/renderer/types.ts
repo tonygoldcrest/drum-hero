@@ -1,3 +1,5 @@
+import { InputElement } from '../types';
+
 export interface AudioFile {
   name: string;
   src: string;
@@ -8,3 +10,11 @@ export interface AudioFile {
 export const PLAYHEAD_STYLES = ['Cursor', 'Measure', 'None'] as const;
 
 export type PlayheadStyle = (typeof PLAYHEAD_STYLES)[number];
+
+export type MappingElement = {
+  value: InputElement;
+  color: string;
+  displayName: string;
+  type: 'cymbal' | 'drum' | 'control';
+  alternative?: string;
+};

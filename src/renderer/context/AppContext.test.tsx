@@ -232,6 +232,23 @@ describe('AppContext keyboard default suppression', () => {
   });
 });
 
+describe('AppContext settings', () => {
+  it('defaults showReference to on', () => {
+    const { result } = renderHook(() => useApp(), { wrapper });
+
+    expect(result.current.showReference).toBe(true);
+  });
+
+  it('persists showReference when toggled off', () => {
+    const { result } = renderHook(() => useApp(), { wrapper });
+
+    act(() => result.current.setShowReference(false));
+
+    expect(result.current.showReference).toBe(false);
+    expect(window.localStorage.getItem('settings.showReference')).toBe('false');
+  });
+});
+
 describe('useApp', () => {
   it('throws when used outside the provider', () => {
     expect(() => renderHook(() => useApp())).toThrow(

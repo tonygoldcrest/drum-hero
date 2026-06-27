@@ -40,6 +40,8 @@ export const SettingsButton = memo(function Settings({
     countIn,
     setCountIn,
     currentPath,
+    showReference,
+    setShowReference,
   } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [inputConfigOpen, setInputConfigOpen] = useState(false);
@@ -111,6 +113,8 @@ export const SettingsButton = memo(function Settings({
             onSetupInput={openInput}
             volumeSliders={volumeSliders}
             currentInputName={currentInputName}
+            showReference={showReference}
+            onShowReferenceChange={setShowReference}
           />
         )}
       </Popover>

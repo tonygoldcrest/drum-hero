@@ -1,10 +1,19 @@
 import { createRef } from 'react';
 import { fireEvent, render } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Measure, RenderData } from '../../../chart-parser/types';
 import { SongData } from '../../../types';
 import { GameEngine } from '../../services/game-engine';
 import { SheetMusic } from './SheetMusic';
+
+const appState = vi.hoisted(() => ({
+  enableColors: true,
+  showReference: false,
+}));
+
+vi.mock('../../context/AppContext', () => ({
+  useApp: () => appState,
+}));
 
 function makeStave(): RenderData['stave'] {
   return {
@@ -58,6 +67,11 @@ function overlays(container: HTMLElement) {
   return Array.from(container.querySelectorAll('[class*="z-[-3]"]'));
 }
 
+beforeEach(() => {
+  appState.enableColors = true;
+  appState.showReference = false;
+});
+
 describe('SheetMusic', () => {
   it('renders the song title and credits', () => {
     const { getByText } = renderSheet();
@@ -109,5 +123,35 @@ describe('SheetMusic', () => {
     fireEvent.click(overlays(container)[0]);
 
     expect(onSelectMeasure).not.toHaveBeenCalled();
+  });
+});
+
+describe('SheetMusic reference legend', () => {
+  it('shows the reference when colors are on and the reference is enabled', () => {
+    appState.enableColors = true;
+    appState.showReference = true;
+
+    const { getByText } = renderSheet();
+
+    expect(getByText('Snare')).toBeInTheDocument();
+    expect(getByText('Kick')).toBeInTheDocument();
+  });
+
+  it('hides the reference when it is disabled', () => {
+    appState.enableColors = true;
+    appState.showReference = false;
+
+    const { queryByText } = renderSheet();
+
+    expect(queryByText('Snare')).not.toBeInTheDocument();
+  });
+
+  it('hides the reference when colors are off even if it is enabled', () => {
+    appState.enableColors = false;
+    appState.showReference = true;
+
+    const { queryByText } = renderSheet();
+
+    expect(queryByText('Snare')).not.toBeInTheDocument();
   });
 });

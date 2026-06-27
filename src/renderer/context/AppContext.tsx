@@ -30,6 +30,8 @@ interface AppContextValue {
   setShowBarNumbers: (v: boolean) => void;
   showTempo: boolean;
   setShowTempo: (v: boolean) => void;
+  showReference: boolean;
+  setShowReference: (v: boolean) => void;
   countIn: boolean;
   setCountIn: (v: boolean) => void;
   currentPath: string | null;
@@ -72,7 +74,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     'settings.showBarNumbers',
     false,
   );
-  const [showTempo, setShowTempo] = usePersisted('settings.showTempo', true);
+  const [showTempo, setShowTempo] = usePersisted('settings.showTempo', false);
+  const [showReference, setShowReference] = usePersisted(
+    'settings.showReference',
+    true,
+  );
   const [countIn, setCountIn] = usePersisted('settings.countIn', true);
   const [currentPath, setCurrentPath] = useState<string | null>(null);
   const [selectedDevice, setSelectedDevice] = usePersisted<InputDevice | null>(
@@ -208,6 +214,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         inputMapping,
         assignControl,
         removeControl,
+        showReference,
+        setShowReference,
       }}
     >
       {children}

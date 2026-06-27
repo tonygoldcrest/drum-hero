@@ -1,3 +1,6 @@
+import { faCircle, faPause, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { MappingElement } from './types';
+
 export function formatTime(time: number) {
   const hrs = ~~(time / 3600);
   const mins = ~~((time % 3600) / 60);
@@ -12,4 +15,16 @@ export function formatTime(time: number) {
   ret += `${secs}`;
 
   return ret;
+}
+
+export function elementIcon(type: MappingElement['type']) {
+  if (type === 'cymbal') {
+    return faXmark;
+  }
+
+  if (type === 'control') {
+    return faPause;
+  }
+
+  return faCircle;
 }
