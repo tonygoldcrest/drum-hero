@@ -53,11 +53,9 @@ async function doSplit(event: Electron.IpcMainEvent, id: string) {
 
   try {
     await new Promise<void>((resolve, reject) => {
-      const proc = spawn(
-        getBinaryPath(),
-        ['--two-stems=drums', '-o', './stems', audioFilename],
-        { cwd: songData.dir },
-      );
+      const proc = spawn(getBinaryPath(), ['-o', './stems', audioFilename], {
+        cwd: songData.dir,
+      });
 
       activeProc = proc;
       activeId = id;
@@ -101,7 +99,7 @@ async function doSplit(event: Electron.IpcMainEvent, id: string) {
     );
 
     for (const file of fs.readdirSync(stemOutputDir)) {
-      const destName = file === 'no_drums.mp3' ? 'song.mp3' : file;
+      const destName = file === 'other.mp3' ? 'song.mp3' : file;
 
       fs.renameSync(
         path.join(stemOutputDir, file),

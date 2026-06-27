@@ -73,6 +73,7 @@ module.exports = [
       '**/node_modules',
       '**/.DS_Store',
       '**/out',
+      '**/storybook-static',
       'release/app/dist',
       'release/build',
       '.erb/dll',

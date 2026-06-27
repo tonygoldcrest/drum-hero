@@ -10,6 +10,7 @@ const storeHolder = vi.hoisted(() => ({
 }));
 const spawnHolder = vi.hoisted(() => ({
   procs: [] as FakeProc[],
+  mock: undefined as ReturnType<typeof vi.fn> | undefined,
 }));
 
 interface FakeEmitter {
@@ -68,6 +69,8 @@ vi.mock('child_process', () => {
     return proc;
   });
 
+  spawnHolder.mock = spawn;
+
   return { spawn, default: { spawn } };
 });
 
@@ -89,7 +92,9 @@ function makeStemOutput(dir: string) {
 
   fs.mkdirSync(out, { recursive: true });
   fs.writeFileSync(path.join(out, 'drums.mp3'), 'drums');
-  fs.writeFileSync(path.join(out, 'no_drums.mp3'), 'rest');
+  fs.writeFileSync(path.join(out, 'bass.mp3'), 'bass');
+  fs.writeFileSync(path.join(out, 'vocals.mp3'), 'vocals');
+  fs.writeFileSync(path.join(out, 'other.mp3'), 'other');
 }
 
 function songEntry(dir: string) {
@@ -115,6 +120,7 @@ describe('splitSong', () => {
   beforeEach(() => {
     library = fs.mkdtempSync(path.join(os.tmpdir(), 'split-'));
     spawnHolder.procs = [];
+    spawnHolder.mock?.mockClear();
   });
 
   afterEach(() => {
@@ -193,12 +199,37 @@ describe('splitSong', () => {
 
     expect(fs.existsSync(path.join(dir, 'song.mp3'))).toBe(true);
     expect(fs.existsSync(path.join(dir, 'drums.mp3'))).toBe(true);
+    expect(fs.existsSync(path.join(dir, 'bass.mp3'))).toBe(true);
+    expect(fs.existsSync(path.join(dir, 'vocals.mp3'))).toBe(true);
+    expect(fs.existsSync(path.join(dir, 'other.mp3'))).toBe(false);
     expect(fs.existsSync(path.join(dir, 'mix.ogg'))).toBe(false);
     expect(fs.existsSync(path.join(dir, 'stems'))).toBe(false);
 
     const stored = storeHolder.current.get('songs.song-1') as { id: string };
 
     expect(stored.id).toBe('song-1');
+  });
+
+  it('runs a full split rather than isolating only drums', async () => {
+    const dir = makeSongDir(library);
+
+    makeStemOutput(dir);
+    storeHolder.current = makeStore({ songs: { 'song-1': songEntry(dir) } });
+
+    const event = makeEvent();
+
+    splitSong(event as never, 'song-1');
+
+    const proc = await waitForProc(0);
+    const args = spawnHolder.mock!.mock.calls[0][1] as string[];
+
+    expect(args).not.toContain('--two-stems=drums');
+    expect(args.some((arg) => arg.startsWith('--two-stems'))).toBe(false);
+
+    proc.emit('close', 0, null);
+    await vi.waitFor(() =>
+      expect(lastReply(event, 'split-song')).toBeDefined(),
+    );
   });
 
   it('reports a non-zero exit code as a failure', async () => {
