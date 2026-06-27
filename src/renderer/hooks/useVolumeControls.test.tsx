@@ -12,8 +12,8 @@ const { settings } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('../context/AppContext', () => ({
-  useApp: () => settings,
+vi.mock('./usePersisted', () => ({
+  usePersisted: () => [settings.mixerLevels, settings.setMixerLevels],
 }));
 
 type Result = { current: ReturnType<typeof useVolumeControls> };

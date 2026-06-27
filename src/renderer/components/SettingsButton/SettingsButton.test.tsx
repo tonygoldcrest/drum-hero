@@ -14,7 +14,7 @@ import { SettingsButton } from './SettingsButton';
 vi.mock('../../input', () => ({
   inputBus: {
     start: () => {},
-    subscribe: (_listener: (event: InputEvent) => void) => () => {},
+    capture: (_listener: (event: InputEvent) => void) => () => {},
     listDevices: () => Promise.resolve([]),
   },
   controlSource: (id: string) => id.slice(0, id.indexOf(':')),
@@ -131,6 +131,24 @@ describe('SettingsButton — song-view parameters', () => {
     open();
 
     expect(screen.queryByTestId('difficulty-expert')).not.toBeInTheDocument();
+  });
+
+  it('labels the input button with the selected device while the modal is closed', () => {
+    window.localStorage.setItem(
+      'settings.selectedDevice',
+      JSON.stringify({
+        id: 'midi:Pad',
+        name: 'My Pad',
+        sourceId: 'midi',
+        port: 1,
+      }),
+    );
+
+    renderSongView();
+    open();
+
+    expect(screen.getByText('My Pad')).toBeInTheDocument();
+    expect(screen.queryByText('Setup input')).not.toBeInTheDocument();
   });
 });
 

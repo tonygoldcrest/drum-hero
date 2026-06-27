@@ -28,7 +28,7 @@ export function SortButton({
       anchorName="--sort-trigger"
       open={isOpen}
       onOpenChange={onOpenChange}
-      contentClassName="min-w-44 p-3 gap-2"
+      contentClassName="min-w-60 p-3 gap-2"
       renderTrigger={({ ref, toggle, anchorStyle }) => (
         <Button
           ref={ref as RefObject<HTMLButtonElement>}

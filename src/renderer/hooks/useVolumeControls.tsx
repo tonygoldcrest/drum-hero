@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import { TrackConfig } from '../services/audio-player/types';
 import { AudioVolume } from '../components/AudioVolume';
-import { useApp } from '../context/AppContext';
+import { usePersisted } from './usePersisted';
 
 interface VolumeControl {
   stemName: string;
@@ -27,7 +27,10 @@ export function useVolumeControls(
   isReady: boolean,
 ): VolumeControlsResult {
   const [volumeControls, setVolumeControls] = useState<VolumeControl[]>([]);
-  const { mixerLevels, setMixerLevels } = useApp();
+  const [mixerLevels, setMixerLevels] = usePersisted<Record<string, number>>(
+    'settings.mixerLevels',
+    {},
+  );
   const mixerLevelsRef = useRef(mixerLevels);
   const volumeControlsRef = useRef(volumeControls);
 

@@ -17,6 +17,7 @@ import {
   isTypingTarget,
 } from '../input';
 import { PlayheadStyle, PLAYHEAD_STYLES } from '../types';
+import { usePersisted } from '../hooks/usePersisted';
 
 interface AppContextValue {
   difficulty: Difficulty;
@@ -38,8 +39,6 @@ interface AppContextValue {
   inputMapping: InputMapping;
   assignControl: (element: InputElement, controlId: string) => void;
   removeControl: (element: InputElement, controlId: string) => void;
-  mixerLevels: Record<string, number>;
-  setMixerLevels: (mixerLevels: Record<string, number>) => void;
 }
 
 const EMPTY_INPUT_MAPPING: InputMapping = {
@@ -54,27 +53,6 @@ const EMPTY_INPUT_MAPPING: InputMapping = {
   pause: [],
 };
 const KIT_ELEMENTS = Object.keys(EMPTY_INPUT_MAPPING) as InputElement[];
-
-function load<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-
-    return raw !== null ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function usePersisted<T>(key: string, fallback: T) {
-  const [value, setValue] = useState<T>(() => load(key, fallback));
-
-  useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(value));
-  }, [key, value]);
-
-  return [value, setValue] as const;
-}
-
 const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -100,10 +78,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [selectedDevice, setSelectedDevice] = usePersisted<InputDevice | null>(
     'settings.selectedDevice',
     null,
-  );
-  const [mixerLevels, setMixerLevels] = usePersisted<Record<string, number>>(
-    'settings.mixerLevels',
-    {},
   );
   const [inputMappings, setInputMappings] = usePersisted<
     Record<string, InputMapping>
@@ -234,8 +208,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         inputMapping,
         assignControl,
         removeControl,
-        mixerLevels,
-        setMixerLevels,
       }}
     >
       {children}

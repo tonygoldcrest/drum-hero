@@ -3,6 +3,7 @@ import { App } from 'antd';
 import { uniqBy } from 'es-toolkit';
 import { Difficulty } from 'scan-chart';
 import { SongData } from '../../types';
+import { ALL_DIFFICULTIES } from '../../constants';
 
 type PageResult = { songs: SongData[]; total: number | undefined };
 
@@ -11,8 +12,6 @@ interface NoteCount {
   difficulty: Difficulty;
   count: number;
 }
-
-const DIFFICULTY_ORDER: Difficulty[] = ['easy', 'medium', 'hard', 'expert'];
 
 function drumDifficulties(
   notesData: { noteCounts?: NoteCount[] } | undefined,
@@ -23,7 +22,7 @@ function drumDifficulties(
       .map((nc) => nc.difficulty),
   );
 
-  return DIFFICULTY_ORDER.filter((d) => present.has(d));
+  return ALL_DIFFICULTIES.filter((d) => present.has(d));
 }
 
 function mapSongs(data: Record<string, unknown>[]): SongData[] {

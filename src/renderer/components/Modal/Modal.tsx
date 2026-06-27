@@ -44,22 +44,25 @@ export function Modal({
       )}
       popover="manual"
       onMouseDown={(event) => {
-        event.preventDefault();
         event.stopPropagation();
-      }}
-      onClick={(event) => {
-        event.preventDefault();
-        event.stopPropagation();
-
-        if (!onClose) {
-          return;
-        }
 
         const target = event.target as Node;
 
         if (!panelRef.current?.contains(target)) {
-          onClose();
+          event.preventDefault();
         }
+      }}
+      onClick={(event) => {
+        event.stopPropagation();
+
+        const target = event.target as Node;
+
+        if (panelRef.current?.contains(target)) {
+          return;
+        }
+
+        event.preventDefault();
+        onClose?.();
       }}
     >
       <div

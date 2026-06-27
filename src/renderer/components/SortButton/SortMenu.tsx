@@ -57,7 +57,7 @@ export function SortMenu({ sort, onSortChange, focusedIndex }: Props) {
             type={sort.key === key ? 'primary' : 'default'}
             onClick={() => handleClick(key)}
             className={cn('justify-start', {
-              'outline outline-2 outline-accent': index === focusedIndex,
+              'outline-2 outline-accent': index === focusedIndex,
             })}
           >
             <div className="flex justify-between w-full items-center">

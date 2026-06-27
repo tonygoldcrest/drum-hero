@@ -5,6 +5,7 @@ import { SongData } from '../../types';
 import { Mode } from '../components/SongFilter';
 import { type SortState } from '../components/SortButton';
 import { useOnlineSearch } from './useOnlineSearch';
+import { usePersisted } from './usePersisted';
 
 function parseDifficulty(value: string | undefined): number {
   const parsed = parseInt(value ?? '', 10);
@@ -15,7 +16,7 @@ function parseDifficulty(value: string | undefined): number {
 export function useSongFilter(songList: SongData[], difficulty: Difficulty) {
   const [nameFilter, setNameFilter] = useState('');
   const [mode, setMode] = useState<Mode>('local');
-  const [sort, setSort] = useState<SortState>({
+  const [sort, setSort] = usePersisted<SortState>('settings.sort', {
     key: 'favorite',
     direction: 'asc',
   });

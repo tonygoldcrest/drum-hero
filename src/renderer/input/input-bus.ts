@@ -3,6 +3,7 @@ import { InputDevice, InputEvent, InputSource } from './types';
 export class InputBus {
   private listeners = new Set<(event: InputEvent) => void>();
   private stops: (() => void)[] = [];
+  private captureListener?: (event: InputEvent) => void;
 
   constructor(private sources: InputSource[]) {}
 
@@ -12,6 +13,12 @@ export class InputBus {
     }
 
     const emit = (event: InputEvent) => {
+      if (this.captureListener) {
+        this.captureListener(event);
+
+        return;
+      }
+
       this.listeners.forEach((listener) => listener(event));
     };
 
@@ -28,6 +35,16 @@ export class InputBus {
 
     return () => {
       this.listeners.delete(listener);
+    };
+  };
+
+  capture = (listener: (event: InputEvent) => void): (() => void) => {
+    this.captureListener = listener;
+
+    return () => {
+      if (this.captureListener === listener) {
+        this.captureListener = undefined;
+      }
     };
   };
 

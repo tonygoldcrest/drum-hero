@@ -2,6 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SongData } from '../../types';
 import { Difficulty } from 'scan-chart';
+import { installLocalStorage } from './test-support';
 
 const onlineState = vi.hoisted(() => ({
   current: {
@@ -40,6 +41,7 @@ function song(id: string, extra: Partial<SongData> = {}): SongData {
 }
 
 beforeEach(() => {
+  installLocalStorage();
   onlineState.calls.length = 0;
   onlineState.current = {
     results: [],
@@ -211,6 +213,23 @@ describe('useSongFilter', () => {
     act(() => result.current.setMode('online'));
 
     expect(onlineState.calls.at(-1)).toMatchObject({ active: true });
+  });
+
+  it('persists the chosen sort across remounts', () => {
+    const list = [song('Charlie'), song('alpha'), song('Bravo')];
+    const first = renderHook(() => useSongFilter(list, 'expert'));
+
+    act(() => first.result.current.setSort({ key: 'name', direction: 'desc' }));
+    first.unmount();
+
+    const { result } = renderHook(() => useSongFilter(list, 'expert'));
+
+    expect(result.current.sort).toEqual({ key: 'name', direction: 'desc' });
+    expect(ids(result.current.filteredSongList)).toEqual([
+      'Charlie',
+      'Bravo',
+      'alpha',
+    ]);
   });
 
   it('does not mutate the input song list while sorting', () => {

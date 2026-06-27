@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SongData } from '../../types';
 import { AppProvider } from '../context/AppContext';
@@ -86,16 +86,29 @@ function makeSong(id: string, extra: Partial<SongData> = {}): SongData {
   } as SongData;
 }
 
+function SongViewStub() {
+  const navigate = useNavigate();
+
+  return (
+    <div data-testid="song-view-stub">
+      <button
+        type="button"
+        data-testid="song-view-back"
+        onClick={() => navigate('/')}
+      >
+        back
+      </button>
+    </div>
+  );
+}
+
 function wrapper({ children }: { children: ReactNode }) {
   return (
     <AppProvider>
       <MemoryRouter initialEntries={['/']}>
         <Routes>
           <Route path="/" element={children}>
-            <Route
-              path=":id"
-              element={<div data-testid="song-view-stub">song view</div>}
-            />
+            <Route path=":id" element={<SongViewStub />} />
           </Route>
         </Routes>
       </MemoryRouter>
@@ -521,6 +534,70 @@ describe('SongListView — input navigation', () => {
     expect(focused('a')).toBe(true);
   });
 
+  it('keeps the focused song after returning from the song view', () => {
+    renderView();
+    loadSongs([makeSong('a'), makeSong('b'), makeSong('c')]);
+
+    act(() => handlers().tom2());
+    act(() => handlers().tom2());
+    expect(focused('b')).toBe(true);
+
+    act(() => handlers().tom3());
+    expect(screen.getByTestId('song-view-stub')).toBeInTheDocument();
+
+    emit('update-song', makeSong('b'));
+
+    fireEvent.click(screen.getByTestId('song-view-back'));
+
+    expect(screen.queryByTestId('song-view-stub')).toBeNull();
+    expect(focused('b')).toBe(true);
+  });
+
+  it('clears focus when the name filter changes', () => {
+    renderView();
+    loadSongs([
+      makeSong('a', { name: 'Alpha' }),
+      makeSong('b', { name: 'Beta' }),
+    ]);
+
+    act(() => handlers().tom2());
+    expect(focused('a')).toBe(true);
+
+    fireEvent.change(screen.getByPlaceholderText('Enter song name'), {
+      target: { value: 'Alpha' },
+    });
+
+    expect(focused('a')).toBe(false);
+  });
+
+  it('clears focus when the sort changes', () => {
+    renderView();
+    loadSongs([
+      makeSong('a', { name: 'Alpha' }),
+      makeSong('b', { name: 'Beta' }),
+    ]);
+
+    act(() => handlers().tom2());
+    expect(focused('a')).toBe(true);
+
+    fireEvent.click(screen.getByText('Name').closest('button')!);
+
+    expect(focused('a')).toBe(false);
+  });
+
+  it('clears focus when the mode changes', () => {
+    renderView();
+    loadSongs([makeSong('a'), makeSong('b')]);
+
+    act(() => handlers().tom2());
+    expect(focused('a')).toBe(true);
+
+    act(() => handlers().ride());
+    act(() => handlers().ride());
+
+    expect(focused('a')).toBe(false);
+  });
+
   it('toggles online mode with the ride cymbal', () => {
     renderView();
     loadSongs([]);
@@ -528,6 +605,37 @@ describe('SongListView — input navigation', () => {
     act(() => handlers().ride());
 
     expect(online.calls.at(-1)).toMatchObject({ active: true });
+  });
+
+  it('cycles the difficulty filter with the crash cymbal', () => {
+    renderView();
+    loadSongs([
+      makeSong('a', { name: 'Easy Only', drumDifficulties: ['easy'] }),
+      makeSong('b', { name: 'Expert Only', drumDifficulties: ['expert'] }),
+    ]);
+
+    expect(screen.getByText('Expert Only')).toBeInTheDocument();
+    expect(screen.queryByText('Easy Only')).not.toBeInTheDocument();
+
+    act(() => handlers().crash());
+
+    expect(screen.getByText('Easy Only')).toBeInTheDocument();
+    expect(screen.queryByText('Expert Only')).not.toBeInTheDocument();
+  });
+
+  it('wraps back to the original difficulty after a full cycle', () => {
+    renderView();
+    loadSongs([
+      makeSong('a', { name: 'Easy Only', drumDifficulties: ['easy'] }),
+      makeSong('b', { name: 'Expert Only', drumDifficulties: ['expert'] }),
+    ]);
+
+    for (let i = 0; i < 4; i += 1) {
+      act(() => handlers().crash());
+    }
+
+    expect(screen.getByText('Expert Only')).toBeInTheDocument();
+    expect(screen.queryByText('Easy Only')).not.toBeInTheDocument();
   });
 
   it('downloads the focused song with the green tom in online mode', () => {

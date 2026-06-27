@@ -7,8 +7,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Difficulty } from 'scan-chart';
 import { StemToolsPanel } from '../../context/StemToolsContext';
-
-const ALL_DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard', 'expert'];
+import { ALL_DIFFICULTIES } from '../../../constants';
 
 interface Props {
   difficulty: Difficulty;
@@ -18,6 +17,7 @@ interface Props {
   onRescan: () => void;
   scanPercent?: number;
   onSetupInput: () => void;
+  currentInputName?: string;
 }
 
 export function SongListSettings({
@@ -28,6 +28,7 @@ export function SongListSettings({
   onRescan,
   scanPercent,
   onSetupInput,
+  currentInputName,
 }: Props) {
   return (
     <>
@@ -58,7 +59,7 @@ export function SongListSettings({
       <Divider />
 
       <Button icon={<FontAwesomeIcon icon={faDrum} />} onClick={onSetupInput}>
-        Setup input
+        {currentInputName ?? 'Setup input'}
       </Button>
 
       <Divider />

@@ -97,6 +97,51 @@ describe('InputBus', () => {
     expect(a.startCalls).toBe(2);
   });
 
+  it('routes events only to the capture listener while capturing', () => {
+    const a = makeSource('midi', []);
+    const bus = new InputBus([a.source]);
+    const subscriber: InputEvent[] = [];
+    const captured: InputEvent[] = [];
+
+    bus.subscribe((event) => subscriber.push(event));
+    bus.start();
+
+    const release = bus.capture((event) => captured.push(event));
+
+    a.emit({ controlId: 'midi:38', value: 1 });
+
+    expect(captured).toEqual([{ controlId: 'midi:38', value: 1 }]);
+    expect(subscriber).toEqual([]);
+
+    release();
+
+    a.emit({ controlId: 'midi:40', value: 1 });
+
+    expect(subscriber).toEqual([{ controlId: 'midi:40', value: 1 }]);
+  });
+
+  it('only releases capture when the active listener releases it', () => {
+    const a = makeSource('midi', []);
+    const bus = new InputBus([a.source]);
+    const subscriber: InputEvent[] = [];
+
+    bus.subscribe((event) => subscriber.push(event));
+    bus.start();
+
+    const releaseFirst = bus.capture(() => {});
+    const releaseSecond = bus.capture(() => {});
+
+    releaseFirst();
+    a.emit({ controlId: 'midi:38', value: 1 });
+
+    expect(subscriber).toEqual([]);
+
+    releaseSecond();
+    a.emit({ controlId: 'midi:40', value: 1 });
+
+    expect(subscriber).toEqual([{ controlId: 'midi:40', value: 1 }]);
+  });
+
   it('flattens devices from all sources', async () => {
     const a = makeSource('midi', [
       { id: 'midi:Pad', name: 'Pad', sourceId: 'midi' },

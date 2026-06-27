@@ -4,8 +4,7 @@ import ini from 'ini';
 import { randomUUID } from 'crypto';
 import { Difficulty, parseChartFile } from 'scan-chart';
 import { AudioData, SongData } from '../types';
-
-const DIFFICULTY_ORDER: Difficulty[] = ['easy', 'medium', 'hard', 'expert'];
+import { ALL_DIFFICULTIES } from '../constants';
 
 function readDrumDifficulties(
   dir: string,
@@ -26,7 +25,7 @@ function readDrumDifficulties(
         .map((t) => t.difficulty),
     );
 
-    return DIFFICULTY_ORDER.filter((d) => present.has(d));
+    return ALL_DIFFICULTIES.filter((d) => present.has(d));
   } catch {
     return [];
   }
@@ -66,6 +65,7 @@ export function buildSongFromDir(
     id?: string;
     liked?: boolean;
     scoreData?: SongData['scoreData'];
+    drumDifficulties?: SongData['drumDifficulties'];
   },
 ): SongData | null {
   const songIniPath = path.join(dir, 'song.ini');
@@ -92,12 +92,15 @@ export function buildSongFromDir(
 
   const format: 'mid' | 'chart' = hasMid ? 'mid' : 'chart';
   const meta = info.song ?? info.Song ?? info;
-  const drumDifficulties = readDrumDifficulties(
-    dir,
-    format,
-    meta.pro_drums === 'True',
-    meta.five_lane_drums === 'True',
-  );
+  const drumDifficulties =
+    existing?.drumDifficulties && existing.drumDifficulties.length > 0
+      ? existing.drumDifficulties
+      : readDrumDifficulties(
+          dir,
+          format,
+          meta.pro_drums === 'True',
+          meta.five_lane_drums === 'True',
+        );
   const audio: AudioData[] = fs
     .readdirSync(dir)
     .filter(

@@ -43,14 +43,18 @@ export function useInputConfig(isOpen: boolean) {
   }, [isOpen, selectedDevice, setSelectedDevice]);
 
   useEffect(() => {
-    if (!selectedDevice || !isOpen) {
+    if (!isOpen) {
       return undefined;
     }
 
-    return inputBus.subscribe(({ controlId }) => {
+    return inputBus.capture(({ controlId }) => {
       const listening = listeningToRef.current;
 
-      if (listening && controlSource(controlId) === selectedDevice.sourceId) {
+      if (
+        listening &&
+        selectedDevice &&
+        controlSource(controlId) === selectedDevice.sourceId
+      ) {
         assignControl(listening, controlId);
         setListeningTo(undefined);
       }
@@ -76,6 +80,7 @@ export function useInputConfig(isOpen: boolean) {
   return {
     devices,
     selectedDeviceId: selectedDevice?.id,
+    selectedDeviceName: selectedDevice?.name,
     onSelectDevice: (id: string | undefined) => {
       setSelectedDevice(devices.find((device) => device.id === id) ?? null);
     },

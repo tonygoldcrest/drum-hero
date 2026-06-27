@@ -34,7 +34,7 @@ const KIT_ELEMENTS: MappingElement[] = [
   },
   {
     value: 'crash',
-    displayName: 'Crash',
+    displayName: 'Crash / Difficulty',
     color: themedark.color.green,
     type: 'cymbal',
   },
@@ -121,7 +121,7 @@ export function InputConfig({
       className="bg-surface text-text-body border border-border p-2 rounded-md flex flex-col"
     >
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-3 w-30 shrink-0 overflow-hidden">
+        <div className="flex items-center gap-3 w-40 shrink-0 overflow-hidden">
           <FontAwesomeIcon
             style={{
               color: element.color,
@@ -178,7 +178,13 @@ export function InputConfig({
   );
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} header={header} footer={footer}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      header={header}
+      footer={footer}
+      panelClassName="w-160"
+    >
       <div className="flex flex-col gap-3 p-4">
         <div className="flex flex-col gap-1">
           <div className="text-text-faint text-[12px] font-semibold uppercase">

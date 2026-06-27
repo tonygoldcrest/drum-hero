@@ -45,6 +45,7 @@ export const SettingsButton = memo(function Settings({
   const [inputConfigOpen, setInputConfigOpen] = useState(false);
   const [isDev, setIsDev] = useState(false);
   const inputConfig = useInputConfig(inputConfigOpen);
+  const currentInputName = inputConfig.selectedDeviceName;
 
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage('check-dev');
@@ -92,6 +93,7 @@ export const SettingsButton = memo(function Settings({
             }
             scanPercent={scanPercent}
             onSetupInput={openInput}
+            currentInputName={currentInputName}
           />
         ) : (
           <SongViewSettings
@@ -108,6 +110,7 @@ export const SettingsButton = memo(function Settings({
             isDev={isDev}
             onSetupInput={openInput}
             volumeSliders={volumeSliders}
+            currentInputName={currentInputName}
           />
         )}
       </Popover>

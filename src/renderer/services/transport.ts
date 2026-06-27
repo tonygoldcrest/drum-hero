@@ -141,7 +141,7 @@ export class Transport {
     const begin = () => {
       this.isStarted = true;
       this.state = 'playing';
-      this.audioPlayer?.start(startTime);
+      void this.audioPlayer?.start(startTime);
       this.emit();
     };
 
@@ -188,7 +188,7 @@ export class Transport {
     this.isStarted = true;
     this.state = 'playing';
     this.setPosition(seconds);
-    this.audioPlayer.start(seconds);
+    void this.audioPlayer.start(seconds);
     this.emit();
   }
 

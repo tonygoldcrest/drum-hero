@@ -68,4 +68,23 @@ describe('Modal', () => {
 
     expect(() => fireEvent.click(screen.getByTestId('modal'))).not.toThrow();
   });
+
+  it('keeps native inputs inside the panel usable (does not prevent their mousedown)', () => {
+    render(
+      <Modal isOpen onClose={vi.fn()}>
+        <select data-testid="select">
+          <option>a</option>
+        </select>
+      </Modal>,
+    );
+
+    const event = new MouseEvent('mousedown', {
+      bubbles: true,
+      cancelable: true,
+    });
+
+    screen.getByTestId('select').dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+  });
 });

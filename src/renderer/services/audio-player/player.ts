@@ -4,23 +4,16 @@ import { trimTrailingSilence } from './utils';
 
 export class AudioPlayer {
   context: AudioContext;
-
   audioTracks: AudioTrack[] = [];
-
   ready: Promise<AudioTrack[]>;
-
   isInitialised: boolean = false;
-
   onEnded: (() => void) | null;
-
   private startedAt: number = -1;
-
   private offset: number = 0;
-
   duration: number = 0;
 
   constructor(trackConfigs: TrackConfig[], onEnded: () => void) {
-    this.context = new AudioContext();
+    this.context = new AudioContext({ latencyHint: 'playback' });
     this.ready = this.createTracks(trackConfigs);
     this.onEnded = onEnded;
     this.ready
@@ -54,7 +47,7 @@ export class AudioPlayer {
     );
   }
 
-  start(offset: number = 0) {
+  async start(offset: number = 0) {
     if (this.isInitialised) {
       this.stop();
     }
@@ -62,7 +55,7 @@ export class AudioPlayer {
     this.offset = offset;
 
     if (this.context.state === 'suspended') {
-      this.context.resume();
+      await this.context.resume().catch(() => {});
     }
 
     const time = this.context.currentTime;

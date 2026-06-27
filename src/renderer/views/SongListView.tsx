@@ -18,9 +18,10 @@ import { useSongList } from '../hooks/useSongList';
 import { useDownload } from '../hooks/useDownload';
 import { useSongFilter } from '../hooks/useSongFilter';
 import { useInputControls } from '../hooks/useInputControls';
+import { ALL_DIFFICULTIES } from '../../constants';
 
 export function SongListView() {
-  const { currentPath, inputMapping, difficulty } = useApp();
+  const { currentPath, inputMapping, difficulty, setDifficulty } = useApp();
   const navigate = useNavigate();
   const songOpen = useOutlet() !== null;
   const stemTools = useStemTools();
@@ -60,12 +61,15 @@ export function SongListView() {
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [focusedSortIndex, setFocusedSortIndex] = useState(0);
   const sortAvailable = mode !== 'online';
-  const [prevFilteredSongList, setPrevFilteredSongList] =
-    useState(filteredSongList);
+  const [prevNameFilter, setPrevNameFilter] = useState(nameFilter);
+  const [prevMode, setPrevMode] = useState(mode);
+  const [prevSort, setPrevSort] = useState(sort);
   const [prevSortAvailable, setPrevSortAvailable] = useState(sortAvailable);
 
-  if (filteredSongList !== prevFilteredSongList) {
-    setPrevFilteredSongList(filteredSongList);
+  if (nameFilter !== prevNameFilter || mode !== prevMode || sort !== prevSort) {
+    setPrevNameFilter(nameFilter);
+    setPrevMode(mode);
+    setPrevSort(sort);
     setFocusedSongIndex(undefined);
   }
 
@@ -181,6 +185,13 @@ export function SongListView() {
           },
           kick: openSort,
           ride: () => setMode(mode === 'online' ? 'local' : 'online'),
+          crash: () => {
+            const difficultyIndex = ALL_DIFFICULTIES.indexOf(difficulty);
+
+            setDifficulty(
+              ALL_DIFFICULTIES[(difficultyIndex + 1) % ALL_DIFFICULTIES.length],
+            );
+          },
         },
     !songOpen,
   );

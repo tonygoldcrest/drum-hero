@@ -53,12 +53,32 @@ describe('AudioPlayer', () => {
 
     context.state = 'suspended';
     context.currentTime = 10;
-    player.start(2);
+    await player.start(2);
 
     expect(context.resume).toHaveBeenCalledTimes(1);
     expect(player.isInitialised).toBe(true);
     context.bufferSources.forEach((source) =>
       expect(source.starts.at(-1)).toEqual({ at: 10, offset: 2 }),
+    );
+  });
+
+  it('schedules sources only after the suspended context has resumed', async () => {
+    const { player } = await makePlayer();
+
+    context.state = 'suspended';
+    context.currentTime = 4;
+
+    const started = player.start(1);
+
+    expect(player.isInitialised).toBe(false);
+    expect(context.bufferSources).toHaveLength(0);
+
+    await started;
+
+    expect(player.isInitialised).toBe(true);
+    expect(context.bufferSources.length).toBeGreaterThan(0);
+    context.bufferSources.forEach((source) =>
+      expect(source.starts.at(-1)).toEqual({ at: 4, offset: 1 }),
     );
   });
 

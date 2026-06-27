@@ -93,6 +93,26 @@ describe('buildSongFromDir drum difficulties', () => {
     expect(song?.drumDifficulties).toEqual([]);
     expect(song?.format).toBe('mid');
   });
+
+  it('reuses existing drum difficulties without reparsing the chart', () => {
+    writeSong(CHART_WITHOUT_DRUMS);
+
+    const song = buildSongFromDir(dir, {
+      drumDifficulties: ['expert'],
+    });
+
+    expect(song?.drumDifficulties).toEqual(['expert']);
+  });
+
+  it('reparses when existing drum difficulties are empty', () => {
+    writeSong(CHART_WITH_HARD_AND_EXPERT);
+
+    const song = buildSongFromDir(dir, {
+      drumDifficulties: [],
+    });
+
+    expect(song?.drumDifficulties).toEqual(['hard', 'expert']);
+  });
 });
 
 describe('buildSongFromDir guards', () => {

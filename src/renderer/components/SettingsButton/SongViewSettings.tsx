@@ -18,6 +18,7 @@ interface Props {
   isDev: boolean;
   onSetupInput: () => void;
   volumeSliders?: ReactNode[];
+  currentInputName?: string;
 }
 
 export function SongViewSettings({
@@ -34,11 +35,12 @@ export function SongViewSettings({
   isDev,
   onSetupInput,
   volumeSliders,
+  currentInputName,
 }: Props) {
   return (
     <>
       <Button icon={<FontAwesomeIcon icon={faDrum} />} onClick={onSetupInput}>
-        Setup input
+        {currentInputName ?? 'Setup input'}
       </Button>
 
       <Divider />

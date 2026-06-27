@@ -43,7 +43,7 @@ vi.mock('../../context/AppContext', () => ({
 
 vi.mock('../../input', () => ({
   inputBus: {
-    subscribe: (listener: (event: InputEvent) => void) => {
+    capture: (listener: (event: InputEvent) => void) => {
       busListeners.add(listener);
 
       return () => {
