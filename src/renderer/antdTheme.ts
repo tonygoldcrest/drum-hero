@@ -8,11 +8,19 @@ export const antdTheme: ThemeConfig = {
     borderRadius: themedark.radius.sm,
     colorBorder: 'transparent',
     colorBgContainer: themedark.color.surfaceSunken,
+    colorBgElevated: themedark.color.bg,
     colorText: themedark.color.text,
     colorTextPlaceholder: themedark.color.textDimmer,
     colorError: themedark.color.red,
   },
   components: {
+    Modal: {
+      headerBg: 'transparent',
+      contentBg: themedark.color.bg,
+      titleColor: themedark.color.text,
+      colorIcon: themedark.color.textMuted,
+      colorIconHover: themedark.color.text,
+    },
     Input: {
       activeBorderColor: 'transparent',
       hoverBorderColor: 'transparent',

@@ -1,8 +1,7 @@
-import { type CSSProperties, type RefObject } from 'react';
-import { Button } from 'antd';
+import { Button, Popover } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSort } from '@fortawesome/free-solid-svg-icons';
-import { Popover } from '../Popover';
+import { popoverOpenChange, popoverStyles } from '../../overlayStyles';
 import { SortMenu } from './SortMenu';
 import { SortState } from './sort';
 
@@ -25,24 +24,25 @@ export function SortButton({
 }: Props) {
   return (
     <Popover
-      anchorName="--sort-trigger"
       open={isOpen}
-      onOpenChange={onOpenChange}
-      contentClassName="min-w-60 p-3 gap-2"
-      renderTrigger={({ ref, toggle, anchorStyle }) => (
-        <Button
-          ref={ref as RefObject<HTMLButtonElement>}
-          icon={<FontAwesomeIcon icon={faSort} />}
-          onClick={toggle}
-          size="large"
-          style={anchorStyle as CSSProperties}
-        />
-      )}
+      onOpenChange={popoverOpenChange(onOpenChange)}
+      trigger="click"
+      placement="bottomRight"
+      styles={popoverStyles}
+      content={
+        <div className="min-w-60 flex flex-col gap-2">
+          <SortMenu
+            sort={sort}
+            onSortChange={onSortChange}
+            focusedIndex={focusedIndex}
+          />
+        </div>
+      }
     >
-      <SortMenu
-        sort={sort}
-        onSortChange={onSortChange}
-        focusedIndex={focusedIndex}
+      <Button
+        icon={<FontAwesomeIcon icon={faSort} />}
+        size="large"
+        data-testid="sort-trigger"
       />
     </Popover>
   );

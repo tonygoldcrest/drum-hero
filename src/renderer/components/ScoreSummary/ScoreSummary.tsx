@@ -1,11 +1,11 @@
-import { Button } from 'antd';
+import { Button, Modal } from 'antd';
 import { useMemo } from 'react';
 import { ScoreData, SongData } from '../../../types';
 import { Difficulty } from 'scan-chart';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRepeat } from '@fortawesome/free-solid-svg-icons';
 import { calculateAccuracy, getStarRating } from '../../views/utils';
-import { Modal } from '../Modal';
+import { MODAL_ABOVE_POPOVER_Z_INDEX, modalStyles } from '../../overlayStyles';
 import { Stars } from '../Stars';
 
 interface Props {
@@ -57,7 +57,7 @@ export function ScoreSummary({
     </>
   );
   const footer = (
-    <>
+    <div className="flex gap-3 w-full">
       <Button
         className="grow"
         onClick={() => onRetry()}
@@ -74,12 +74,24 @@ export function ScoreSummary({
       >
         Next song
       </Button>
-    </>
+    </div>
   );
 
   return (
-    <Modal isOpen={isOpen} testId="score-modal" header={header} footer={footer}>
-      <div className="flex flex-col gap-5 p-4 items-center">
+    <Modal
+      open={isOpen}
+      title={header}
+      footer={footer}
+      closable={false}
+      keyboard={false}
+      mask={{ closable: false }}
+      width={560}
+      destroyOnHidden
+      styles={modalStyles}
+      wrapProps={{ 'data-testid': 'score-modal' }}
+      zIndex={MODAL_ABOVE_POPOVER_Z_INDEX}
+    >
+      <div className="flex flex-col gap-5 items-center">
         <Stars
           rating={starRating}
           perfect={isPerfect}

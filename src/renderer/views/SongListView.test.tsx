@@ -233,6 +233,7 @@ describe('SongListView — filtering and sorting', () => {
       makeSong('b', { name: 'Alpha' }),
     ]);
 
+    fireEvent.click(screen.getByTestId('sort-trigger'));
     fireEvent.click(screen.getByText('Name').closest('button')!);
 
     const rendered = screen
@@ -580,6 +581,7 @@ describe('SongListView — input navigation', () => {
     act(() => handlers().tom2());
     expect(focused('a')).toBe(true);
 
+    fireEvent.click(screen.getByTestId('sort-trigger'));
     fireEvent.click(screen.getByText('Name').closest('button')!);
 
     expect(focused('a')).toBe(false);

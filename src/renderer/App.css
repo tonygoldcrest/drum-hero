@@ -195,6 +195,13 @@ textarea,
   box-sizing: border-box;
 }
 
+.ant-modal:focus,
+.ant-modal:focus-visible,
+.ant-modal-container:focus,
+.ant-modal-container:focus-visible {
+  outline: none;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

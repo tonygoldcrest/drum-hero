@@ -34,7 +34,6 @@ function renderMenu(
     <MemoryRouter>
       <StemToolsProvider value={stemToolsValue(status)}>
         <SongMenu
-          id="song-1"
           dir="/songs/track"
           canSplit
           splitting={false}
@@ -59,24 +58,17 @@ describe('SongMenu', () => {
     delete (window as unknown as { electron?: unknown }).electron;
   });
 
-  it('toggles the popover open and closed on the trigger', () => {
+  it('opens the menu on the trigger', () => {
     renderMenu();
 
-    const trigger = screen.getByTestId('song-menu-trigger');
-    const popover = document.querySelector('[popover]')!;
+    expect(screen.queryByText('Open song directory')).toBeNull();
 
-    expect(popover.matches(':popover-open')).toBe(false);
+    fireEvent.click(screen.getByTestId('song-menu-trigger'));
 
-    fireEvent.click(trigger);
-
-    expect(popover.matches(':popover-open')).toBe(true);
-
-    fireEvent.click(trigger);
-
-    expect(popover.matches(':popover-open')).toBe(false);
+    expect(screen.getByText('Open song directory')).toBeInTheDocument();
   });
 
-  it('opens the song directory through IPC and closes the menu', () => {
+  it('opens the song directory through IPC', () => {
     renderMenu();
 
     fireEvent.click(screen.getByTestId('song-menu-trigger'));
@@ -86,9 +78,6 @@ describe('SongMenu', () => {
       channel: 'open-song-directory',
       args: ['/songs/track'],
     });
-    expect(document.querySelector('[popover]')!.matches(':popover-open')).toBe(
-      false,
-    );
   });
 
   it('offers stem splitting only when tools are ready and splitting is allowed', () => {

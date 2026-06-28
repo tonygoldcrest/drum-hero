@@ -1,16 +1,10 @@
-import {
-  ReactNode,
-  memo,
-  useEffect,
-  useState,
-  type CSSProperties,
-  type RefObject,
-} from 'react';
-import { Button } from 'antd';
+import { ReactNode, memo, useEffect, useState } from 'react';
+import { Button, Popover } from 'antd';
+import { useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog } from '@fortawesome/free-solid-svg-icons';
 import { useApp } from '../../context/AppContext';
-import { Popover } from '../Popover';
+import { popoverOpenChange, popoverStyles } from '../../overlayStyles';
 import { InputConfig, useInputConfig } from '../InputConfig';
 import { SongListSettings } from './SongListSettings';
 import { SongViewSettings } from './SongViewSettings';
@@ -48,6 +42,7 @@ export const SettingsButton = memo(function Settings({
   const [isDev, setIsDev] = useState(false);
   const inputConfig = useInputConfig(inputConfigOpen);
   const currentInputName = inputConfig.selectedDeviceName;
+  const { pathname } = useLocation();
 
   useEffect(() => {
     window.electron.ipcRenderer.sendMessage('check-dev');
@@ -55,6 +50,10 @@ export const SettingsButton = memo(function Settings({
       setIsDev(dev);
     });
   }, []);
+
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
 
   const openInput = () => setInputConfigOpen(true);
 
@@ -67,56 +66,56 @@ export const SettingsButton = memo(function Settings({
       />
 
       <Popover
-        anchorName="--settings-trigger"
         open={isOpen}
-        onOpenChange={setIsOpen}
-        contentClassName="min-w-90 bg-bg p-3 gap-3"
-        renderTrigger={({ ref, toggle, anchorStyle }) => (
-          <Button
-            ref={ref as RefObject<HTMLButtonElement>}
-            icon={<FontAwesomeIcon icon={faCog} />}
-            onClick={toggle}
-            size="large"
-            data-testid="settings-trigger"
-            style={anchorStyle as CSSProperties}
-          />
-        )}
+        onOpenChange={popoverOpenChange(setIsOpen)}
+        trigger="click"
+        placement="bottomRight"
+        styles={popoverStyles}
+        content={
+          <div className="min-w-90 flex flex-col gap-3">
+            {page === 'song-list' ? (
+              <SongListSettings
+                difficulty={difficulty}
+                onDifficultyChange={setDifficulty}
+                currentPath={currentPath}
+                onSelectFolder={() =>
+                  window.electron.ipcRenderer.sendMessage('rescan-songs')
+                }
+                onRescan={() =>
+                  window.electron.ipcRenderer.sendMessage('rescan-songs', false)
+                }
+                scanPercent={scanPercent}
+                onSetupInput={openInput}
+                currentInputName={currentInputName}
+              />
+            ) : (
+              <SongViewSettings
+                playheadStyle={playheadStyle}
+                onPlayheadStyleChange={setPlayheadStyle}
+                enableColors={enableColors}
+                onEnableColorsChange={setEnableColors}
+                showBarNumbers={showBarNumbers}
+                onShowBarNumbersChange={setShowBarNumbers}
+                showTempo={showTempo}
+                onShowTempoChange={setShowTempo}
+                countIn={countIn}
+                onCountInChange={setCountIn}
+                isDev={isDev}
+                onSetupInput={openInput}
+                volumeSliders={volumeSliders}
+                currentInputName={currentInputName}
+                showReference={showReference}
+                onShowReferenceChange={setShowReference}
+              />
+            )}
+          </div>
+        }
       >
-        {page === 'song-list' ? (
-          <SongListSettings
-            difficulty={difficulty}
-            onDifficultyChange={setDifficulty}
-            currentPath={currentPath}
-            onSelectFolder={() =>
-              window.electron.ipcRenderer.sendMessage('rescan-songs')
-            }
-            onRescan={() =>
-              window.electron.ipcRenderer.sendMessage('rescan-songs', false)
-            }
-            scanPercent={scanPercent}
-            onSetupInput={openInput}
-            currentInputName={currentInputName}
-          />
-        ) : (
-          <SongViewSettings
-            playheadStyle={playheadStyle}
-            onPlayheadStyleChange={setPlayheadStyle}
-            enableColors={enableColors}
-            onEnableColorsChange={setEnableColors}
-            showBarNumbers={showBarNumbers}
-            onShowBarNumbersChange={setShowBarNumbers}
-            showTempo={showTempo}
-            onShowTempoChange={setShowTempo}
-            countIn={countIn}
-            onCountInChange={setCountIn}
-            isDev={isDev}
-            onSetupInput={openInput}
-            volumeSliders={volumeSliders}
-            currentInputName={currentInputName}
-            showReference={showReference}
-            onShowReferenceChange={setShowReference}
-          />
-        )}
+        <Button
+          icon={<FontAwesomeIcon icon={faCog} />}
+          size="large"
+          data-testid="settings-trigger"
+        />
       </Popover>
     </>
   );

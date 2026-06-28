@@ -74,7 +74,6 @@ export function SongListItem({
       return (
         <div className="flex flex-col gap-2 items-center h-full">
           <SongMenu
-            id={id}
             dir={dir}
             canSplit={(audio?.length ?? 0) === 1}
             splitting={splitting}

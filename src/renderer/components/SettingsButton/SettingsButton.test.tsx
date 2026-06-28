@@ -236,14 +236,10 @@ describe('SettingsButton — song-list parameters', () => {
     renderSongView();
     open();
 
-    const modalBackdrop = screen
-      .getByText('Configure input')
-      .closest('.backdrop-blur-xs')!;
-
-    expect(modalBackdrop.className).not.toContain('flex');
+    expect(screen.queryByText('Configure input')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByText('Setup input'));
 
-    expect(modalBackdrop.className).toContain('flex');
+    expect(screen.getByText('Configure input')).toBeInTheDocument();
   });
 });

@@ -1,7 +1,7 @@
-import { Button, Divider } from 'antd';
+import { Button, Divider, Modal } from 'antd';
 import { InputElement, InputMapping } from '../../../types';
 import { controlLabel, InputDevice } from '../../input';
-import { Modal } from '../Modal';
+import { modalStyles, MODAL_ABOVE_POPOVER_Z_INDEX } from '../../overlayStyles';
 import { IconButton } from '../IconButton';
 import themedark from '../../theme';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -112,22 +112,23 @@ export function InputConfig({
       </div>
     </div>
   );
-  const header = <div className="font-semibold text-xl">Configure input</div>;
-  const footer = (
-    <Button className="ml-auto" type="primary" onClick={onClose}>
-      Done
-    </Button>
-  );
 
   return (
     <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      header={header}
-      footer={footer}
-      panelClassName="w-160"
+      open={isOpen}
+      onCancel={onClose}
+      title={<div className="font-semibold text-xl">Configure input</div>}
+      footer={
+        <Button type="primary" onClick={onClose}>
+          Done
+        </Button>
+      }
+      width={640}
+      destroyOnHidden
+      styles={modalStyles}
+      zIndex={MODAL_ABOVE_POPOVER_Z_INDEX}
     >
-      <div className="flex flex-col gap-3 p-4">
+      <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
           <div className="text-text-faint text-[12px] font-semibold uppercase">
             Input Device

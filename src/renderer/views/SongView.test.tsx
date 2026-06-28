@@ -432,11 +432,11 @@ describe('SongView — score', () => {
     renderView();
     await loadSong();
 
-    expect(screen.getByTestId('score-modal')).not.toHaveClass('flex');
+    expect(screen.queryByTestId('score-modal')).toBeNull();
 
     await finishSong();
 
-    expect(screen.getByTestId('score-modal')).toHaveClass('flex');
+    expect(screen.getByTestId('score-modal')).toBeInTheDocument();
     expect(ipc.sent.map((s) => s.channel)).not.toContain('update-song');
   });
 
@@ -508,7 +508,9 @@ describe('SongView — score', () => {
 
     fireEvent.click(screen.getByText('Retry'));
 
-    expect(screen.getByTestId('score-modal')).not.toHaveClass('flex');
+    expect(
+      screen.getByTestId('score-modal').querySelector('.ant-modal'),
+    ).toHaveClass('ant-zoom-leave');
   });
 
   it('returns to the song list on next song', async () => {
