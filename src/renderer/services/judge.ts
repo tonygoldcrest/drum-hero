@@ -99,6 +99,21 @@ export class Judge {
     this.incorrectHits = 0;
   }
 
+  private isInSilentMeasure(tick: number): boolean {
+    const containing = this.renderData.find(
+      ({ measure }) =>
+        measure !== undefined &&
+        tick >= measure.startTick &&
+        tick < measure.endTick,
+    );
+
+    if (!containing) {
+      return false;
+    }
+
+    return containing.renderedNotes.every((rn) => rn.note.isRest());
+  }
+
   handleInput({ controlId, value }: InputEvent): void {
     if (value === 0 || !this.enabled) {
       return;
@@ -157,7 +172,9 @@ export class Judge {
     }
 
     if (!bestNote) {
-      this.incorrectHits += 1;
+      if (!this.isInSilentMeasure(tick)) {
+        this.incorrectHits += 1;
+      }
 
       return;
     }
@@ -187,7 +204,9 @@ export class Judge {
       );
 
     if (newPrefixes.length === 0) {
-      this.incorrectHits += 1;
+      if (!this.isInSilentMeasure(tick)) {
+        this.incorrectHits += 1;
+      }
 
       return;
     }

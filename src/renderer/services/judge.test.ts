@@ -28,8 +28,14 @@ function rendered(
   return { tick, note, ...marks } as unknown as RenderedNote;
 }
 
-function measure(notes: RenderedNote[]): RenderData {
-  return { renderedNotes: notes } as unknown as RenderData;
+function measure(
+  notes: RenderedNote[],
+  bounds?: { startTick: number; endTick: number },
+): RenderData {
+  return {
+    renderedNotes: notes,
+    ...(bounds ? { measure: bounds } : {}),
+  } as unknown as RenderData;
 }
 
 function hit(controlId: string, value = 100): InputEvent {
@@ -339,6 +345,58 @@ describe('Judge', () => {
     engine.handleInput(hit('midi:38', 30));
 
     expect(engine.isHit(480, 'c/5')).toBe(true);
+    expect(engine.falseHitCount).toBe(0);
+  });
+
+  it('does not count a false hit inside a fully silent measure', () => {
+    const rest = fakeNote(['c/5'], true);
+    const { engine } = setup(
+      {
+        renderData: [
+          measure([rendered(480, rest)], { startTick: 0, endTick: 1920 }),
+        ],
+      },
+      { tick: 480 },
+    );
+
+    engine.handleInput(hit('midi:38'));
+
+    expect(engine.hitCount).toBe(0);
+    expect(engine.falseHitCount).toBe(0);
+  });
+
+  it('still counts a false hit in a measure that contains notes', () => {
+    const note = fakeNote(['c/5']);
+    const { engine } = setup(
+      {
+        renderData: [
+          measure([rendered(5000, note)], { startTick: 0, endTick: 10000 }),
+        ],
+      },
+      { tick: 480 },
+    );
+
+    engine.handleInput(hit('midi:38'));
+
+    expect(engine.falseHitCount).toBe(1);
+  });
+
+  it('registers an early hit on a note in the next measure from a silent measure', () => {
+    const rest = fakeNote(['c/5'], true);
+    const note = fakeNote(['c/5']);
+    const { engine } = setup(
+      {
+        renderData: [
+          measure([rendered(1000, rest)], { startTick: 0, endTick: 1920 }),
+          measure([rendered(1950, note)], { startTick: 1920, endTick: 3840 }),
+        ],
+      },
+      { tick: 1900 },
+    );
+
+    engine.handleInput(hit('midi:38'));
+
+    expect(engine.isHit(1950, 'c/5')).toBe(true);
     expect(engine.falseHitCount).toBe(0);
   });
 
