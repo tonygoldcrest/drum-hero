@@ -161,7 +161,7 @@ class AppState {
 
       return { action: 'deny' };
     });
-    new AppUpdater();
+    new AppUpdater(this.mainWindow);
   }
 
   preventSleep(): void {

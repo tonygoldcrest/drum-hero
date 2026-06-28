@@ -106,8 +106,7 @@ export function buildSongFromDir(
     .filter(
       (f) =>
         ['.ogg', '.opus', '.mp3'].includes(path.extname(f)) &&
-        f !== 'crowd.ogg' &&
-        f !== 'preview.ogg',
+        path.parse(f).name !== 'preview',
     )
     .map((f) => ({
       src: toAssetUrl(path.join(dir, f)),

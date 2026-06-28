@@ -5,12 +5,20 @@ import { SongListView } from './views/SongListView';
 import { SongView } from './views/SongView';
 import { antdTheme } from './antdTheme';
 import { AppProvider } from './context/AppContext';
+import { useAppUpdate } from './hooks/useAppUpdate';
+
+function UpdateNotifier() {
+  useAppUpdate();
+
+  return undefined;
+}
 
 export default function App() {
   return (
     <>
       <ConfigProvider theme={antdTheme}>
         <AntdApp>
+          <UpdateNotifier />
           <AppProvider>
             <Router>
               <Routes>

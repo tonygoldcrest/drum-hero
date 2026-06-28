@@ -128,17 +128,20 @@ describe('buildSongFromDir guards', () => {
 });
 
 describe('buildSongFromDir metadata', () => {
-  it('collects playable audio stems and skips crowd/preview tracks', () => {
+  it('keeps crowd stems and skips preview tracks in any format', () => {
     writeSong(CHART_WITH_HARD_AND_EXPERT);
     fs.writeFileSync(path.join(dir, 'drums.ogg'), '');
     fs.writeFileSync(path.join(dir, 'song.mp3'), '');
     fs.writeFileSync(path.join(dir, 'crowd.ogg'), '');
+    fs.writeFileSync(path.join(dir, 'crowd.opus'), '');
     fs.writeFileSync(path.join(dir, 'preview.ogg'), '');
+    fs.writeFileSync(path.join(dir, 'preview.opus'), '');
+    fs.writeFileSync(path.join(dir, 'preview.mp3'), '');
 
     const song = buildSongFromDir(dir);
     const names = song?.audio.map((a) => a.name).sort();
 
-    expect(names).toEqual(['drums', 'song']);
+    expect(names).toEqual(['crowd', 'crowd', 'drums', 'song']);
     expect(song?.audio.every((a) => a.src.startsWith('sightkick://'))).toBe(
       true,
     );

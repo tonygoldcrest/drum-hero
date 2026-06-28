@@ -107,6 +107,11 @@ export interface IpcDeleteStemToolsResponse {
   error?: string;
 }
 
+export interface IpcUpdateAvailableResponse {
+  version: string;
+  releaseUrl: string;
+}
+
 export interface IpcSplitSongResponse {
   id: string;
   progress?: number;

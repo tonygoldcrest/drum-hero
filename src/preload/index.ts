@@ -20,6 +20,8 @@ export type Channels =
   | 'midi-device-list'
   | 'listen-midi'
   | 'stop-listen-midi'
+  | 'check-update'
+  | 'update-available'
   | 'update-song';
 
 const electronHandler = {

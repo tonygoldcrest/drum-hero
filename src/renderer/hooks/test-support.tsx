@@ -94,6 +94,7 @@ export interface NotificationMock {
   info: ReturnType<typeof vi.fn>;
   warning: ReturnType<typeof vi.fn>;
   open: ReturnType<typeof vi.fn>;
+  destroy: ReturnType<typeof vi.fn>;
 }
 
 export function resetNotification(): NotificationMock {
@@ -103,6 +104,7 @@ export function resetNotification(): NotificationMock {
     info: vi.fn(),
     warning: vi.fn(),
     open: vi.fn(),
+    destroy: vi.fn(),
   };
 
   (
