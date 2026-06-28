@@ -443,7 +443,7 @@ describe('SongView — score', () => {
   it('persists a new high score when notes were actually hit', async () => {
     window.localStorage.setItem(
       'settings.playheadStyle',
-      JSON.stringify('None'),
+      JSON.stringify('Cursor'),
     );
     window.localStorage.setItem('settings.countIn', JSON.stringify(false));
     window.localStorage.setItem(

@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import type { ModalProps, PopoverProps } from 'antd';
+import type { ModalProps } from 'antd';
 
 const border = '1px solid var(--color-border)';
 const panelShadow = 'var(--shadow-panel)';
@@ -21,7 +21,11 @@ export const modalStyles: ModalProps['styles'] = {
   mask: { background: 'rgba(10, 10, 12, 0.4)', backdropFilter: 'blur(2px)' },
 };
 
-export const popoverStyles: PopoverProps['styles'] = {
+export const popoverStyles: {
+  root?: CSSProperties;
+  container?: CSSProperties;
+  arrow?: CSSProperties;
+} = {
   container: { border, boxShadow: panelShadow },
 };
 

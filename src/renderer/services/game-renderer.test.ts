@@ -85,7 +85,7 @@ function hasClass(note: StaveNote, cls: string, head = 0): boolean {
 }
 
 interface SetupOptions {
-  playheadStyle?: 'Cursor' | 'Measure' | 'None';
+  playheadStyle?: 'Cursor' | 'Measure';
   isHit?: (tick: number, prefix: string) => boolean;
   cursorEl?: HTMLElement;
   highlightEls?: (HTMLElement | undefined)[];
@@ -278,20 +278,6 @@ describe('GameRenderer', () => {
 
     expect(fill(note, 0)).toBe(HIT);
     expect(fill(note, 1)).toBe('');
-  });
-
-  it('hides the cursor and does not mark a note active when the style is None', () => {
-    const cursor = div();
-    const n0 = staveNote(['c/5']);
-    const view = setup([measureData(0, 1920, [rendered(0, n0)])], {
-      playheadStyle: 'None',
-      cursorEl: cursor,
-    });
-
-    view.render(0, 0);
-
-    expect(cursor.style.display).toBe('none');
-    expect(hasClass(n0, 'vf-note-active')).toBe(false);
   });
 
   it('clears colouring while the playhead sits on a note-head-less rest', () => {

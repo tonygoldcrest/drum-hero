@@ -139,10 +139,6 @@ export class GameRenderer {
   }
 
   paintHit(note: StaveNote, prefixes: string[]): void {
-    if (this.playheadStyle === 'None') {
-      return;
-    }
-
     note.getKeys().forEach((key, i) => {
       if (!prefixes.includes(keyPrefix(key))) {
         return;
@@ -225,7 +221,7 @@ export class GameRenderer {
   private locateActiveNote(tick: number): NotePos | undefined {
     const mIdx = this.measureIdx;
 
-    if (this.playheadStyle === 'None' || mIdx < 0) {
+    if (mIdx < 0) {
       return undefined;
     }
 
@@ -271,7 +267,7 @@ export class GameRenderer {
       this.filledEls.clear();
     };
 
-    if (!target || this.playheadStyle === 'None') {
+    if (!target) {
       clearAll();
       this.coloredPos = undefined;
 
@@ -414,10 +410,6 @@ export class GameRenderer {
   }
 
   private updateScroll(index: number): void {
-    if (this.playheadStyle === 'None') {
-      return;
-    }
-
     const el = this.highlightEls[index];
 
     if (!el) {

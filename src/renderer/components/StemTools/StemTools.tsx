@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Button, Progress } from 'antd';
 import { StemToolsPhase, StemToolsStatus } from '../../../types';
 import { IconButton } from '../IconButton';
+import { Tooltip } from '../Tooltip';
 
 function formatSize(bytes?: number): string {
   if (!bytes) {
@@ -63,17 +64,22 @@ export function StemTools({
     available === true
   ) {
     return (
-      <Button onClick={onDownloadStemTools} style={{ height: 'auto' }}>
-        <div className="flex flex-col gap-0.5 items-center py-2">
-          <div className="flex gap-1 items-center">
-            <FontAwesomeIcon icon={faDownload} />
-            Get stem splitter
+      <Tooltip
+        title="Downloads a tool that pulls the drums out of any track, so you can mute them and play along yourself"
+        placement="bottom"
+      >
+        <Button onClick={onDownloadStemTools} style={{ height: 'auto' }}>
+          <div className="flex flex-col gap-0.5 items-center py-2">
+            <div className="flex gap-1 items-center">
+              <FontAwesomeIcon icon={faDownload} />
+              Get stem splitter
+            </div>
+            {sizeCaption && (
+              <div className="text-xs text-text-faint">{sizeCaption}</div>
+            )}
           </div>
-          {sizeCaption && (
-            <div className="text-xs text-text-faint">{sizeCaption}</div>
-          )}
-        </div>
-      </Button>
+        </Button>
+      </Tooltip>
     );
   }
 

@@ -5,10 +5,15 @@ import { modalStyles, MODAL_ABOVE_POPOVER_Z_INDEX } from '../../overlayStyles';
 import { IconButton } from '../IconButton';
 import themedark from '../../theme';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
+import {
+  faInfoCircle,
+  faPlus,
+  faXmark,
+} from '@fortawesome/free-solid-svg-icons';
 import { MappingElement } from '../../types';
 import { KIT_ELEMENTS } from '../../constants';
 import { elementIcon } from '../../util';
+import { Tooltip } from '../Tooltip';
 
 const CONTROL_ELEMENTS: MappingElement[] = [
   {
@@ -147,8 +152,20 @@ export function InputConfig({
           </select>
         </div>
         <div className="flex flex-col gap-2">
-          <div className="text-text-faint text-[12px] font-semibold uppercase">
-            Mapping
+          <div className="flex items-center gap-2">
+            <div className="text-text-faint text-[12px] font-semibold uppercase">
+              Mapping
+            </div>
+
+            <Tooltip
+              title="You can map more than one button to a single drum. If a cymbal sends a different signal depending on where you hit it, add each one so every hit counts."
+              placement="right"
+            >
+              <FontAwesomeIcon
+                icon={faInfoCircle}
+                color={themedark.color.textDim}
+              />
+            </Tooltip>
           </div>
           {KIT_ELEMENTS.map(renderElement)}
         </div>

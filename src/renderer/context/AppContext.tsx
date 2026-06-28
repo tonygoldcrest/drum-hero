@@ -66,6 +66,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     'settings.playheadStyle',
     PLAYHEAD_STYLES[0],
   );
+
+  useEffect(() => {
+    if (!PLAYHEAD_STYLES.includes(playheadStyle)) {
+      setPlayheadStyle(PLAYHEAD_STYLES[0]);
+    }
+  }, [playheadStyle, setPlayheadStyle]);
+
   const [enableColors, setEnableColors] = usePersisted(
     'settings.enableColors',
     true,

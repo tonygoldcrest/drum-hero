@@ -25,7 +25,10 @@ export function SongMenu({ dir, canSplit, splitting, onSplit }: Props) {
       onOpenChange={popoverOpenChange(setIsOpen)}
       trigger="click"
       placement="bottomRight"
-      styles={popoverStyles}
+      styles={{
+        ...popoverStyles,
+        container: { ...popoverStyles.container, padding: 0 },
+      }}
       content={
         <SongMenuContent
           showSplit={showSplit}

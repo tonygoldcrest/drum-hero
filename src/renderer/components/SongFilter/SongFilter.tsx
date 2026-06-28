@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolder, faGlobe, faSearch } from '@fortawesome/free-solid-svg-icons';
 import { Difficulty } from 'scan-chart';
 import { cn } from '../../cn';
+import { Tooltip } from '../Tooltip';
 
 export type Mode = 'local' | 'online';
 
@@ -29,10 +30,12 @@ export function SongFilter({
     {
       icon: <FontAwesomeIcon icon={faFolder} />,
       value: 'local',
+      tooltipText: "Songs you've already got on your machine",
     },
     {
       icon: <FontAwesomeIcon icon={faGlobe} />,
       value: 'online',
+      tooltipText: 'Go hunting for new songs to download',
     },
   ] as const;
 
@@ -63,14 +66,19 @@ export function SongFilter({
 
             <div className="flex gap-2 items-center">
               {options.map((option) => (
-                <Button
+                <Tooltip
                   key={option.value}
-                  className="grow"
-                  type={mode === option.value ? 'primary' : 'default'}
-                  icon={option.icon}
-                  data-testid={`mode-${option.value}`}
-                  onClick={() => onChangeMode(option.value)}
-                ></Button>
+                  title={option.tooltipText}
+                  placement="bottomLeft"
+                >
+                  <Button
+                    className="grow"
+                    type={mode === option.value ? 'primary' : 'default'}
+                    icon={option.icon}
+                    data-testid={`mode-${option.value}`}
+                    onClick={() => onChangeMode(option.value)}
+                  ></Button>
+                </Tooltip>
               ))}
             </div>
           </div>

@@ -7,7 +7,7 @@ export interface AudioFile {
   volume: number;
 }
 
-export const PLAYHEAD_STYLES = ['Cursor', 'Measure', 'None'] as const;
+export const PLAYHEAD_STYLES = ['Cursor', 'Measure'] as const;
 
 export type PlayheadStyle = (typeof PLAYHEAD_STYLES)[number];
 

@@ -72,7 +72,9 @@ describe('SettingsButton — song-view parameters', () => {
     renderSongView();
     open();
 
-    const colorsRow = screen.getByText('Enable colors').parentElement!;
+    const colorsRow = screen
+      .getByText('Enable colors')
+      .closest('.justify-between')!;
 
     fireEvent.click(colorsRow.querySelector('button[role="switch"]')!);
 
@@ -83,7 +85,9 @@ describe('SettingsButton — song-view parameters', () => {
     renderSongView();
     open();
 
-    const tempoRow = screen.getByText('Show tempo').parentElement!;
+    const tempoRow = screen
+      .getByText('Show tempo')
+      .closest('.justify-between')!;
 
     fireEvent.click(tempoRow.querySelector('button[role="switch"]')!);
 
@@ -94,7 +98,9 @@ describe('SettingsButton — song-view parameters', () => {
     renderSongView();
     open();
 
-    const referenceRow = screen.getByText('Show reference').parentElement!;
+    const referenceRow = screen
+      .getByText('Show reference')
+      .closest('.justify-between')!;
 
     fireEvent.click(referenceRow.querySelector('button[role="switch"]')!);
 
@@ -114,7 +120,9 @@ describe('SettingsButton — song-view parameters', () => {
     renderSongView();
     open();
 
-    const countInRow = screen.getByText('Count-in').parentElement!;
+    const countInRow = screen
+      .getByText('Count-in')
+      .closest('.justify-between')!;
 
     fireEvent.click(countInRow.querySelector('button[role="switch"]')!);
 
