@@ -32,6 +32,7 @@ const meta: Meta<typeof InputConfig> = {
     onLearn: () => {},
     onStopLearn: () => {},
     onRemoveControl: () => {},
+    onRefreshDevices: () => {},
   },
 };
 

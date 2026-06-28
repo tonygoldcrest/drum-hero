@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { InputElement } from '../../../types';
 import { controlSource, InputDevice, inputBus } from '../../input';
@@ -28,11 +28,7 @@ export function useInputConfig(isOpen: boolean) {
     listeningToRef.current = listeningTo;
   }, [listeningTo]);
 
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
+  const refreshDevices = useCallback(() => {
     inputBus.listDevices().then((list) => {
       setDevices(list);
 
@@ -40,7 +36,15 @@ export function useInputConfig(isOpen: boolean) {
         setSelectedDevice(null);
       }
     });
-  }, [isOpen, selectedDevice, setSelectedDevice]);
+  }, [selectedDevice, setSelectedDevice]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    refreshDevices();
+  }, [isOpen, refreshDevices]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -89,5 +93,6 @@ export function useInputConfig(isOpen: boolean) {
     onLearn: (element: InputElement) => setListeningTo(element),
     onStopLearn: () => setListeningTo(undefined),
     onRemoveControl: removeControl,
+    onRefreshDevices: refreshDevices,
   };
 }

@@ -130,6 +130,20 @@ describe('InputConfig', () => {
     expect(settings.setSelectedDevice).not.toHaveBeenCalledWith(null);
   });
 
+  it('re-lists devices when the refresh button is clicked', async () => {
+    await act(async () => {
+      render(<InputConfigModal isOpen />);
+    });
+
+    listDevicesMock.mockClear();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Refresh device list'));
+    });
+
+    expect(listDevicesMock).toHaveBeenCalledTimes(1);
+  });
+
   it('assigns the next learned control to the chosen element', () => {
     render(<InputConfigModal isOpen />);
 

@@ -1,4 +1,4 @@
-import { Button, Divider, Modal } from 'antd';
+import { Button, Divider, Modal, Select } from 'antd';
 import { InputElement, InputMapping } from '../../../types';
 import { controlLabel, InputDevice } from '../../input';
 import { modalStyles, MODAL_ABOVE_POPOVER_Z_INDEX } from '../../overlayStyles';
@@ -6,6 +6,7 @@ import { IconButton } from '../IconButton';
 import themedark from '../../theme';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
+  faArrowsRotate,
   faInfoCircle,
   faPlus,
   faXmark,
@@ -35,6 +36,7 @@ interface Props {
   onLearn: (element: InputElement) => void;
   onStopLearn: () => void;
   onRemoveControl: (element: InputElement, control: string) => void;
+  onRefreshDevices: () => void;
 }
 
 export function InputConfig({
@@ -48,6 +50,7 @@ export function InputConfig({
   onLearn,
   onStopLearn,
   onRemoveControl,
+  onRefreshDevices,
 }: Props) {
   const renderElement = (element: MappingElement) => (
     <div
@@ -138,18 +141,25 @@ export function InputConfig({
           <div className="text-text-faint text-[12px] font-semibold uppercase">
             Input Device
           </div>
-          <select
-            className="select"
-            value={selectedDeviceId}
-            onChange={(event) => onSelectDevice(event.target.value)}
-          >
-            <option value={undefined}>- None -</option>
-            {devices.map(({ id, name }) => (
-              <option key={id} value={id}>
-                {name}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2">
+            <Select
+              className="grow"
+              value={selectedDeviceId}
+              onChange={(value) => onSelectDevice(value)}
+              options={[
+                { value: undefined, label: '- None -' },
+                ...devices.map(({ id, name }) => ({ value: id, label: name })),
+              ]}
+            />
+            <Tooltip title="Refresh device list" placement="top">
+              <Button
+                icon={<FontAwesomeIcon icon={faArrowsRotate} />}
+                type="default"
+                onClick={onRefreshDevices}
+                aria-label="Refresh device list"
+              />
+            </Tooltip>
+          </div>
         </div>
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
