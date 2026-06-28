@@ -1,3 +1,4 @@
+import './bootstrapUserData';
 import sourceMapSupport from 'source-map-support';
 import { appState } from './AppState';
 

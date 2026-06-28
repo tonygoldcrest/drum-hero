@@ -63,6 +63,7 @@ module.exports = [
   {
     ignores: [
       'eslint.config.js',
+      '**/.userdata',
       '**/logs',
       '**/*.log',
       '**/pids',
