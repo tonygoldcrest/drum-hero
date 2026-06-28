@@ -4,6 +4,7 @@ import { faFolder, faGlobe, faSearch } from '@fortawesome/free-solid-svg-icons';
 import { Difficulty } from 'scan-chart';
 import { cn } from '../../cn';
 import { Tooltip } from '../Tooltip';
+import { MappingHint } from '../MappingHint';
 
 export type Mode = 'local' | 'online';
 
@@ -15,6 +16,7 @@ export interface SongFilterProps {
   filteredSongsCount: number;
   mode: Mode;
   onChangeMode: (value: Mode) => void;
+  showHints?: boolean;
 }
 
 export function SongFilter({
@@ -25,6 +27,7 @@ export function SongFilter({
   className,
   difficulty,
   filteredSongsCount,
+  showHints,
 }: SongFilterProps) {
   const options = [
     {
@@ -52,9 +55,14 @@ export function SongFilter({
         }}
         suffix={
           <div className="flex gap-1 items-center">
-            <div className="text-text-faint text-[13.5px] capitalize">
-              {difficulty}
-            </div>
+            <MappingHint
+              element={showHints ? 'crash' : undefined}
+              className="pr-2"
+            >
+              <div className="text-text-faint text-[13.5px] capitalize">
+                {difficulty}
+              </div>
+            </MappingHint>
 
             <Divider vertical />
 
@@ -66,19 +74,22 @@ export function SongFilter({
 
             <div className="flex gap-2 items-center">
               {options.map((option) => (
-                <Tooltip
+                <MappingHint
                   key={option.value}
-                  title={option.tooltipText}
-                  placement="bottomLeft"
+                  element={
+                    showHints && mode !== option.value ? 'ride' : undefined
+                  }
                 >
-                  <Button
-                    className="grow"
-                    type={mode === option.value ? 'primary' : 'default'}
-                    icon={option.icon}
-                    data-testid={`mode-${option.value}`}
-                    onClick={() => onChangeMode(option.value)}
-                  ></Button>
-                </Tooltip>
+                  <Tooltip title={option.tooltipText} placement="bottomLeft">
+                    <Button
+                      className="grow"
+                      type={mode === option.value ? 'primary' : 'default'}
+                      icon={option.icon}
+                      data-testid={`mode-${option.value}`}
+                      onClick={() => onChangeMode(option.value)}
+                    ></Button>
+                  </Tooltip>
+                </MappingHint>
               ))}
             </div>
           </div>

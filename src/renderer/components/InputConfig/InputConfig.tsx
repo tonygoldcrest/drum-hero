@@ -158,7 +158,20 @@ export function InputConfig({
             </div>
 
             <Tooltip
-              title="You can map more than one button to a single drum. If a cymbal sends a different signal depending on where you hit it, add each one so every hit counts."
+              title={
+                <div className="flex flex-col gap-2">
+                  <div>
+                    Map more than one button to a single drum. If a cymbal sends
+                    a different signal depending on where you hit it, add each
+                    one so every hit counts.
+                  </div>
+                  <div>
+                    Your drums also get you around the app. Hit them to move
+                    through menus and pick songs. Little drum icons pop up to
+                    show which one to hit.
+                  </div>
+                </div>
+              }
               placement="right"
             >
               <FontAwesomeIcon
@@ -167,7 +180,7 @@ export function InputConfig({
               />
             </Tooltip>
           </div>
-          {KIT_ELEMENTS.map(renderElement)}
+          {[...KIT_ELEMENTS.values()].map(renderElement)}
         </div>
         <div className="flex flex-col gap-2">
           <div className="text-text-faint text-[12px] font-semibold uppercase">

@@ -18,7 +18,7 @@ export function Reference({ className }: ReferenceProps) {
         className,
       )}
     >
-      {KIT_ELEMENTS.map((element, index) => {
+      {[...KIT_ELEMENTS.values()].map((element, index) => {
         return (
           <div key={element.value} className="flex items-center">
             {index > 0 && <Divider vertical className="bg-ink/13" />}

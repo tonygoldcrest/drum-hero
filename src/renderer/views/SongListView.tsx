@@ -21,7 +21,13 @@ import { useInputControls } from '../hooks/useInputControls';
 import { ALL_DIFFICULTIES } from '../../constants';
 
 export function SongListView() {
-  const { currentPath, inputMapping, difficulty, setDifficulty } = useApp();
+  const {
+    currentPath,
+    inputMapping,
+    difficulty,
+    setDifficulty,
+    selectedDevice,
+  } = useApp();
   const navigate = useNavigate();
   const songOpen = useOutlet() !== null;
   const stemTools = useStemTools();
@@ -215,6 +221,7 @@ export function SongListView() {
               }
               mode={mode}
               onChangeMode={setMode}
+              showHints={selectedDevice !== null && !isSortOpen}
             />
             {sortAvailable && (
               <SortButton
@@ -223,6 +230,7 @@ export function SongListView() {
                 isOpen={isSortOpen}
                 onOpenChange={setIsSortOpen}
                 focusedIndex={isSortOpen ? focusedSortIndex : undefined}
+                showHints={selectedDevice !== null}
               />
             )}
             <SettingsButton page="song-list" scanPercent={scanPercent} />
@@ -256,6 +264,7 @@ export function SongListView() {
                 onLikeChange={handleLikeChange}
                 onLoadMore={mode === 'online' ? loadMore : undefined}
                 focusedIndex={!isSortOpen ? focusedSongIndex : undefined}
+                showHints={selectedDevice !== null && !isSortOpen}
               />
             ) : (
               <EmptySongState mode={mode} />

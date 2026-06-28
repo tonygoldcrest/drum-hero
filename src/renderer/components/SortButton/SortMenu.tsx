@@ -6,15 +6,44 @@ import {
   faHeart,
 } from '@fortawesome/free-solid-svg-icons';
 import { cn } from '../../cn';
+import { InputElement } from '../../../types';
+import { MappingHint } from '../MappingHint';
 import { DIRECTIONAL_KEYS, SORT_OPTIONS, SortKey, SortState } from './sort';
 
 interface Props {
   sort: SortState;
   onSortChange: (sort: SortState) => void;
   focusedIndex?: number;
+  showHints?: boolean;
 }
 
-export function SortMenu({ sort, onSortChange, focusedIndex }: Props) {
+export function SortMenu({
+  sort,
+  onSortChange,
+  focusedIndex,
+  showHints,
+}: Props) {
+  const hintForIndex = (index: number): InputElement | undefined => {
+    if (!showHints || focusedIndex === undefined) {
+      return undefined;
+    }
+
+    const len = SORT_OPTIONS.length;
+
+    if (index === focusedIndex) {
+      return 'tom3';
+    }
+
+    if (index === (focusedIndex + 1) % len) {
+      return 'tom2';
+    }
+
+    if (index === (focusedIndex - 1 + len) % len) {
+      return 'tom1';
+    }
+
+    return undefined;
+  };
   const handleClick = (key: SortKey) => {
     if (key === 'favorite') {
       onSortChange({
@@ -52,21 +81,26 @@ export function SortMenu({ sort, onSortChange, focusedIndex }: Props) {
         const icon = key === 'favorite' ? faHeart : dirIcon(key)!;
 
         return (
-          <Button
+          <MappingHint
             key={key}
-            type={sort.key === key ? 'primary' : 'default'}
-            onClick={() => handleClick(key)}
-            className={cn('justify-start', {
-              'outline-2 outline-accent': index === focusedIndex,
-            })}
+            element={hintForIndex(index)}
+            className="w-full"
           >
-            <div className="flex justify-between w-full items-center">
-              <div>{label}</div>
-              <div>
-                <FontAwesomeIcon icon={icon} />
+            <Button
+              type={sort.key === key ? 'primary' : 'default'}
+              onClick={() => handleClick(key)}
+              className={cn('w-full justify-start', {
+                'outline-2 outline-accent': index === focusedIndex,
+              })}
+            >
+              <div className="flex justify-between w-full items-center">
+                <div>{label}</div>
+                <div>
+                  <FontAwesomeIcon icon={icon} />
+                </div>
               </div>
-            </div>
-          </Button>
+            </Button>
+          </MappingHint>
         );
       })}
     </>

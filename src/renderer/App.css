@@ -45,7 +45,7 @@
   --shadow-accent-soft:  0 6px 6px -6px rgba(255,90,60,0.5);
   --shadow-paper:        inset 0 1px 0 rgba(255,255,255,0.6), 0 18px 40px -20px rgba(0,0,0,0.6);
   --shadow-float-label:  0 8px 20px rgba(0,0,0,0.4);
-  --shadow-paper-strong: 0 8px 22px -10px rgba(80,60,20,0.5);
+  --shadow-paper-strong: 0 14px 34px -8px rgba(20, 14, 4, 0.78), 0 4px 12px -4px rgba(20, 14, 4, 0.55);
 }
 
 :root {
@@ -172,6 +172,18 @@
   }
   80% {
     transform: translateX(-1.5px);
+  }
+}
+
+@keyframes sk-mapping-hint-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  50% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 1px currentColor);
   }
 }
 
