@@ -72,7 +72,7 @@ export function SongListSettings({
       <Divider />
 
       <Tooltip
-        title="Hook up your e-kit or keyboard so we can score your hits"
+        title="Hook up your e-kit (or keyboard if you fancy) so we can score your hits"
         placement="bottom"
       >
         <Button icon={<FontAwesomeIcon icon={faDrum} />} onClick={onSetupInput}>
