@@ -78,6 +78,7 @@ const CTX: TransportContext = {
   measures: MEASURES,
   delaySeconds: 0,
   countInEnabled: false,
+  minDurationSeconds: 0,
 };
 
 async function flush() {

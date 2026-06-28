@@ -7,8 +7,19 @@ import {
   installWebAudio,
 } from './test-support';
 
+const trimSpy = vi.hoisted(() =>
+  vi.fn(
+    (
+      buffer: unknown,
+      _context?: unknown,
+      _threshold?: number,
+      _minDurationSeconds?: number,
+    ) => buffer,
+  ),
+);
+
 vi.mock('./utils', () => ({
-  trimTrailingSilence: (buffer: unknown) => buffer,
+  trimTrailingSilence: trimSpy,
 }));
 
 let context: FakeAudioContext;
@@ -33,6 +44,7 @@ async function makePlayer(tracks: TrackConfig[] = TRACKS, onEnded = vi.fn()) {
 beforeEach(() => {
   context = installWebAudio();
   installFetchByByteLength((url) => DURATIONS[url] ?? 100);
+  trimSpy.mockClear();
 });
 
 afterEach(() => {
@@ -46,6 +58,23 @@ describe('AudioPlayer', () => {
     expect(fetch).toHaveBeenCalledTimes(2);
     expect(player.audioTracks).toHaveLength(2);
     expect(player.duration).toBe(500);
+  });
+
+  it('trims each decoded buffer with the provided minimum duration', async () => {
+    const player = new AudioPlayer(TRACKS, vi.fn(), () => 12.5);
+
+    await player.ready;
+    await Promise.resolve();
+
+    expect(trimSpy).toHaveBeenCalledTimes(2);
+    trimSpy.mock.calls.forEach((call) => expect(call[3]).toBe(12.5));
+  });
+
+  it('defaults the minimum duration to zero when no getter is given', async () => {
+    await makePlayer();
+
+    expect(trimSpy).toHaveBeenCalled();
+    trimSpy.mock.calls.forEach((call) => expect(call[3]).toBe(0));
   });
 
   it('resumes a suspended context and starts every track on play', async () => {

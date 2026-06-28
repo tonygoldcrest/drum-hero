@@ -17,6 +17,7 @@ export interface TransportContext {
   measures: Measure[];
   delaySeconds: number;
   countInEnabled: boolean;
+  minDurationSeconds: number;
 }
 
 export interface PlaybackSnapshot {
@@ -59,6 +60,7 @@ export class Transport {
   private measures: Measure[] = [];
   private delaySeconds = 0;
   private countInEnabled = false;
+  private minDurationSeconds = 0;
   private createdPlayer: AudioPlayer | undefined;
   private audioPlayer: AudioPlayer | undefined;
   private state: PlaybackState = 'idle';
@@ -93,6 +95,7 @@ export class Transport {
     this.measures = context.measures;
     this.delaySeconds = context.delaySeconds;
     this.countInEnabled = context.countInEnabled;
+    this.minDurationSeconds = context.minDurationSeconds;
   }
 
   setDev(isDev: boolean): void {
@@ -218,7 +221,11 @@ export class Transport {
   }
 
   private initAudio(trackData: TrackConfig[]): void {
-    const player = new AudioPlayer(trackData, () => this.handleEnded());
+    const player = new AudioPlayer(
+      trackData,
+      () => this.handleEnded(),
+      () => this.minDurationSeconds,
+    );
 
     this.createdPlayer = player;
 

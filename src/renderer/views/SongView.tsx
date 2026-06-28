@@ -15,7 +15,7 @@ import { useApp } from '../context/AppContext';
 import { useSongLoader } from '../hooks/useSongLoader';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { useVolumeControls } from '../hooks/useVolumeControls';
-import { calculateAccuracy } from './utils';
+import { calculateAccuracy, ticksToSeconds } from './utils';
 import { useSheetMusic } from '../hooks/useSheetMusic';
 import { useInputControls } from '../hooks/useInputControls';
 import { ScoreSummary } from '../components/ScoreSummary';
@@ -54,6 +54,19 @@ export function SongView() {
     [renderData],
   );
   const delaySeconds = (Number(songData?.delay) || 0) / 1000;
+  const minDurationSeconds = useMemo(() => {
+    const measureList = parsedMidi?.measures;
+    const lastMeasure = chart && measureList?.[measureList.length - 1];
+
+    if (!lastMeasure) {
+      return 0;
+    }
+
+    return (
+      ticksToSeconds(lastMeasure.endTick, chart.resolution, chart.tempos) +
+      delaySeconds
+    );
+  }, [chart, parsedMidi, delaySeconds]);
   const {
     engine,
     isReady,
@@ -77,6 +90,7 @@ export function SongView() {
     measures,
     renderData,
     delaySeconds,
+    minDurationSeconds,
     countInEnabled: countIn,
     playheadStyle,
     mapping: inputMapping,

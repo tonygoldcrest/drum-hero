@@ -40,10 +40,15 @@ export function trimTrailingSilence(
   buffer: AudioBuffer,
   context: BaseAudioContext,
   threshold: number = SILENCE_THRESHOLD,
+  minDurationSeconds: number = 0,
 ): AudioBuffer {
   const lastSample = findLastAudibleSample(buffer, threshold);
   const padding = Math.floor(TAIL_PADDING_SECONDS * buffer.sampleRate);
-  const newLength = Math.min(buffer.length, lastSample + 1 + padding);
+  const minLength = Math.ceil(minDurationSeconds * buffer.sampleRate);
+  const newLength = Math.min(
+    buffer.length,
+    Math.max(lastSample + 1 + padding, minLength),
+  );
 
   if (newLength >= buffer.length) {
     return buffer;

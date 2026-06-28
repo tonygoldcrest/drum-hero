@@ -10,10 +10,16 @@ export class AudioPlayer {
   onEnded: (() => void) | null;
   private startedAt: number = -1;
   private offset: number = 0;
+  private getMinDurationSeconds: () => number;
   duration: number = 0;
 
-  constructor(trackConfigs: TrackConfig[], onEnded: () => void) {
+  constructor(
+    trackConfigs: TrackConfig[],
+    onEnded: () => void,
+    getMinDurationSeconds: () => number = () => 0,
+  ) {
     this.context = new AudioContext({ latencyHint: 'playback' });
+    this.getMinDurationSeconds = getMinDurationSeconds;
     this.ready = this.createTracks(trackConfigs);
     this.onEnded = onEnded;
     this.ready
@@ -34,8 +40,14 @@ export class AudioPlayer {
         const decodedBuffers = await Promise.all(
           dataBuffers.map((buf) => this.context.decodeAudioData(buf)),
         );
+        const minDurationSeconds = this.getMinDurationSeconds();
         const audioBuffers = decodedBuffers.map((buffer) =>
-          trimTrailingSilence(buffer, this.context),
+          trimTrailingSilence(
+            buffer,
+            this.context,
+            undefined,
+            minDurationSeconds,
+          ),
         );
         const audioTrack = new AudioTrack(audioBuffers, name, this.context);
 

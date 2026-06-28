@@ -23,6 +23,7 @@ export interface GameContext {
   renderData: RenderData[];
   delaySeconds: number;
   countInEnabled: boolean;
+  minDurationSeconds: number;
 }
 
 export interface GameSettings {
@@ -84,6 +85,7 @@ export class GameEngine {
       measures: context.measures,
       delaySeconds: context.delaySeconds,
       countInEnabled: context.countInEnabled,
+      minDurationSeconds: context.minDurationSeconds,
     });
     this.judge.setContext({
       chart: context.chart,

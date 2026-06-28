@@ -61,4 +61,30 @@ describe('trimTrailingSilence', () => {
 
     expect(trimmed.length).toBe(101);
   });
+
+  it('never trims shorter than the minimum duration', () => {
+    const samples = [...constant(500, 1), ...constant(500, 0)];
+    const buffer = makeBuffer([samples], 1000);
+    const trimmed = trimTrailingSilence(
+      buffer as unknown as AudioBuffer,
+      context,
+      0.005,
+      0.8,
+    ) as unknown as FakeAudioBuffer;
+
+    expect(trimmed.length).toBe(800);
+  });
+
+  it('keeps the whole buffer when the minimum duration exceeds it', () => {
+    const samples = [...constant(500, 1), ...constant(500, 0)];
+    const buffer = makeBuffer([samples], 1000);
+    const trimmed = trimTrailingSilence(
+      buffer as unknown as AudioBuffer,
+      context,
+      0.005,
+      2,
+    );
+
+    expect(trimmed).toBe(buffer as unknown as AudioBuffer);
+  });
 });

@@ -158,6 +158,7 @@ async function setup(over: Partial<GameContext> = {}) {
     measures: renderData.map((rd) => rd.measure),
     renderData,
     delaySeconds: 0,
+    minDurationSeconds: 0,
     countInEnabled: false,
     ...over,
   });

@@ -22,6 +22,7 @@ interface UseGameEngineParams {
   measures: Measure[];
   renderData: RenderData[];
   delaySeconds: number;
+  minDurationSeconds: number;
   countInEnabled: boolean;
   playheadStyle: PlayheadStyle;
   mapping: InputMapping;
@@ -67,6 +68,7 @@ export function useGameEngine({
   measures,
   renderData,
   delaySeconds,
+  minDurationSeconds,
   countInEnabled,
   playheadStyle,
   mapping,
@@ -117,8 +119,17 @@ export function useGameEngine({
       renderData,
       delaySeconds,
       countInEnabled,
+      minDurationSeconds,
     });
-  }, [engine, chart, measures, renderData, delaySeconds, countInEnabled]);
+  }, [
+    engine,
+    chart,
+    measures,
+    renderData,
+    delaySeconds,
+    minDurationSeconds,
+    countInEnabled,
+  ]);
 
   useEffect(() => {
     engine?.setSettings({ playheadStyle });
