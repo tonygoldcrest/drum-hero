@@ -2,11 +2,10 @@ import type { CSSProperties } from 'react';
 import type { ModalProps } from 'antd';
 
 const border = '1px solid var(--color-border)';
-const panelShadow = 'var(--shadow-panel)';
 const sectionPadding: CSSProperties = { margin: 0, padding: '16px 24px' };
 
 export const modalStyles: ModalProps['styles'] = {
-  container: { padding: 0, overflow: 'hidden', border, boxShadow: panelShadow },
+  container: { padding: 0, overflow: 'hidden', border, boxShadow: 'none' },
   header: {
     ...sectionPadding,
     background: 'var(--gradient-header)',
@@ -26,7 +25,7 @@ export const popoverStyles: {
   container?: CSSProperties;
   arrow?: CSSProperties;
 } = {
-  container: { border, boxShadow: panelShadow },
+  container: { border, boxShadow: 'none' },
 };
 
 export const MODAL_ABOVE_POPOVER_Z_INDEX = 1050;
