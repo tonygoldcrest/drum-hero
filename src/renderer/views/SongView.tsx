@@ -293,7 +293,7 @@ export function SongView() {
         </Content>
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10 backdrop-blur-xs">
-            <Spin />
+            <Spin size="large" />
           </div>
         )}
         <CountIn count={countInBeat} beatMs={countInBeatMs} />

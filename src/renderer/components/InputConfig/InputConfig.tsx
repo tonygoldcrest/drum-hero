@@ -133,6 +133,7 @@ export function InputConfig({
       }
       width={640}
       destroyOnHidden
+      centered
       styles={modalStyles}
       zIndex={MODAL_ABOVE_POPOVER_Z_INDEX}
     >

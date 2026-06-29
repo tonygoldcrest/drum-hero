@@ -87,6 +87,7 @@ export function ScoreSummary({
       mask={{ closable: false }}
       width={560}
       destroyOnHidden
+      centered
       styles={modalStyles}
       wrapProps={{ 'data-testid': 'score-modal' }}
       zIndex={MODAL_ABOVE_POPOVER_Z_INDEX}

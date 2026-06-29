@@ -20,13 +20,13 @@
   --color-text-dim:        #615c50;
   --color-text-dimmer:     #5f5a4e;
 
-  --color-accent:          #ff5a3c;
-  --color-accent-hover:    #ff6a4d;
-  --color-accent-deep:     #ec4527;
-  --color-accent-text:     #ff7a5f;
+  --color-accent:          #d54b30;
+  --color-accent-hover:    color-mix(in srgb, var(--color-accent), white 14%);
+  --color-accent-deep:     color-mix(in srgb, var(--color-accent), black 16%);
+  --color-accent-text:     color-mix(in srgb, var(--color-accent), white 15%);
   --color-accent-ink:      #1a160f;
-  --color-accent-soft-bg:  rgba(255,90,60,0.08);
-  --color-accent-soft-border: rgba(255,90,60,0.22);
+  --color-accent-soft-bg:  color-mix(in srgb, var(--color-accent) 8%, transparent);
+  --color-accent-soft-border: color-mix(in srgb, var(--color-accent) 22%, transparent);
 
   --color-red:             #cf3b2e;
 
@@ -40,9 +40,9 @@
 
   --shadow-frame:        0 40px 90px -30px rgba(40,30,10,0.55), 0 0 0 1px rgba(255,255,255,0.04);
   --shadow-panel:        0 40px 90px -30px rgba(40,30,10,0.55), 0 0 0 1px rgba(255,255,255,0.05);
-  --shadow-accent-button: 0 12px 32px -6px rgba(255,90,60,0.6), inset 0 1px 0 rgba(255,255,255,0.3);
-  --shadow-accent-chip:  0 6px 16px -4px rgba(255,90,60,0.5);
-  --shadow-accent-soft:  0 6px 6px -6px rgba(255,90,60,0.5);
+  --shadow-accent-button: 0 12px 32px -6px color-mix(in srgb, var(--color-accent) 60%, transparent), inset 0 1px 0 rgba(255,255,255,0.3);
+  --shadow-accent-chip:  0 6px 16px -4px color-mix(in srgb, var(--color-accent) 50%, transparent);
+  --shadow-accent-soft:  0 6px 6px -6px color-mix(in srgb, var(--color-accent) 50%, transparent);
   --shadow-paper:        inset 0 1px 0 rgba(255,255,255,0.6), 0 18px 40px -20px rgba(0,0,0,0.6);
   --shadow-float-label:  0 8px 20px rgba(0,0,0,0.4);
   --shadow-paper-strong: 0 14px 34px -8px rgba(20, 14, 4, 0.78), 0 4px 12px -4px rgba(20, 14, 4, 0.55);
@@ -51,10 +51,10 @@
 :root {
   --gradient-header:       linear-gradient(180deg, #191a1d, #16171a);
   --gradient-header-reverse:       linear-gradient(180deg,  #16171a, #191a1d);
-  --gradient-accent:       linear-gradient(145deg, #ff6a4d, #ec4527);
-  --gradient-accent-fade:  linear-gradient(90deg, rgba(255,90,60,0.35), rgba(255,255,255,0.04));
-  --gradient-accent-fade-reverse:  linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,90,60,0.35));
-  --gradient-slider-fill: linear-gradient(90deg, #ec4527, #ff5a3c);
+  --gradient-accent:       linear-gradient(145deg, var(--color-accent-hover), var(--color-accent-deep));
+  --gradient-accent-fade:  linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 35%, transparent), rgba(255,255,255,0.04));
+  --gradient-accent-fade-reverse:  linear-gradient(90deg, rgba(255,255,255,0.04), color-mix(in srgb, var(--color-accent) 35%, transparent));
+  --gradient-slider-fill: linear-gradient(90deg, var(--color-accent-deep), var(--color-accent));
 }
 
 .ant-input-prefix {
@@ -186,7 +186,7 @@ textarea,
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 90, 60, 0.5);
+  background: color-mix(in srgb, var(--color-accent) 50%, transparent);
 }
 
 ::-webkit-scrollbar-corner {

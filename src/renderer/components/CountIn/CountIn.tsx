@@ -27,7 +27,7 @@ export function CountIn({ count, beatMs, animated = true }: CountInProps) {
             animation,
             boxShadow: themedark.shadow.accentButton,
             background:
-              'radial-gradient(var(--color-accent), #ff5a3c90 90%, rgba(0,0,0,0) 100%)',
+              'radial-gradient(var(--color-accent), color-mix(in srgb, var(--color-accent) 56%, transparent) 90%, rgba(0,0,0,0) 100%)',
           }}
         />
         <div

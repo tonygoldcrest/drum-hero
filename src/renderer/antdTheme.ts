@@ -37,7 +37,7 @@ export const antdTheme: ThemeConfig = {
       dangerShadow: 'none',
       colorBorderDisabled: themedark.color.surfaceRaised,
       colorTextDisabled: themedark.color.textFaint,
-      primaryShadow: themedark.shadow.accentButton,
+      primaryShadow: 'none',
       dangerColor: themedark.color.red,
       colorBgContainer: themedark.color.surfaceRaised,
       colorBorder: themedark.color.border,
