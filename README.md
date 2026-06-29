@@ -1,4 +1,4 @@
-# <img width="64" height="64" alt="SightKick Logo Github" src="https://github.com/user-attachments/assets/e7b4df52-573e-4ac1-af78-83c425ac0301" /> SightKick
+# <img width="64" height="64" alt="SightKick Logo Github" src="https://cdn.sightkick.dev/images/sightkick-logo.png" /> SightKick
 
 A game for learning drums with sheet music for thousands of songs. Mute the drum track, play along with your kit, and chase your best score.
 
@@ -8,7 +8,7 @@ A game for learning drums with sheet music for thousands of songs. Mute the drum
   <a href="https://discord.gg/kwBx9VZt3">Discord</a>
 </h1>
 
-<img width="1478" height="880" alt="image" src="https://github.com/user-attachments/assets/ca8fe524-b6b2-4d46-8bc5-db2970ef081d" />
+<img width="1478" height="880" alt="image" src="https://cdn.sightkick.dev/images/hero.png" />
 
 ## Requirements
 
