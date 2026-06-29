@@ -267,7 +267,11 @@ export function SongListView() {
                 showHints={selectedDevice !== null && !isSortOpen}
               />
             ) : (
-              <EmptySongState mode={mode} />
+              <EmptySongState
+                mode={mode}
+                hasFolder={currentPath !== null}
+                hasSongs={songList.length > 0}
+              />
             )}
           </div>
 

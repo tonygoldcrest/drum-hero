@@ -183,13 +183,38 @@ describe('SongListView — loading', () => {
     expect(screen.getByText('2 results')).toBeInTheDocument();
   });
 
-  it('shows the empty state when no songs are returned', () => {
+  it('guides to select a folder when none is selected', () => {
     renderView();
 
-    loadSongs([]);
+    loadSongs([], null);
 
-    expect(screen.getByText('No songs found.')).toBeInTheDocument();
     expect(screen.getByText('Select folder')).toBeInTheDocument();
+  });
+
+  it('guides to download songs when the selected folder is empty', () => {
+    renderView();
+
+    loadSongs([], '/music');
+
+    expect(screen.getByText('No songs in this folder.')).toBeInTheDocument();
+    expect(screen.getByText('Download some')).toBeInTheDocument();
+    expect(screen.queryByText('Select folder')).not.toBeInTheDocument();
+  });
+
+  it('reports when no songs match the active filter', () => {
+    renderView();
+
+    loadSongs([
+      makeSong('a', { name: 'Master of Puppets' }),
+      makeSong('b', { name: 'Enter Sandman' }),
+    ]);
+
+    fireEvent.change(screen.getByPlaceholderText('Enter song name'), {
+      target: { value: 'nonexistent song' },
+    });
+
+    expect(screen.getByText('No songs match your filter.')).toBeInTheDocument();
+    expect(screen.queryByText('Select folder')).not.toBeInTheDocument();
   });
 
   it('repopulates the list when the backend rescans the folder', () => {
