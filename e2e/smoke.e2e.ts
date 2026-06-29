@@ -23,8 +23,8 @@ test.describe('first run', () => {
     harness = await launchApp({ seedLibrary: false });
     page = await harness.app.firstWindow();
 
-    await expect(page.getByText('No songs found.')).toBeVisible();
-    await expect(page.getByText('Select a different folder')).toBeVisible();
+    await expect(page.getByText('Pick a folder for your songs.')).toBeVisible();
+    await expect(page.getByText('Select folder')).toBeVisible();
   });
 });
 
@@ -33,7 +33,7 @@ test.describe('seeded library', () => {
     harness = await launchApp({ seedLibrary: true });
     page = await harness.app.firstWindow();
 
-    await expect(page.getByText('No songs found.')).toBeVisible();
+    await expect(page.getByText('No songs in this folder.')).toBeVisible();
 
     await page.getByTestId('settings-trigger').click();
     await page.getByTestId('rescan-folder').click();
