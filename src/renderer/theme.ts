@@ -40,6 +40,7 @@ export const alpha = (color: string, value: number) => {
 };
 
 const accent = '#d54b30';
+const accentBright = '#ff5a3c';
 const accentHover = lighten(accent, 0.14);
 const accentDeep = darken(accent, 0.16);
 const accentText = lighten(accent, 0.15);
@@ -69,6 +70,7 @@ export const themedark = {
     starPerfect: '#d8dde6',
 
     accent,
+    accentBright,
     accentHover,
     accentDeep,
     accentText,

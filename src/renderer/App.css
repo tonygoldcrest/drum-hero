@@ -21,6 +21,7 @@
   --color-text-dimmer:     #5f5a4e;
 
   --color-accent:          #d54b30;
+  --color-accent-bright:   #ff5a3c;
   --color-accent-hover:    color-mix(in srgb, var(--color-accent), white 14%);
   --color-accent-deep:     color-mix(in srgb, var(--color-accent), black 16%);
   --color-accent-text:     color-mix(in srgb, var(--color-accent), white 15%);
@@ -89,19 +90,19 @@
 
 @keyframes sk-note-pop {
   0% {
-    fill: var(--color-accent);
+    fill: var(--color-accent-bright);
     transform: scale(1);
     opacity: 1;
     filter: drop-shadow(0 0 0 transparent);
   }
   35% {
-    fill: var(--color-accent-hover);
+    fill: color-mix(in srgb, var(--color-accent-bright), white 9%);
     transform: scale(1.9);
     opacity: 1;
-    filter: drop-shadow(0 0 12px var(--color-accent));
+    filter: drop-shadow(0 0 12px var(--color-accent-bright));
   }
   100% {
-    fill: var(--color-accent-text);
+    fill: color-mix(in srgb, var(--color-accent-bright), white 18%);
     transform: scale(2.8);
     opacity: 0;
     filter: drop-shadow(0 0 20px transparent);

@@ -372,7 +372,7 @@ export class GameRenderer {
       const on = this.playheadStyle === 'Measure' && i === index;
 
       el.style.backgroundColor = on ? 'var(--color-accent-soft-bg)' : '';
-      el.style.border = on ? '2px solid var(--color-accent)' : '';
+      el.style.border = on ? '2px solid var(--color-accent-bright)' : '';
     });
   }
 

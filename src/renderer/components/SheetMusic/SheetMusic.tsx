@@ -88,10 +88,10 @@ export function SheetMusic({
             style={{ display: 'none' }}
           >
             <div
-              className="absolute w-3 h-3 bg-accent left-1/2 rounded-[3px]"
+              className="absolute w-3 h-3 bg-accent-bright left-1/2 rounded-[3px]"
               style={{ transform: 'translateX(-50%) rotate(45deg)' }}
             />
-            <div className="absolute w-0.75 bg-accent h-full rounded-[3px] left-1/2 -translate-x-1/2" />
+            <div className="absolute w-0.75 bg-accent-bright h-full rounded-[3px] left-1/2 -translate-x-1/2" />
           </div>
         </div>
       </div>
