@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ScoreData, SongData } from '../../../types';
 import themedark from '../../theme';
@@ -175,5 +175,35 @@ describe('SongListItem indicators', () => {
     const item = screen.getByTestId('song-item-song-1');
 
     expect(within(item).getByText('Master of Puppets')).toBeInTheDocument();
+  });
+
+  it('does not navigate when clicking a song menu item', () => {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <SongListItem
+                songData={makeSong()}
+                onLikeChange={vi.fn()}
+                onDownload={vi.fn()}
+                onSplit={vi.fn()}
+                difficulty="expert"
+                splitting={false}
+                mode="local"
+                downloadingDisabled={false}
+              />
+            }
+          />
+          <Route path="/:id" element={<div>song view</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByTestId('song-menu-trigger'));
+    fireEvent.click(screen.getByText('Open song directory'));
+
+    expect(screen.queryByText('song view')).not.toBeInTheDocument();
   });
 });

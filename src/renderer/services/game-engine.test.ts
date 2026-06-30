@@ -266,7 +266,7 @@ describe('GameEngine', () => {
     engine.setRendererRefs({ cursorEl: undefined, highlightEls: [a, b] });
     engine.timeStore.set(2.1);
 
-    expect(b.style.border).toContain('var(--color-accent)');
+    expect(b.style.border).toContain('var(--color-accent-bright)');
     expect(b.style.backgroundColor).toBe('var(--color-accent-soft-bg)');
     expect(a.style.backgroundColor).toBe('');
   });

@@ -30,18 +30,23 @@ export function SongMenu({ dir, canSplit, splitting, onSplit }: Props) {
         container: { ...popoverStyles.container, padding: 0 },
       }}
       content={
-        <SongMenuContent
-          showSplit={showSplit}
-          splitting={splitting}
-          onOpenDirectory={() => {
-            window.electron.ipcRenderer.sendMessage('open-song-directory', dir);
-            close();
-          }}
-          onSplit={() => {
-            onSplit();
-            close();
-          }}
-        />
+        <div onClick={(event) => event.stopPropagation()}>
+          <SongMenuContent
+            showSplit={showSplit}
+            splitting={splitting}
+            onOpenDirectory={() => {
+              window.electron.ipcRenderer.sendMessage(
+                'open-song-directory',
+                dir,
+              );
+              close();
+            }}
+            onSplit={() => {
+              onSplit();
+              close();
+            }}
+          />
+        </div>
       }
     >
       <IconButton

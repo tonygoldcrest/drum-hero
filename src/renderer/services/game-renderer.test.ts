@@ -128,12 +128,12 @@ describe('GameRenderer', () => {
 
     view.render(0, 480);
 
-    expect(a.style.border).toContain('var(--color-accent)');
+    expect(a.style.border).toContain('var(--color-accent-bright)');
     expect(b.style.border).toBe('');
 
     view.render(0, 2016);
 
-    expect(b.style.border).toContain('var(--color-accent)');
+    expect(b.style.border).toContain('var(--color-accent-bright)');
     expect(a.style.backgroundColor).toBe('');
   });
 
