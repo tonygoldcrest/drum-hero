@@ -328,6 +328,30 @@ describe('GameEngine', () => {
     );
   });
 
+  it('prunes a false hit made ahead of a seek when seeking back', async () => {
+    const note = staveNote(['c/5']);
+    const { engine, onEnded, player } = await setup({
+      renderData: [
+        measureData(
+          0,
+          1920,
+          [rendered(480, note)],
+          [{ isRest: false, notes: ['c/5'] } as Note],
+        ),
+      ],
+    });
+
+    engine.setMapping({ crash: ['midi:49'] });
+    engine.seekSeconds(0.5);
+    emitInput('midi:49');
+    engine.seekSeconds(0.1);
+
+    player.onEnded();
+    expect(onEnded).toHaveBeenCalledWith(
+      expect.objectContaining({ falseHits: 0 }),
+    );
+  });
+
   it('does not register input hits before playback starts', async () => {
     const note = staveNote(['c/5']);
     const { engine } = await setup({

@@ -7,6 +7,8 @@ import { faRepeat } from '@fortawesome/free-solid-svg-icons';
 import { calculateAccuracy, getStarRating } from '../../views/utils';
 import { MODAL_ABOVE_POPOVER_Z_INDEX, modalStyles } from '../../overlayStyles';
 import { Stars } from '../Stars';
+import { MappingHint } from '../MappingHint';
+import { useApp } from '../../context/AppContext';
 
 interface Props {
   isOpen: boolean;
@@ -25,6 +27,7 @@ export function ScoreSummary({
   difficulty,
   scoreData,
 }: Props) {
+  const { selectedDevice } = useApp();
   const starRating = useMemo(() => {
     if (!scoreData) {
       return 0;
@@ -58,22 +61,32 @@ export function ScoreSummary({
   );
   const footer = (
     <div className="flex gap-3 w-full">
-      <Button
+      <MappingHint
         className="grow"
-        onClick={() => onRetry()}
-        icon={<FontAwesomeIcon icon={faRepeat} />}
-        size="large"
+        element={selectedDevice ? 'snare' : undefined}
       >
-        Retry
-      </Button>
-      <Button
+        <Button
+          className="w-full"
+          onClick={() => onRetry()}
+          icon={<FontAwesomeIcon icon={faRepeat} />}
+          size="large"
+        >
+          Retry
+        </Button>
+      </MappingHint>
+      <MappingHint
         className="grow"
-        type="primary"
-        onClick={() => onNextSong()}
-        size="large"
+        element={selectedDevice ? 'tom3' : undefined}
       >
-        Next song
-      </Button>
+        <Button
+          className="w-full"
+          type="primary"
+          onClick={() => onNextSong()}
+          size="large"
+        >
+          Next song
+        </Button>
+      </MappingHint>
     </div>
   );
 

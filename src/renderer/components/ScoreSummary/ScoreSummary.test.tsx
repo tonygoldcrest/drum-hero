@@ -1,16 +1,50 @@
+import { ReactNode } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { InputEvent } from '../../input/types';
+import { AppProvider } from '../../context/AppContext';
+import { installIpcMock, installLocalStorage } from '../../hooks/test-support';
 import { ScoreData, SongData } from '../../../types';
 import { ScoreSummary } from './ScoreSummary';
+
+vi.mock('../../input', () => ({
+  inputBus: {
+    start: () => {},
+    capture: (_listener: (event: InputEvent) => void) => () => {},
+    listDevices: () => Promise.resolve([]),
+  },
+  controlSource: (id: string) => id.slice(0, id.indexOf(':')),
+  controlLabel: (id: string) => id.slice(id.indexOf(':') + 1),
+}));
 
 const songData = {
   name: 'Master of Puppets',
   artist: 'Metallica',
 } as SongData;
 
+function selectKeyboardDevice() {
+  localStorage.setItem(
+    'settings.selectedDevice',
+    JSON.stringify({ id: 'keyboard', name: 'Keyboard', sourceId: 'keyboard' }),
+  );
+}
+
+function wrapper({ children }: { children: ReactNode }) {
+  return (
+    <AppProvider>
+      <MemoryRouter initialEntries={['/']}>{children}</MemoryRouter>
+    </AppProvider>
+  );
+}
+
 function filledStars() {
   return document.querySelectorAll('svg[data-prefix="fas"][data-icon="star"]')
     .length;
+}
+
+function mappingHints() {
+  return document.querySelectorAll('svg[style*="sk-mapping-hint-pulse"]');
 }
 
 function renderSummary(
@@ -30,12 +64,18 @@ function renderSummary(
       scoreData={scoreData}
       {...overrides}
     />,
+    { wrapper },
   );
 
   return { onRetry, onNextSong };
 }
 
 describe('ScoreSummary', () => {
+  beforeEach(() => {
+    installLocalStorage();
+    installIpcMock();
+  });
+
   it('shows the song, artist and difficulty', () => {
     renderSummary({ hitNotes: 70, totalNotes: 100, falseHits: 0 });
 
@@ -78,5 +118,19 @@ describe('ScoreSummary', () => {
 
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(onNextSong).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the footer mapping hints when no device is selected', () => {
+    renderSummary({ hitNotes: 50, totalNotes: 100, falseHits: 0 });
+
+    expect(mappingHints()).toHaveLength(0);
+  });
+
+  it('shows footer mapping hints when a device is selected', () => {
+    selectKeyboardDevice();
+
+    renderSummary({ hitNotes: 50, totalNotes: 100, falseHits: 0 });
+
+    expect(mappingHints()).toHaveLength(2);
   });
 });

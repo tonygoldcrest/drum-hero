@@ -170,6 +170,95 @@ describe('Judge', () => {
     expect(engine.falseHitCount).toBe(1);
   });
 
+  it('counts every simultaneous wrong hit at the same tick', () => {
+    const { engine } = setup(
+      {
+        renderData: [
+          measure([rendered(5000, fakeNote(['c/5']))], {
+            startTick: 0,
+            endTick: 10000,
+          }),
+        ],
+        mapping: {
+          crash: ['midi:49'],
+          ride: ['midi:51'],
+          tom1: ['midi:50'],
+        },
+      },
+      { tick: 480 },
+    );
+
+    engine.handleInput(hit('midi:49'));
+    engine.handleInput(hit('midi:51'));
+    engine.handleInput(hit('midi:50'));
+
+    expect(engine.falseHitCount).toBe(3);
+  });
+
+  it('never wipes false hits on backward setTick, regardless of magnitude', () => {
+    const { engine } = setup(
+      {
+        renderData: [
+          measure([rendered(5000, fakeNote(['c/5']))], {
+            startTick: 0,
+            endTick: 10000,
+          }),
+        ],
+        mapping: { crash: ['midi:49'] },
+      },
+      { tick: 480 },
+    );
+
+    engine.handleInput(hit('midi:49'));
+    expect(engine.falseHitCount).toBe(1);
+
+    engine.setTick(1);
+    engine.setTick(490);
+    engine.handleInput(hit('midi:49'));
+
+    expect(engine.falseHitCount).toBe(2);
+  });
+
+  it('drops only false hits ahead of a genuine rewind, keeping earlier ones', () => {
+    const { engine } = setup(
+      {
+        renderData: [
+          measure([rendered(5000, fakeNote(['c/5']))], {
+            startTick: 0,
+            endTick: 10000,
+          }),
+        ],
+        mapping: { crash: ['midi:49'] },
+      },
+      { tick: 480 },
+    );
+
+    engine.handleInput(hit('midi:49'));
+    engine.setTick(2000);
+    engine.handleInput(hit('midi:49'));
+    expect(engine.falseHitCount).toBe(2);
+
+    engine.rewindTo(1000);
+
+    expect(engine.falseHitCount).toBe(1);
+  });
+
+  it('keeps a recorded hit through backward setTick, regardless of magnitude', () => {
+    const note = fakeNote(['c/5']);
+    const { engine } = setup(
+      { renderData: [measure([rendered(480, note)])] },
+      { tick: 480 },
+    );
+
+    engine.handleInput(hit('midi:38'));
+    expect(engine.isHit(480, 'c/5')).toBe(true);
+
+    engine.setTick(1);
+
+    expect(engine.isHit(480, 'c/5')).toBe(true);
+    expect(engine.hitCount).toBe(1);
+  });
+
   it('does nothing while the current tick is undefined', () => {
     const note = fakeNote(['c/5']);
     const { engine } = setup({ renderData: [measure([rendered(480, note)])] });
@@ -191,7 +280,7 @@ describe('Judge', () => {
     engine.handleInput(hit('midi:38'));
     expect(engine.isHit(480, 'c/5')).toBe(true);
 
-    engine.setTick(100);
+    engine.rewindTo(100);
 
     expect(engine.isHit(480, 'c/5')).toBe(false);
     expect(engine.falseHitCount).toBe(0);
@@ -378,6 +467,27 @@ describe('Judge', () => {
 
     engine.handleInput(hit('midi:38'));
 
+    expect(engine.falseHitCount).toBe(1);
+  });
+
+  it('counts a false hit played alongside a correct early hit into a silent measure', () => {
+    const rest = fakeNote(['c/5'], true);
+    const note = fakeNote(['c/5']);
+    const { engine } = setup(
+      {
+        renderData: [
+          measure([rendered(1000, rest)], { startTick: 0, endTick: 1920 }),
+          measure([rendered(1950, note)], { startTick: 1920, endTick: 3840 }),
+        ],
+        mapping: { snare: ['midi:38'], tom1: ['midi:48'] },
+      },
+      { tick: 1900 },
+    );
+
+    engine.handleInput(hit('midi:38'));
+    engine.handleInput(hit('midi:48'));
+
+    expect(engine.isHit(1950, 'c/5')).toBe(true);
     expect(engine.falseHitCount).toBe(1);
   });
 

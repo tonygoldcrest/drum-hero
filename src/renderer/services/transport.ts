@@ -37,6 +37,7 @@ export interface TransportOptions {
   isDev: boolean;
   onEnded: () => void;
   onError: () => void;
+  onSeek?: (tick: number) => void;
 }
 
 const SNAPSHOT_KEYS: (keyof PlaybackSnapshot)[] = [
@@ -56,6 +57,7 @@ export class Transport {
   private isDev: boolean;
   private onEndedCb: () => void;
   private onErrorCb: () => void;
+  private onSeekCb: (tick: number) => void;
   private chart: ParsedChart | undefined;
   private measures: Measure[] = [];
   private delaySeconds = 0;
@@ -79,6 +81,7 @@ export class Transport {
     this.isDev = options.isDev;
     this.onEndedCb = options.onEnded;
     this.onErrorCb = options.onError;
+    this.onSeekCb = options.onSeek ?? (() => {});
     this.snapshot = this.buildSnapshot();
 
     preloadMetronome();
@@ -140,6 +143,7 @@ export class Transport {
     const startTime = this.tickToTime(tick);
 
     this.setPosition(startTime);
+    this.onSeekCb(tick);
 
     const begin = () => {
       this.isStarted = true;
@@ -191,6 +195,17 @@ export class Transport {
     this.isStarted = true;
     this.state = 'playing';
     this.setPosition(seconds);
+
+    if (this.chart) {
+      this.onSeekCb(
+        secondsToTicks(
+          seconds - this.delaySeconds,
+          this.chart.resolution,
+          this.chart.tempos,
+        ),
+      );
+    }
+
     void this.audioPlayer.start(seconds);
     this.emit();
   }

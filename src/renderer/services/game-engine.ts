@@ -52,6 +52,7 @@ export class GameEngine {
       isDev: options.isDev,
       onEnded: () => this.handleEnded(),
       onError: options.onError,
+      onSeek: (tick) => this.judge.rewindTo(tick),
     });
     this.timeUnsub = this.transport.timeStore.subscribe(this.handleFrame);
     this.transportUnsub = this.transport.subscribe(this.handleTransportChange);

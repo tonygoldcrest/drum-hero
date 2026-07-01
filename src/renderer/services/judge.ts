@@ -39,7 +39,7 @@ export class Judge {
   private enabled = false;
   private currentTick: number | undefined;
   private hitKeys = new Set<string>();
-  private incorrectHits = 0;
+  private falseHitTicks: number[] = [];
   private hitListeners = new Set<JudgeHitHandler>();
 
   setContext(context: JudgeContext): void {
@@ -59,18 +59,17 @@ export class Judge {
   }
 
   setTick(tick: number | undefined): void {
-    const prev = this.currentTick;
+    this.currentTick = tick;
+  }
 
-    if (tick !== undefined && prev !== undefined && tick < prev) {
-      for (const key of this.hitKeys) {
-        if (parseInt(key, 10) >= tick) {
-          this.hitKeys.delete(key);
-        }
+  rewindTo(tick: number): void {
+    for (const key of this.hitKeys) {
+      if (parseInt(key, 10) >= tick) {
+        this.hitKeys.delete(key);
       }
-
-      this.incorrectHits = 0;
     }
 
+    this.falseHitTicks = this.falseHitTicks.filter((t) => t < tick);
     this.currentTick = tick;
   }
 
@@ -91,12 +90,12 @@ export class Judge {
   }
 
   get falseHitCount(): number {
-    return this.incorrectHits;
+    return this.falseHitTicks.length;
   }
 
   reset(): void {
     this.hitKeys.clear();
-    this.incorrectHits = 0;
+    this.falseHitTicks = [];
   }
 
   private isInSilentMeasure(tick: number): boolean {
@@ -112,6 +111,18 @@ export class Judge {
     }
 
     return containing.renderedNotes.every((rn) => rn.note.isRest());
+  }
+
+  private hasScoreableNoteNear(tick: number, toleranceTicks: number): boolean {
+    for (const { renderedNotes } of this.renderData) {
+      for (const rn of renderedNotes) {
+        if (!rn.note.isRest() && Math.abs(rn.tick - tick) <= toleranceTicks) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   handleInput({ controlId, value }: InputEvent): void {
@@ -172,8 +183,11 @@ export class Judge {
     }
 
     if (!bestNote) {
-      if (!this.isInSilentMeasure(tick)) {
-        this.incorrectHits += 1;
+      if (
+        !this.isInSilentMeasure(tick) ||
+        this.hasScoreableNoteNear(tick, toleranceTicks)
+      ) {
+        this.falseHitTicks.push(tick);
       }
 
       return;
@@ -204,8 +218,11 @@ export class Judge {
       );
 
     if (newPrefixes.length === 0) {
-      if (!this.isInSilentMeasure(tick)) {
-        this.incorrectHits += 1;
+      if (
+        !this.isInSilentMeasure(tick) ||
+        this.hasScoreableNoteNear(tick, toleranceTicks)
+      ) {
+        this.falseHitTicks.push(tick);
       }
 
       return;
